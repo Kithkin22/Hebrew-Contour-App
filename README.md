@@ -1,2 +1,17 @@
-# Hebrew-Contour-App
-Help with Contouring Hebrew
+# Hebrew Contour Table App PWA
+
+This folder contains the installable PWA version of the Hebrew Contour Table App.
+
+## Files
+- `index.html` — the app
+- `manifest.json` — app install metadata
+- `service-worker.js` — offline caching
+- `icons/` — home screen icons
+
+## Install on iPhone
+1. Upload this folder to a web host such as GitHub Pages.
+2. Open the site in Safari on your iPhone.
+3. Tap Share.
+4. Tap Add to Home Screen.
+
+After the first load, the app should continue to open offline from the Home Screen.
