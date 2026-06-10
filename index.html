@@ -1238,6 +1238,37 @@ let generatedRefs=[];
 let state={ref:'',verses:[],selected:null,columns:[],language:'hebrew',legend:[],inclusios:[],comments:[],activeCommentId:null,arcs:[],activeArcId:null};
 let bracketAnchor=null;
 function esc(s){return String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function cleanLogosText(text){
+  if(text==null)return '';
+  const junkLine=/\b(?:address|edition|title|publisher|author|year|pages)\s*=|Biblia Hebraica|Stuttgart|German Bible Society|Elliger|Rudolph|\bWeil\b/i;
+  const footnoteToken=/^[abcd]$/i;
+  const superscriptFootnotes=/[\u1D43-\u1D4F\u1D9C-\u1DBF\u207A-\u207F\u2090-\u209C]/g;
+  const hasHebrew=/[\u0590-\u05FF]/;
+  let s=String(text).replace(/@book\{[^}]*\}/g,'');
+  let inBookBlock=false;
+  s=s.split('\n').filter(line=>{
+    const trimmed=line.trim();
+    if(/^@book\s*\{/.test(trimmed)){inBookBlock=true;return false;}
+    if(inBookBlock){if(/\}/.test(trimmed))inBookBlock=false;return false;}
+    return !junkLine.test(line);
+  }).map(line=>line.split(/\s+/).filter(tok=>{
+    if(footnoteToken.test(tok))return false;
+    return true;
+  }).map(tok=>{
+    tok=tok.replace(superscriptFootnotes,'');
+    if(/^\d+[abcd]+$/i.test(tok))tok=tok.replace(/^(\d+)[abcd]+$/i,'$1');
+    else if(hasHebrew.test(tok))tok=tok.replace(/[abcd]+$/i,'');
+    return tok;
+  }).filter(Boolean).join(' ')).join('\n');
+  return s.replace(/\n{3,}/g,'\n\n').trim();
+}
+function applyLogosCleanupToPasteBox(){
+  const box=document.getElementById('pasteBox');
+  if(!box)return '';
+  const cleaned=cleanLogosText(box.value);
+  box.value=cleaned;
+  return cleaned;
+}
 function parseText(text,ref){state.legend=state.legend||[];state.inclusios=[];state.comments=[];state.arcs=[];state.activeArcId=null;state.activeCommentId=null;state.ref=ref||'';state.language=(document.getElementById('textSource')&&document.getElementById('textSource').value)||state.language||'hebrew';const lines=text.split(/\n+/);state.verses=lines.map((line,i)=>({ref:(generatedRefs[i]|| (ref?ref+(text.includes('\n')?' line '+(i+1):''):'Line '+(i+1))),clauses:[{indent:0,words:line.trim().split(/\s+/).filter(Boolean).map(w=>({text:w,deleted:false,specials:[],note:'',translation:'',color:''})),ann:{}}]})).filter(v=>v.clauses[0].words.length);state.selected=null;render();}
 function locOK(l){return l&&state.verses[l.v]&&state.verses[l.v].clauses[l.c]&&state.verses[l.v].clauses[l.c].words[l.w];}
 function normalizeHebrewWord(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05C7]/g,'').replace(/[־־]/g,'').replace(/[.,;:!?()\[\]{}"'׳״·;⸀⸂⸃]/g,'').toLowerCase().trim();}
@@ -1552,7 +1583,15 @@ document.getElementById('generateReferenceBtn').onclick=generateFromReference;
 document.getElementById('passageReference').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();generateFromReference();}});
 document.getElementById('textSource').onchange=()=>{setupBooks();document.getElementById('pasteBox').dir=document.getElementById('textSource').value==='greek'?'ltr':'rtl';};
 
-document.getElementById('makeText').onclick=()=>{generatedRefs=[];parseText(document.getElementById('pasteBox').value,document.getElementById('refBox').value);};
+document.getElementById('pasteBox').addEventListener('paste',e=>{
+  e.preventDefault();
+  const cleaned=cleanLogosText(e.clipboardData.getData('text/plain'));
+  const box=e.target;
+  const start=box.selectionStart,end=box.selectionEnd;
+  box.value=box.value.slice(0,start)+cleaned+box.value.slice(end);
+  box.selectionStart=box.selectionEnd=start+cleaned.length;
+});
+document.getElementById('makeText').onclick=()=>{generatedRefs=[];parseText(applyLogosCleanupToPasteBox(),document.getElementById('refBox').value);};
 document.getElementById('sampleText').onclick=()=>{document.getElementById('textSource').value='hebrew';setupBooks();state.language='hebrew';document.getElementById('refBox').value='Ruth 3:4';document.getElementById('pasteBox').value='וִיהִי בְשָׁכְבוֹ וְיָדַעַתְּ אֶת־הַמָּקוֹם אֲשֶׁר יִשְׁכַּב־שָׁם וּבָאת וְגִלִּית מַרְגְּלֹתָיו וְשָׁכָבְתְּי';parseText(document.getElementById('pasteBox').value,document.getElementById('refBox').value);};
 
 function ensureLegend(){if(!Array.isArray(state.legend))state.legend=[];}
