@@ -1062,12 +1062,12 @@ body.dark-mode .password-gate-card h2{color:#ececec}
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
-  <div class="password-gate-card">
+  <form id="passwordGateForm" class="password-gate-card" autocomplete="off">
     <h2>Enter Password</h2>
-    <input type="password" id="appPasswordInput" autocomplete="current-password" placeholder="Password">
-    <button type="button" class="btn primary" id="appPasswordSubmit">Access App</button>
+    <input type="password" id="appPasswordInput" name="app-password" autocomplete="off" placeholder="Password" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <button type="submit" class="btn primary" id="appPasswordSubmit">Access App</button>
     <p id="passwordGateError" class="password-gate-error hidden">Incorrect password.</p>
-  </div>
+  </form>
 </div>
 <div id="appRoot" class="hidden">
 <header><h1>Hebrew/Greek Contour Table App</h1></header>
@@ -1276,6 +1276,7 @@ body.dark-mode .password-gate-card h2{color:#ececec}
 <script>
 const APP_PASSWORD="AMBS";
 const APP_ACCESS_SESSION_KEY="hebrewContourApp.accessGranted";
+const PASSWORD_DEBUG=/localhost|127\.0\.0\.1|vercel\.app/i.test(location.hostname);
 function unlockApp(){
   sessionStorage.setItem(APP_ACCESS_SESSION_KEY,"1");
   const gate=document.getElementById('passwordGate');
@@ -1289,12 +1290,19 @@ function initPasswordGate(){
     unlockApp();
     return;
   }
+  const form=document.getElementById('passwordGateForm');
   const input=document.getElementById('appPasswordInput');
-  const submit=document.getElementById('appPasswordSubmit');
   const error=document.getElementById('passwordGateError');
-  if(!input||!submit)return;
-  function tryUnlock(){
-    if(input.value===APP_PASSWORD){
+  if(!input)return;
+  function tryUnlock(e){
+    if(e&&e.preventDefault)e.preventDefault();
+    const enteredPassword=input.value.trim();
+    input.value=enteredPassword;
+    if(PASSWORD_DEBUG){
+      console.log("Password entered length:", enteredPassword.length);
+      console.log("Expected password length:", APP_PASSWORD.length);
+    }
+    if(enteredPassword===APP_PASSWORD){
       if(error)error.classList.add('hidden');
       unlockApp();
       return;
@@ -1306,11 +1314,10 @@ function initPasswordGate(){
     input.focus();
     input.select();
   }
-  submit.addEventListener('click',tryUnlock);
-  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryUnlock();}});
+  if(form)form.addEventListener('submit',tryUnlock);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tryUnlock(e);}});
   input.focus();
 }
-initPasswordGate();
 const BOOK_NAMES = "01O\tGenesis\n02O\tExodus\n03O\tLeviticus\n04O\tNumbers\n05O\tDeuteronomy\n06O\tJoshua\n07O\tJudges\n08O\tRuth\n09O\t1 Samuel\n10O\t2 Samuel\n11O\t1 Kings\n12O\t2 Kings\n13O\t1 Chronicles\n14O\t2 Chronicles\n15O\tEzra\n16O\tNehemiah\n17O\tEsther\n18O\tJob\n19O\tPsalms\n20O\tProverbs\n21O\tEcclesiastes\n22O\tSong of Solomon\n23O\tIsaiah\n24O\tJeremiah\n25O\tLamentations\n26O\tEzekiel\n27O\tDaniel\n28O\tHosea\n29O\tJoel\n30O\tAmos\n31O\tObadiah\n32O\tJonah\n33O\tMicah\n34O\tNahum\n35O\tHabakkuk\n36O\tZephaniah\n37O\tHaggai\n38O\tZechariah\n39O\tMalachi\n40N\tMatthew\n41N\tMark\n42N\tLuke\n43N\tJohn\n44N\tActs of the Apostles\n45N\tRomans\n46N\t1 Corinthians\n47N\t2 Corinthians\n48N\tGalatians\n49N\tEphesians\n50N\tPhilippians\n51N\tColossians\n52N\t1 Thessalonians\n53N\t2 Thessalonians\n54N\t1 Timothy\n55N\t2 Timothy\n56N\tTitus\n57N\tPhilemon\n58N\tHebrews\n59N\tJames\n60N\t1 Peter\n61N\t2 Peter\n62N\t1 John\n63N\t2 John\n64N\t3 John\n65N\tJude\n66N\tRevelation\n67A\tTobit\n68A\tJudith\n69A\tEsther, Greek\n70A\tWisdom of Solomon\n71A\tEcclesiasticus (Sira\n72A\tBaruch\n73A\tEpistle of Jeremiah\n74A\tPrayer of Azariah\n75A\tSusanna\n76A\tBel and the Dragon\n77A\t1 Maccabees\n78A\t2 Maccabees\n79A\t3 Maccabees\n80A\t4 Maccabees\n81A\t1 Esdras\n82A\t2 Esdras\n83A\tPrayer of Manasseh\n84A\tPsalm 151\n85A\tPsalm of Solomon\n86A\tOdes\n";
 const GREEK_BOOKS = [
   {id:'Matt',name:'Matthew',file:'Matt.txt'}, {id:'Mark',name:'Mark',file:'Mark.txt'}, {id:'Luke',name:'Luke',file:'Luke.txt'}, {id:'John',name:'John',file:'John.txt'}, {id:'Acts',name:'Acts',file:'Acts.txt'},
@@ -2085,6 +2092,7 @@ function startApp(){
   autoSaveProject();
 }
 autosaveReady=false;
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initPasswordGate);else initPasswordGate();
 
 /* 1.3.8b keyboard shortcuts inserted inside existing script */
 (function(){
