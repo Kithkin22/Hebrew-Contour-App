@@ -1066,7 +1066,7 @@ body.dark-mode .password-gate-card h2{color:#ececec}
     <h2>Enter Password</h2>
     <input type="password" id="appPasswordInput" autocomplete="current-password" placeholder="Password">
     <button type="button" class="btn primary" id="appPasswordSubmit">Access App</button>
-    <p id="passwordGateError" class="password-gate-error hidden">Invalid Password.</p>
+    <p id="passwordGateError" class="password-gate-error hidden">Incorrect password.</p>
   </div>
 </div>
 <div id="appRoot" class="hidden">
@@ -1274,8 +1274,10 @@ body.dark-mode .password-gate-card h2{color:#ececec}
 </div>
 
 <script>
-const APP_ACCESS_PASSWORD='AMBS';
+const APP_PASSWORD="AMBS";
+const APP_ACCESS_SESSION_KEY="hebrewContourApp.accessGranted";
 function unlockApp(){
+  sessionStorage.setItem(APP_ACCESS_SESSION_KEY,"1");
   const gate=document.getElementById('passwordGate');
   const app=document.getElementById('appRoot');
   if(gate)gate.classList.add('hidden');
@@ -1283,17 +1285,24 @@ function unlockApp(){
   startApp();
 }
 function initPasswordGate(){
+  if(sessionStorage.getItem(APP_ACCESS_SESSION_KEY)==="1"){
+    unlockApp();
+    return;
+  }
   const input=document.getElementById('appPasswordInput');
   const submit=document.getElementById('appPasswordSubmit');
   const error=document.getElementById('passwordGateError');
   if(!input||!submit)return;
   function tryUnlock(){
-    if(input.value===APP_ACCESS_PASSWORD){
+    if(input.value===APP_PASSWORD){
       if(error)error.classList.add('hidden');
       unlockApp();
       return;
     }
-    if(error)error.classList.remove('hidden');
+    if(error){
+      error.textContent="Incorrect password.";
+      error.classList.remove('hidden');
+    }
     input.focus();
     input.select();
   }
@@ -1799,14 +1808,16 @@ function clearAutosave(){
     localStorage.removeItem(PROJECT_STORAGE_KEY);localStorage.removeItem(PROJECT_AUTOSAVE_KEY);updateSaveStatus('Autosave cleared.');
   }
 }
-function offerAutosaveRestore(){
+function restoreAutosaveSilently(){
   let raw=localStorage.getItem(PROJECT_AUTOSAVE_KEY)||localStorage.getItem(PROJECT_STORAGE_KEY);
-  if(!raw)return;
+  if(!raw)return false;
   try{
     let data=JSON.parse(raw);
+    if(!restoreProjectPayload(data))return false;
     let when=data.savedAt?new Date(data.savedAt).toLocaleString():'a previous session';
-    if(confirm('Restore your last saved/autosaved project from '+when+'?'))restoreProjectPayload(data);
-  }catch(e){}
+    updateSaveStatus('Restored autosaved work from '+when+'.');
+    return true;
+  }catch(e){return false;}
 }
 document.getElementById('saveLocalBtn').onclick=saveProjectLocal;
 document.getElementById('loadLocalBtn').onclick=loadProjectLocal;
@@ -2060,17 +2071,17 @@ window.addEventListener('resize',()=>setTimeout(renderArcOverlay,50));
 })();
 
 // Initial load order matters: do NOT autosave the default blank/demo state before
-// giving the user a chance to restore their previous session.
+// restore any autosaved work before enabling background autosave.
 // Previous versions called render() after autosaveReady=true, which overwrote
-// the saved session before the restore prompt could load it.
+// the saved session before silent restore could load it.
 let appStarted=false;
 function startApp(){
   if(appStarted)return;
   appStarted=true;
   autosaveReady=false;
-  offerAutosaveRestore();
+  const restored=restoreAutosaveSilently();
   autosaveReady=true;
-  render();
+  if(!restored)render();
   autoSaveProject();
 }
 autosaveReady=false;
