@@ -1,4 +1,4 @@
-const CACHE_NAME = 'contour-app-pwa-v2';
+const CACHE_NAME = 'contour-app-pwa-v3';
 const APP_ASSETS = [
   './',
   './index.html',
