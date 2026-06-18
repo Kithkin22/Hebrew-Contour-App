@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Feedback Admin</title>
+<style>
+  :root{color-scheme:light dark}
+  body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;margin:0;background:#f4f6f8;color:#1f2d3d}
+  .wrap{max-width:920px;margin:0 auto;padding:24px}
+  h1{margin:0 0 6px;font-size:24px}
+  .muted{color:#64748b;font-size:14px}
+  .gate,.panel{background:#fff;border:1px solid #d8e1ea;border-radius:12px;padding:20px;box-shadow:0 8px 24px rgba(15,39,64,.08)}
+  .gate{max-width:360px;margin:80px auto 0}
+  input[type=password],button{font:inherit}
+  input[type=password]{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cfd9e4;border-radius:8px;margin:12px 0}
+  button{border:0;border-radius:8px;padding:10px 14px;cursor:pointer;background:#286090;color:#fff;font-weight:600}
+  button.secondary{background:#e2e8f0;color:#1f2d3d}
+  .err{color:#a94442;font-size:14px;margin-top:10px}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:18px 0}
+  .filter.active{background:#286090;color:#fff}
+  .stats{font-size:14px;color:#64748b}
+  .list{display:grid;gap:12px}
+  .item{border:1px solid #d8e1ea;border-radius:10px;padding:14px;background:#fff}
+  .item.fixed{opacity:.72;background:#f8fafc}
+  .item-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+  .badge{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:#eef2f7;color:#475569}
+  .badge.bug{background:#fdecec;color:#a94442}
+  .badge.feature{background:#eef7ff;color:#286090}
+  .badge.fixed{background:#edf7ed;color:#3c763d}
+  .message{margin:10px 0 8px;white-space:pre-wrap;line-height:1.45}
+  .meta{font-size:12px;color:#64748b;line-height:1.5}
+  .fixed-row{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600}
+  .empty{padding:32px;text-align:center;color:#64748b;border:1px dashed #cfd9e4;border-radius:10px;background:#fff}
+  .hidden{display:none!important}
+  @media (prefers-color-scheme:dark){
+    body{background:#111b26;color:#e8eef5}
+    .gate,.panel,.item,.empty{background:#17212b;border-color:#314253;color:#e8eef5}
+    .muted,.meta,.stats{color:#a9b6c5}
+    button.secondary{background:#314253;color:#e8eef5}
+    .item.fixed{background:#1f2c38}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="loginGate" class="gate">
+    <h1>Feedback admin</h1>
+    <p class="muted">Private view for reviewing user feedback. Not linked from the public app.</p>
+    <input type="password" id="adminPassword" placeholder="Admin password" autocomplete="current-password">
+    <button type="button" id="loginBtn">Sign in</button>
+    <p id="loginError" class="err hidden"></p>
+  </div>
+
+  <div id="adminPanel" class="hidden">
+    <h1>Feedback inbox</h1>
+    <p class="muted">Mark items fixed when addressed. Only you can access this page.</p>
+    <div class="toolbar">
+      <button type="button" class="filter active" data-filter="all">All</button>
+      <button type="button" class="filter secondary" data-filter="open">Open</button>
+      <button type="button" class="filter secondary" data-filter="fixed">Fixed</button>
+      <button type="button" class="secondary" id="refreshBtn">Refresh</button>
+      <button type="button" class="secondary" id="logoutBtn">Sign out</button>
+      <span class="stats" id="stats"></span>
+    </div>
+    <div id="feedbackList" class="list"></div>
+  </div>
+</div>
+<script>
+const SESSION_KEY = 'contourFeedbackAdminPassword';
+let adminPassword = '';
+let allEntries = [];
+let activeFilter = 'all';
+
+function $(id){ return document.getElementById(id); }
+
+function setLoginError(msg){
+  const el = $('loginError');
+  if(!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hidden', !msg);
+}
+
+async function api(path, options){
+  const headers = Object.assign({'Content-Type':'application/json','X-Admin-Password': adminPassword}, (options && options.headers) || {});
+  const res = await fetch(path, Object.assign({}, options || {}, {headers}));
+  let data = {};
+  try { data = await res.json(); } catch(e){}
+  if(!res.ok) throw new Error((data && data.error) || ('Request failed (' + res.status + ')'));
+  return data;
+}
+
+function entryStatus(entry){
+  return entry.status === 'fixed' ? 'fixed' : 'open';
+}
+
+function filteredEntries(){
+  if(activeFilter === 'fixed') return allEntries.filter(e => entryStatus(e) === 'fixed');
+  if(activeFilter === 'open') return allEntries.filter(e => entryStatus(e) === 'open');
+  return allEntries;
+}
+
+function formatWhen(iso){
+  if(!iso) return '—';
+  try { return new Date(iso).toLocaleString(); } catch(e){ return iso; }
+}
+
+function renderList(){
+  const list = $('feedbackList');
+  const stats = $('stats');
+  const rows = filteredEntries();
+  const openCount = allEntries.filter(e => entryStatus(e) === 'open').length;
+  const fixedCount = allEntries.filter(e => entryStatus(e) === 'fixed').length;
+  if(stats) stats.textContent = openCount + ' open · ' + fixedCount + ' fixed · ' + allEntries.length + ' total';
+  if(!list) return;
+  if(!rows.length){
+    list.innerHTML = '<div class="empty">No feedback in this view yet.</div>';
+    return;
+  }
+  list.innerHTML = rows.map(function(entry){
+    const fixed = entryStatus(entry) === 'fixed';
+    const ctx = entry.context || {};
+    const meta = [
+      formatWhen(entry.receivedAt),
+      entry.category || 'general',
+      ctx.ref ? ('Ref: ' + ctx.ref) : '',
+      ctx.language ? ('Lang: ' + ctx.language) : '',
+      entry.contact ? ('Contact: ' + entry.contact) : ''
+    ].filter(Boolean).join(' · ');
+    return '<article class="item' + (fixed ? ' fixed' : '') + '" data-id="' + entry.id + '">' +
+      '<div class="item-head">' +
+        '<span class="badge ' + (entry.category || 'general') + '">' + (entry.category || 'general') + '</span>' +
+        (fixed ? '<span class="badge fixed">Fixed</span>' : '<span class="badge">Open</span>') +
+      '</div>' +
+      '<div class="message">' + escapeHtml(entry.message || '') + '</div>' +
+      '<div class="meta">' + escapeHtml(meta) + '</div>' +
+      '<label class="fixed-row"><input type="checkbox"' + (fixed ? ' checked' : '') + ' data-fixed-toggle="' + entry.id + '"> Mark fixed</label>' +
+    '</article>';
+  }).join('');
+
+  list.querySelectorAll('[data-fixed-toggle]').forEach(function(box){
+    box.addEventListener('change', async function(){
+      const id = box.getAttribute('data-fixed-toggle');
+      const nextStatus = box.checked ? 'fixed' : 'open';
+      box.disabled = true;
+      try {
+        await api('/api/feedback-admin', {
+          method: 'PATCH',
+          body: JSON.stringify({ id: id, status: nextStatus })
+        });
+        const item = allEntries.find(function(e){ return e.id === id; });
+        if(item){
+          item.status = nextStatus;
+          item.fixedAt = nextStatus === 'fixed' ? new Date().toISOString() : null;
+        }
+        renderList();
+      } catch(err){
+        box.checked = !box.checked;
+        alert(err.message || 'Could not update status.');
+      } finally {
+        box.disabled = false;
+      }
+    });
+  });
+}
+
+function escapeHtml(s){
+  return String(s || '').replace(/[&<>"]/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]);
+  });
+}
+
+async function loadEntries(){
+  const data = await api('/api/feedback-admin', { method: 'GET' });
+  allEntries = Array.isArray(data.entries) ? data.entries : [];
+  renderList();
+}
+
+function showPanel(){
+  $('loginGate').classList.add('hidden');
+  $('adminPanel').classList.remove('hidden');
+}
+
+function showGate(){
+  $('adminPanel').classList.add('hidden');
+  $('loginGate').classList.remove('hidden');
+}
+
+async function signIn(password){
+  adminPassword = String(password || '').trim();
+  if(!adminPassword){ setLoginError('Enter the admin password.'); return; }
+  setLoginError('');
+  $('loginBtn').disabled = true;
+  try {
+    await api('/api/feedback-admin', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'verify', password: adminPassword })
+    });
+    sessionStorage.setItem(SESSION_KEY, adminPassword);
+    showPanel();
+    await loadEntries();
+  } catch(err){
+    setLoginError(err.message || 'Sign in failed.');
+  } finally {
+    $('loginBtn').disabled = false;
+  }
+}
+
+$('loginBtn').addEventListener('click', function(){
+  signIn($('adminPassword').value);
+});
+$('adminPassword').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') signIn($('adminPassword').value);
+});
+$('refreshBtn').addEventListener('click', function(){
+  loadEntries().catch(function(err){ alert(err.message); });
+});
+$('logoutBtn').addEventListener('click', function(){
+  sessionStorage.removeItem(SESSION_KEY);
+  adminPassword = '';
+  $('adminPassword').value = '';
+  showGate();
+});
+document.querySelectorAll('.filter').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    activeFilter = btn.getAttribute('data-filter') || 'all';
+    document.querySelectorAll('.filter').forEach(function(b){
+      const active = b === btn;
+      b.classList.toggle('active', active);
+      b.classList.toggle('secondary', !active);
+    });
+    renderList();
+  });
+});
+
+(function init(){
+  const saved = sessionStorage.getItem(SESSION_KEY);
+  if(saved){
+    signIn(saved);
+  }
+})();
+</script>
+</body>
+</html>

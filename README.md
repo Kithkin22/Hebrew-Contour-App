@@ -20,11 +20,14 @@ After the first load, the app should continue to open offline from the Home Scre
 
 The app includes a **Feedback** button in the workspace toolbar. Submissions are appended to [`feedback/entries.jsonl`](feedback/entries.jsonl) in this repository via a Vercel serverless function.
 
+A private admin inbox at [`admin.html`](admin.html) lets you review feedback and mark items fixed (password-protected; not linked from the main app).
+
 ### Vercel setup
 
 In the Vercel project, add environment variables:
 
 - `GITHUB_TOKEN` — personal access token with `repo` scope
 - `GITHUB_REPO` — `Kithkin22/Hebrew-Contour-App`
+- `FEEDBACK_ADMIN_PASSWORD` — password for `/admin.html`
 
 Redeploy after saving the variables.
