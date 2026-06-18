@@ -1236,6 +1236,118 @@ body.dark-mode #persistentShowComments{
 }
 #helpBtn[title]{cursor:help;}
 
+/* User feedback: click-menu panels, keycap shortcuts */
+.top-stack .card.compact-card.menu-open{
+  position:relative;
+  z-index:3001;
+  align-self:flex-start;
+  background:var(--ui-surface,#fff)!important;
+  border:1px solid var(--ui-line,#d8e1ea)!important;
+  border-radius:14px!important;
+  box-shadow:0 18px 42px rgba(20,37,56,.18)!important;
+  padding:12px 16px 16px!important;
+  min-width:min(720px, calc(100vw - 40px));
+}
+.top-stack .card.compact-card.menu-open::before,
+.top-stack .card.compact-card.menu-open::after,
+.top-stack .card.compact-card.menu-open:hover::before,
+.top-stack .card.compact-card.menu-open:hover::after,
+.top-stack .card.compact-card.menu-open:focus-within::before,
+.top-stack .card.compact-card.menu-open:focus-within::after{
+  display:none!important;
+  content:none!important;
+}
+.top-stack .card.compact-card.menu-open > p,
+.top-stack .card.compact-card.menu-open > p.muted,
+.top-stack .card.compact-card.menu-open > p.muted.small,
+.top-stack .card.compact-card.menu-open > div,
+.top-stack .card.compact-card.menu-open > .generator-source-row,
+.top-stack .card.compact-card.menu-open > .generator-passage-row,
+.top-stack .card.compact-card.menu-open > .generator-reference-row,
+.top-stack .card.compact-card.menu-open > #wlcStatus,
+.top-stack .card.compact-card.menu-open > #pasteBox,
+.top-stack .card.compact-card.menu-open > .row,
+.top-stack .card.compact-card.menu-open > .save-tools{
+  position:static!important;
+  left:auto!important;
+  top:auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  display:block!important;
+  margin:8px 0 0!important;
+  z-index:auto!important;
+  color:var(--ui-muted,#64748b)!important;
+  line-height:1.45!important;
+}
+.top-stack .card.compact-card.menu-open > .generator-source-row,
+.top-stack .card.compact-card.menu-open > .generator-passage-row,
+.top-stack .card.compact-card.menu-open > .generator-reference-row,
+.top-stack .card.compact-card.menu-open > .row,
+.top-stack .card.compact-card.menu-open > .save-tools{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+.top-stack .card.compact-card.menu-open > p.muted.small{
+  font-size:12px!important;
+  margin-top:10px!important;
+  padding-top:8px!important;
+  border-top:1px solid var(--ui-line,#d8e1ea)!important;
+}
+#annotationShortcutHint{
+  display:flex!important;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+  margin-left:auto;
+}
+#annotationShortcutHint .shortcut-label{
+  font-weight:700;
+  color:var(--ui-muted,#64748b);
+  font-size:12px;
+  margin-right:4px;
+}
+.keycap{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:26px;
+  height:24px;
+  padding:0 7px;
+  border-radius:5px;
+  background:linear-gradient(180deg,#4a5d73 0%,#2f3d4d 100%);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  border:1px solid #1e2833;
+  box-shadow:0 1px 0 #1e2833,0 2px 4px rgba(0,0,0,.18);
+  line-height:1;
+}
+body.dark-mode .keycap{
+  background:linear-gradient(180deg,#5a6f87 0%,#3d4f63 100%);
+  border-color:#2a3544;
+}
+#wiBdbGloss{font-size:13px;line-height:1.35;}
+#wiBdbLink{
+  display:inline-block;
+  margin-top:4px;
+  font-size:12px;
+  font-weight:800;
+  color:var(--ui-blue,#1f5f99);
+  text-decoration:none;
+}
+#wiBdbLink:hover{text-decoration:underline;}
+body.dark-mode #wiBdbLink{color:#6db5ff;}
+@media(min-width:901px){
+  .contour-with-comments{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) 340px!important;
+  }
+  .comments-panel.collapsed{display:none!important;}
+}
+
 </style>
 </head>
 <body>
@@ -1664,7 +1776,7 @@ function locOK(l){return l&&state.verses[l.v]&&state.verses[l.v].clauses[l.c]&&s
 function normalizeHebrewWord(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05C7]/g,'').replace(/[־־]/g,'').replace(/[.,;:!?()\[\]{}"'׳״·;⸀⸂⸃]/g,'').toLowerCase().trim();}
 function selectedWordKey(){return locOK(state.selected)?normalizeHebrewWord(state.verses[state.selected.v].clauses[state.selected.c].words[state.selected.w].text):'';}
 let commentAnchorStart=null;
-let commentsPanelCollapsed=true;
+let commentsPanelCollapsed=false;
 function ensureComments(){if(!Array.isArray(state.comments))state.comments=[];}
 function cloneLoc(l){return l?{v:+l.v,c:+l.c,w:+l.w}:null;}
 function locEqual(a,b){return !!(a&&b&&a.v===b.v&&a.c===b.c&&a.w===b.w);}
@@ -1747,7 +1859,7 @@ let autosaveReady=false;
 function render(){applyLanguageLayout();renderEditor();renderTable();renderLegendEditor();renderInclusioManager();renderCommentsPanel();setTimeout(updateCommentPopover,0);if(autosaveReady)autoSaveProject();}
 function wordFormatClasses(w,l){let f=w.format||{};let suppressCommentStart=l&&isCommentBoundary(l,'start')&&!w.bracketSource;let suppressCommentEnd=l&&isCommentBoundary(l,'end')&&!w.bracketSource;return `${f.bold?'fmt-bold':''} ${f.italic?'fmt-italic':''} ${f.underline?'fmt-underline':''} ${f.doubleUnderline?'fmt-double-underline':''} ${f.highlight?'fmt-highlight':''} ${(w.bracketStart&&!suppressCommentStart)?'bracket-start':''} ${(w.bracketEnd&&!suppressCommentEnd)?'bracket-end':''}`;}
 function wordInlineStyle(w){let styles=[];if(w.color)styles.push('color:'+esc(w.color));if(w.format&&w.format.highlight)styles.push('background-color:'+esc(w.format.highlight));let bc=w.bracketColor||w.inclusioColor;if(bc)styles.push('--bracket-color:'+esc(bc));return styles.join(';');}
-function renderEditor(){const ed=document.getElementById('editor');const layout=getLanguageLayout();const scriptStyle=`direction:${layout.dir};text-align:${layout.textAlign};font-family:${layout.fontFamily}`;ensureComments();if(!state.verses.length){ed.innerHTML='<div class="editor-empty-state" dir="ltr"><p class="editor-empty-title">No text loaded yet</p><p class="muted">Generate a passage from WLC, paste Hebrew/Greek text, or load the Ruth sample.</p><div class="editor-empty-actions"><button type="button" class="btn primary" id="emptyGenerateBtn">Generate Ruth 3:4</button><button type="button" class="btn" id="emptyPasteBtn">Paste text</button><button type="button" class="btn good" id="emptySampleBtn">Load sample</button></div></div>';bindEmptyStateActions();hideCommentPopover();return;}let html='';let activeKey=selectedWordKey();state.verses.forEach((v,vi)=>{html+=`<div class="muted" dir="ltr">${esc(v.ref)}</div>`;v.clauses.forEach((c,ci)=>{let sel=state.selected&&state.selected.v==vi&&state.selected.c==ci;let marginStyle=layout.indentSide==='left'?`margin-left:${c.indent*36}px`:`margin-right:${c.indent*36}px`;html+=`<div class="clause ${sel?'selected':''}" data-v="${vi}" data-c="${ci}" dir="${layout.dir}" style="${marginStyle};${scriptStyle}">`;c.words.forEach((w,wi)=>{let l={v:vi,c:ci,w:wi};let ids=commentIdsForLoc(l);let commentClass=ids.length?'comment-anchored':'';let activeCommentClass=(state.activeCommentId&&ids.includes(state.activeCommentId))?'comment-active':'';let wsel=state.selected&&state.selected.v==vi&&state.selected.c==ci&&state.selected.w==wi;let same=activeKey && normalizeHebrewWord(w.text)===activeKey && !wsel;html+=`<span class="word ${wsel?'selected':''} ${same?'sameword':''} ${commentClass} ${activeCommentClass} ${w.deleted?'deleted':''} ${w.specials.includes('predicate')?'pred':''} ${w.specials.includes('subject')?'subj':''} ${wordFormatClasses(w,l)}" data-v="${vi}" data-c="${ci}" data-w="${wi}" style="${wordInlineStyle(w)}">${esc(w.text)}</span>${commentMarkersForLoc(l)} `});html+='</div>';});});ed.innerHTML=html;document.querySelectorAll('.word').forEach(el=>el.onclick=(ev)=>{let clicked={v:+el.dataset.v,c:+el.dataset.c,w:+el.dataset.w};if(ev.shiftKey&&locOK(state.selected)){applyBracketRange(state.selected,clicked);return;}state.selected=clicked;let ids=commentIdsForLoc(clicked);if(ids.length)state.activeCommentId=ids[0];render();});document.querySelectorAll('.comment-marker').forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();activateComment(el.dataset.commentId);});}
+function renderEditor(){const ed=document.getElementById('editor');const layout=getLanguageLayout();const scriptStyle=`direction:${layout.dir};text-align:${layout.textAlign};font-family:${layout.fontFamily}`;ensureComments();if(!state.verses.length){ed.innerHTML='<div class="editor-empty-state" dir="ltr"><p class="editor-empty-title">No text loaded yet</p><p class="muted">Use <strong>Generate text</strong>, <strong>Paste text</strong>, or <strong>Load Sample</strong> from the top bar.</p></div>';hideCommentPopover();return;}let html='';let activeKey=selectedWordKey();state.verses.forEach((v,vi)=>{html+=`<div class="muted" dir="ltr">${esc(v.ref)}</div>`;v.clauses.forEach((c,ci)=>{let sel=state.selected&&state.selected.v==vi&&state.selected.c==ci;let marginStyle=layout.indentSide==='left'?`margin-left:${c.indent*36}px`:`margin-right:${c.indent*36}px`;html+=`<div class="clause ${sel?'selected':''}" data-v="${vi}" data-c="${ci}" dir="${layout.dir}" style="${marginStyle};${scriptStyle}">`;c.words.forEach((w,wi)=>{let l={v:vi,c:ci,w:wi};let ids=commentIdsForLoc(l);let commentClass=ids.length?'comment-anchored':'';let activeCommentClass=(state.activeCommentId&&ids.includes(state.activeCommentId))?'comment-active':'';let wsel=state.selected&&state.selected.v==vi&&state.selected.c==ci&&state.selected.w==wi;let same=activeKey && normalizeHebrewWord(w.text)===activeKey && !wsel;html+=`<span class="word ${wsel?'selected':''} ${same?'sameword':''} ${commentClass} ${activeCommentClass} ${w.deleted?'deleted':''} ${w.specials.includes('predicate')?'pred':''} ${w.specials.includes('subject')?'subj':''} ${wordFormatClasses(w,l)}" data-v="${vi}" data-c="${ci}" data-w="${wi}" style="${wordInlineStyle(w)}">${esc(w.text)}</span>${commentMarkersForLoc(l)} `});html+='</div>';});});ed.innerHTML=html;document.querySelectorAll('.word').forEach(el=>el.onclick=(ev)=>{let clicked={v:+el.dataset.v,c:+el.dataset.c,w:+el.dataset.w};if(ev.shiftKey&&locOK(state.selected)){applyBracketRange(state.selected,clicked);return;}state.selected=clicked;let ids=commentIdsForLoc(clicked);if(ids.length)state.activeCommentId=ids[0];render();});document.querySelectorAll('.comment-marker').forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();activateComment(el.dataset.commentId);});}
 function clauseRows(){let rows=[];state.verses.forEach((v,vi)=>v.clauses.forEach((c,ci)=>{let words=c.words.filter(w=>!w.deleted).map(w=>w.text).join(' ');let notes=c.words.filter(w=>w.note).map(w=>'['+w.text+'] — '+w.note).join('; ');let trans=c.words.filter(w=>w.translation).map(w=>'['+w.text+'] — '+w.translation).join('; ');rows.push({vi,ci,ref:v.ref,clause:ci+1,hebrew:words,indent:c.indent,notes,translation:trans,ann:c.ann||{}});}));return rows;}
 function renderTable(){let rows=clauseRows();let textHeader=(state.language==='greek'?'Greek Text':'Hebrew Text');let textClass=(state.language==='greek'?'greek':'heb');let ltr=' class="ann-ltr" dir="ltr"';let html='<table id="annTable" dir="ltr"><thead><tr><th class="'+textClass+'">'+textHeader+'</th><th'+ltr+'>Translation</th><th'+ltr+'>Gloss</th><th'+ltr+'>Parsing</th><th'+ltr+'>Notes</th>';state.columns.forEach(col=>html+=`<th class="ann-ltr" dir="ltr">${esc(col)}</th>`);html+='</tr></thead><tbody>';rows.forEach(r=>{html+=`<tr data-v="${r.vi}" data-c="${r.ci}"><td class="${textClass}">${esc(r.hebrew)}</td><td class="ann-ltr" dir="ltr" contenteditable data-col="Translation">${esc(r.ann['Translation']||'')}</td><td class="ann-ltr" dir="ltr">${esc(r.translation)}</td><td class="ann-ltr" dir="ltr" contenteditable data-col="Parsing">${esc(r.ann['Parsing']||'')}</td><td class="ann-ltr" dir="ltr">${esc(r.notes)}</td>`;state.columns.forEach(col=>html+=`<td class="ann-ltr" dir="ltr" contenteditable data-col="${esc(col)}">${esc(r.ann[col]||'')}</td>`);html+='</tr>';});html+='</tbody></table>';const tableWrap=document.getElementById('tableWrap');tableWrap.innerHTML=html;tableWrap.dir='ltr';tableWrap.style.direction='ltr';tableWrap.style.textAlign='left';document.querySelectorAll('#annTable td[contenteditable]').forEach(td=>td.oninput=()=>{let tr=td.closest('tr'),c=state.verses[+tr.dataset.v].clauses[+tr.dataset.c];c.ann=c.ann||{};c.ann[td.dataset.col]=td.innerText;if(autosaveReady)autoSaveProject();});}
 function insertBreak(){let l=state.selected;if(!locOK(l)||l.w===0)return;let cl=state.verses[l.v].clauses[l.c];let newc={indent:cl.indent,words:cl.words.slice(l.w),specials:[],ann:{}};cl.words=cl.words.slice(0,l.w);state.verses[l.v].clauses.splice(l.c+1,0,newc);state.selected={v:l.v,c:l.c+1,w:0};render();}
@@ -2468,7 +2580,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
         <button type="button" class="annotation-tab-btn" data-panel="ann-arcs">Arcs</button>
         <button type="button" class="annotation-tab-btn" data-panel="ann-inclusio">Inclusio</button>
         <button type="button" class="annotation-tab-btn" data-panel="ann-export">Export</button>
-        <span id="annotationShortcutHint">Shortcuts: b, i, u, Shift+U, c, h</span>
+        <span id="annotationShortcutHint"><span class="shortcut-label">Shortcuts</span><kbd class="keycap">b</kbd><kbd class="keycap">i</kbd><kbd class="keycap">u</kbd><kbd class="keycap">Shift+U</kbd><kbd class="keycap">c</kbd><kbd class="keycap">h</kbd></span>
       </div>
       <div id="ann-color" class="annotation-tab-panel active"></div>
       <div id="ann-format" class="annotation-tab-panel"></div>
@@ -2610,8 +2722,75 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 })();
 
 
+
+/* Sefaria BDB lookup for hover inspector */
+(function(){
+  const CACHE={};
+  function stripHtml(html){
+    const d=document.createElement('div');
+    d.innerHTML=String(html||'');
+    return (d.textContent||'').replace(/\s+/g,' ').trim();
+  }
+  function firstDefinition(content){
+    function walk(senses){
+      for(const s of (senses||[])){
+        if(s.definition){
+          const t=stripHtml(s.definition);
+          if(t) return t.length>140?t.slice(0,137)+'…':t;
+        }
+        const inner=walk(s.senses);
+        if(inner) return inner;
+      }
+      return '';
+    }
+    return walk((content&&content.senses)||[]);
+  }
+  function grammarText(content){
+    for(const s of ((content&&content.senses)||[])){
+      const g=s.grammar;
+      if(!g) continue;
+      const parts=[g.verbal_stem,g.morphology].concat(g.binyan_form||[]).filter(Boolean);
+      if(parts.length) return parts.map(stripHtml).join(' · ');
+    }
+    return '';
+  }
+  function normKey(word){
+    return String(word||'').normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05C7]/g,'').replace(/[־־]/g,'').trim().toLowerCase();
+  }
+  function bdbUrl(headword){
+    return 'https://www.sefaria.org/BDB,'+encodeURIComponent(headword||'')+'?lang=bi';
+  }
+  window.lookupSefariaBDB=async function(word){
+    const w=String(word||'').trim();
+    if(!w||!/[֐-׿]/.test(w)) return null;
+    const key=normKey(w);
+    if(CACHE[key]) return CACHE[key];
+    try{
+      const resp=await fetch('https://www.sefaria.org/api/words/'+encodeURIComponent(w)+'?never_split=1');
+      if(!resp.ok) return null;
+      const entries=await resp.json();
+      const bdb=(entries||[]).find(e=>e.parent_lexicon==='BDB Dictionary');
+      if(!bdb) return null;
+      const result={
+        headword:bdb.headword||w,
+        lemma:bdb.headword||w,
+        gloss:firstDefinition(bdb.content),
+        parsing:grammarText(bdb.content),
+        url:bdbUrl(bdb.headword||w)
+      };
+      CACHE[key]=result;
+      return result;
+    }catch(err){
+      console.warn('Sefaria BDB lookup failed',err);
+      return null;
+    }
+  };
+})();
+
+
 /* 4.0 Hover Inspector Shell */
 (function(){
+  if(window.CONTOUR_INSPECTOR_ENABLED===undefined)window.CONTOUR_INSPECTOR_ENABLED=true;
   let inspectorTimer=null;
   const morphLookup = window.CONTOUR_MORPH_LOOKUP || {};
 
@@ -2660,6 +2839,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   }
 
   function showInspector(el){
+    if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
     const box=document.getElementById('wordInspector');
     if(!box||!el) return;
 
@@ -2686,6 +2866,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   }
 
   document.addEventListener('mouseover', function(e){
+    if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
     const wordEl=e.target.closest && e.target.closest('.word');
     if(!wordEl) return;
     clearTimeout(inspectorTimer);
@@ -2716,6 +2897,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
       <div class="wi-row"><div class="wi-label">Word</div><div class="wi-value wi-hebrew" id="wiWord">—</div></div>
       <div class="wi-row"><div class="wi-label">Root</div><div class="wi-value wi-hebrew" id="wiRoot">—</div></div>
       <div class="wi-row"><div class="wi-label">Parsing</div><div class="wi-value" id="wiParsing">—</div></div>
+      <div class="wi-row" id="wiBdbRow"><div class="wi-label">BDB</div><div class="wi-value"><div id="wiBdbGloss">—</div><a id="wiBdbLink" href="#" target="_blank" rel="noopener" style="display:none">Open in Sefaria BDB ↗</a></div></div>
     `;
     document.body.appendChild(box);
   }
@@ -2915,6 +3097,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
     // Override inspector fields by listening before/after hover updates.
     document.addEventListener('mouseover', function(e){
+      if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
       const wordEl = e.target.closest && e.target.closest('.word');
       if(!wordEl) return;
       setTimeout(function(){
@@ -3105,6 +3288,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     if(!enabled){
       const box=document.getElementById('wordInspector');
       if(box){box.style.display='none';box.setAttribute('aria-hidden','true');}
+      clearTimeout(window.__inspectorHoverTimer);
     }
   }
   function installInspectorToggle(){
@@ -3215,6 +3399,33 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     if(heb) return heb;
     const nonStrong=candidates.find(v=>v&&!looksLikeStrong(v));
     return nonStrong || '—';
+  }
+
+  function fillBdbFields(bdb){
+    const gloss=document.getElementById('wiBdbGloss');
+    const link=document.getElementById('wiBdbLink');
+    const row=document.getElementById('wiBdbRow');
+    if(!gloss||!link) return;
+    if(!bdb){
+      gloss.textContent='—';
+      link.style.display='none';
+      if(row) row.style.display='';
+      return;
+    }
+    gloss.textContent=bdb.gloss||'—';
+    link.href=bdb.url||'#';
+    link.style.display=bdb.url?'inline-block':'none';
+    if(row) row.style.display='';
+  }
+  async function applyBdbToInspector(word, wiRoot, wiParsing){
+    if(typeof window.lookupSefariaBDB!=='function') return;
+    if(window.state&&state.language==='greek'){fillBdbFields(null);return;}
+    const bdb=await window.lookupSefariaBDB(word);
+    if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
+    if(!bdb) return;
+    if(wiRoot && (!wiRoot.textContent || wiRoot.textContent==='—') && bdb.lemma) wiRoot.textContent=bdb.lemma;
+    if(wiParsing && (!wiParsing.textContent || wiParsing.textContent==='—') && bdb.parsing) wiParsing.textContent=bdb.parsing;
+    fillBdbFields(bdb);
   }
   function enhance(wordEl){
     if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
