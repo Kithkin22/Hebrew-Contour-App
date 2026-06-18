@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hebrew/Greek Contour Table App 1.3.8a</title>
+<title>Hebrew/Greek Contour Table App 1.3.9a</title>
 <style>
   body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f7f7f7;color:#222} header{background:#203040;color:white;padding:18px 24px} h1{margin:0;font-size:24px}.wrap{max-width:1200px;margin:0 auto;padding:20px}.card{background:white;border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:16px;box-shadow:0 1px 3px #0001}.top-grid{display:grid;grid-template-columns:minmax(360px,1fr) minmax(360px,1fr);gap:16px;margin-bottom:16px}.top-grid .card{margin-bottom:0}.compact-card p{margin:6px 0 10px}.compact-card textarea{min-height:96px}.compact-card .row{gap:8px}.compact-card .btn{padding:8px 10px}.compact-card input,.compact-card select{padding:7px}.save-tools{border-top:1px solid #eee;margin-top:8px;padding-top:8px}.save-tools-title{display:block;color:#286090;font-weight:bold;margin-bottom:6px}.save-tools .row{margin-top:6px}.generate-line{display:flex;flex-wrap:nowrap;gap:8px;align-items:center}.generate-line input{width:62px}.generate-line #textSource{min-width:150px}.generate-line #bookSelect{min-width:160px}.reference-line input{font-size:14px}.toolbar-section{border:1px solid #e5e5e5;border-radius:8px;background:#fafafa;padding:8px 10px;margin:8px 0}.toolbar-section .row{margin:0}.toolbar-label{min-width:95px;color:#333}@media(max-width:1050px){.generate-line{flex-wrap:wrap}}@media(max-width:900px){.top-grid{grid-template-columns:1fr}.compact-card textarea{min-height:110px}}.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.row>*{margin:4px 0}textarea,input,select{font:inherit;border:1px solid #bbb;border-radius:6px;padding:8px}textarea{width:100%;min-height:120px;box-sizing:border-box}.btn{border:0;border-radius:6px;padding:9px 12px;cursor:pointer;background:#ddd}.btn.primary{background:#286090;color:white}.btn.good{background:#3c763d;color:white}.btn.warn{background:#8a6d3b;color:white}.btn.danger{background:#a94442;color:white}.btn:hover{filter:brightness(.95)}#editor{font-size:26px;line-height:2.1;padding:20px;background:#fff;border:1px solid #ddd;border-radius:8px;min-height:180px}
 .lang-hebrew #editor{direction:rtl;text-align:right;font-family:'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif}
@@ -1060,13 +1060,190 @@ body.dark-mode .password-gate-card h2{color:#ececec}
 #passwordGate.hidden{display:none!important;}
 #appRoot.hidden{display:none!important;}
 
+/* Phase A — click-to-open top menus, empty state, help modal */
+#topMenuBackdrop{
+  position:fixed;inset:0;background:rgba(10,20,32,.38);z-index:2500;display:none;pointer-events:none;
+}
+#topMenuBackdrop.show{display:block;}
+.top-stack .card.compact-card:hover > p,
+.top-stack .card.compact-card:hover > div,
+.top-stack .card.compact-card:hover > textarea,
+.top-stack .card.compact-card:hover > input,
+.top-stack .card.compact-card:focus-within > p,
+.top-stack .card.compact-card:focus-within > div,
+.top-stack .card.compact-card:focus-within > textarea,
+.top-stack .card.compact-card:focus-within > input{
+  display:none!important;
+}
+.top-stack .card.compact-card:hover::after,
+.top-stack .card.compact-card:hover::before,
+.top-stack .card.compact-card:focus-within::after,
+.top-stack .card.compact-card:focus-within::before{
+  content:none!important;display:none!important;
+}
+.top-stack .card.compact-card.menu-open > p,
+.top-stack .card.compact-card.menu-open > div,
+.top-stack .card.compact-card.menu-open > textarea,
+.top-stack .card.compact-card.menu-open > input{
+  display:flex!important;
+}
+.top-stack .card.compact-card.menu-open::before{
+  content:""!important;display:block!important;
+  position:absolute;top:44px;left:0;width:660px;min-height:220px;
+  background:var(--ui-surface,#fff);border:1px solid var(--ui-line,#d8e1ea);
+  border-radius:14px;box-shadow:0 18px 42px rgba(20,37,56,.20);z-index:-1;
+}
+.top-stack .card.compact-card[data-menu="paste"].menu-open::before{width:520px;min-height:220px;}
+.top-stack .card.compact-card[data-menu="project"].menu-open::before{width:720px;min-height:190px;}
+.top-stack .card.compact-card.menu-open > p{
+  position:absolute!important;left:18px!important;top:58px!important;width:600px!important;margin:0!important;z-index:5!important;
+}
+.top-stack .card.compact-card.menu-open > .generator-source-row{
+  position:absolute!important;left:18px!important;top:94px!important;width:610px!important;z-index:5!important;
+}
+.top-stack .card.compact-card.menu-open > .generator-passage-row{
+  position:absolute!important;left:18px!important;top:138px!important;width:640px!important;z-index:5!important;
+}
+.top-stack .card.compact-card.menu-open > .generator-reference-row{
+  position:absolute!important;left:18px!important;top:186px!important;width:640px!important;z-index:5!important;
+}
+.top-stack .card.compact-card.menu-open > #wlcStatus{
+  position:absolute!important;left:18px!important;top:236px!important;width:610px!important;z-index:5!important;display:block!important;
+}
+.top-stack .card.compact-card[data-menu="paste"].menu-open > p{
+  left:18px!important;top:58px!important;width:460px!important;
+}
+.top-stack .card.compact-card.menu-open > #pasteBox{
+  display:block!important;position:absolute!important;left:18px!important;top:94px!important;
+  width:480px!important;min-height:88px!important;z-index:5!important;
+}
+.top-stack .card.compact-card[data-menu="paste"].menu-open > .row{
+  position:absolute!important;left:18px!important;top:190px!important;width:480px!important;z-index:5!important;
+}
+.top-stack .card.compact-card[data-menu="project"].menu-open > .row{
+  position:absolute!important;left:18px!important;top:58px!important;width:680px!important;z-index:5!important;
+}
+.top-stack .card.compact-card[data-menu="project"].menu-open > .save-tools{
+  position:absolute!important;left:18px!important;top:122px!important;width:680px!important;z-index:5!important;
+}
+.top-stack .card.compact-card[data-menu="project"].menu-open > p{
+  left:18px!important;top:186px!important;width:640px!important;display:block!important;
+}
+.top-stack .card.compact-card.menu-open > strong:first-child,
+.top-stack .card.compact-card.menu-open > .save-tools-title{
+  background:#f8fbff!important;border-color:#9fc8ee!important;
+}
+body.dark-mode .top-stack .card.compact-card.menu-open > strong:first-child,
+body.dark-mode .top-stack .card.compact-card.menu-open > .save-tools-title{
+  background:#233241!important;border-color:#6db5ff!important;
+}
+.menu-trigger:focus-visible{outline:2px solid var(--ui-blue,#1f5f99);outline-offset:2px;}
+.workspace-help-row{display:flex;justify-content:flex-end;align-items:center;margin:0 0 10px;gap:8px;}
+#helpBtn{min-width:34px;padding:7px 12px;font-weight:800;}
+.help-panel{max-width:560px;}
+.help-panel h3{margin-top:0;}
+.help-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;}
+.help-table th,.help-table td{border:1px solid var(--ui-line,#d8e1ea);padding:6px 8px;text-align:left;vertical-align:top;}
+.help-table th{background:var(--ui-surface-2,#f8fafc);}
+.editor-empty-state{text-align:center;padding:48px 24px;direction:ltr;}
+.editor-empty-title{font-size:20px;font-weight:800;margin:0 0 8px;color:var(--ui-text,#1f2d3d);}
+.editor-empty-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px;}
+@media(max-width:900px){
+  .top-stack .card.compact-card.menu-open::before{width:calc(100vw - 48px)!important;max-width:660px;}
+  .top-stack .card.compact-card.menu-open > p,
+  .top-stack .card.compact-card.menu-open > .generator-source-row,
+  .top-stack .card.compact-card.menu-open > .generator-passage-row,
+  .top-stack .card.compact-card.menu-open > .generator-reference-row,
+  .top-stack .card.compact-card.menu-open > #pasteBox,
+  .top-stack .card.compact-card.menu-open > .row{width:calc(100vw - 72px)!important;max-width:600px;}
+}
+
+/* UI review polish — labels, comments button, mobile, dark contrast */
+.top-menu-hint{
+  flex:1 1 100%;
+  margin:0 0 4px;
+  font-size:13px;
+  line-height:1.45;
+  color:var(--ui-muted,#64748b);
+}
+.password-gate-hint{
+  margin:0 0 14px;
+  color:var(--ui-muted,#666);
+  font-size:14px;
+  line-height:1.45;
+}
+.top-stack .card.compact-card[data-menu="generate"] > .menu-trigger::before{content:"＋ ";}
+.top-stack .card.compact-card[data-menu="paste"] > .menu-trigger::before{content:"📋 ";}
+.top-stack .card.compact-card[data-menu="project"] > .save-tools-title::before{content:"📁 ";}
+.top-stack .card.compact-card:nth-child(1) > strong:first-child::before,
+.top-stack .card.compact-card:nth-child(2) > strong:first-child::before,
+.top-stack .card.compact-card:nth-child(3) > .save-tools-title::before{content:none!important;}
+.top-stack .card.compact-card:has(.save-tools-title) > .save-tools-title::before{
+  content:"📁 " !important;
+}
+#showCommentsPanel{
+  position:static!important;
+  right:auto!important;
+  top:auto!important;
+  z-index:auto!important;
+  margin-left:auto!important;
+}
+#persistentShowComments{
+  position:fixed!important;
+  right:16px!important;
+  bottom:16px!important;
+  top:auto!important;
+  left:auto!important;
+  max-width:calc(100vw - 32px);
+}
+@media(min-width:901px){
+  #persistentShowComments{display:none!important;}
+}
+@media(max-width:900px){
+  #showCommentsPanel{display:none!important;}
+  #persistentShowComments.show{display:block!important;}
+  .top-stack .card.compact-card > .menu-trigger,
+  .top-stack .card.compact-card > .save-tools-title{
+    width:100%!important;
+    justify-content:space-between!important;
+    font-size:17px!important;
+  }
+  #themeToggleBtn,#inspectorToggleBtn,#manualInspectorBtn{
+    flex:1 1 calc(50% - 6px)!important;
+    min-height:42px!important;
+  }
+  #annotationTabsRow{
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+  .annotation-tab-btn{
+    flex:0 0 auto!important;
+    padding:10px 10px 8px!important;
+  }
+}
+body.dark-mode .clause.selected{
+  background:#1a3048!important;
+  outline-color:#6db5ff!important;
+}
+body.dark-mode #persistentShowComments{
+  background:var(--ui-surface,#17212b)!important;
+  color:var(--ui-text,#e8eef5)!important;
+  border-color:var(--ui-line,#314253)!important;
+}
+#topMenuBackdrop.show{
+  pointer-events:auto!important;
+}
+#helpBtn[title]{cursor:help;}
+
 </style>
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
   <form id="passwordGateForm" class="password-gate-card" autocomplete="off">
     <h2>Enter Password</h2>
-    <input type="password" id="appPasswordInput" name="app-password" autocomplete="off" placeholder="Password" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <p class="password-gate-hint">Enter the access password to open the contour editor. Your session stays unlocked until you close this browser tab.</p>
+    <input type="password" id="appPasswordInput" name="app-password" autocomplete="off" placeholder="Password" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="passwordGateError">
     <button type="submit" class="btn primary" id="appPasswordSubmit">Access App</button>
     <p id="passwordGateError" class="password-gate-error hidden">Incorrect password.</p>
   </form>
@@ -1074,9 +1251,11 @@ body.dark-mode .password-gate-card h2{color:#ececec}
 <div id="appRoot" class="hidden">
 <header><h1>Hebrew/Greek Contour Table App</h1></header>
 <div class="wrap">
+  <div id="topMenuBackdrop" aria-hidden="true"></div>
   <div class="top-stack">
-  <div class="card compact-card">
-    <strong>Generate text</strong>
+  <p class="muted top-menu-hint">Click or tap a menu to generate text, paste from Logos, or save your project.</p>
+  <div class="card compact-card" data-menu="generate">
+    <strong class="menu-trigger">Generate text</strong>
     <p class="muted">Choose Hebrew/WLC or Greek/SBLGNT, then generate into the editor.</p>
 
     <div class="generator-source-row">
@@ -1118,8 +1297,8 @@ body.dark-mode .password-gate-card h2{color:#ececec}
     <p class="muted small">SBLGNT source files are provided by Faithlife/SBLGNT under CC BY 4.0; Hebrew source remains the bundled WLC.</p>
   </div>
 
-  <div class="card compact-card">
-    <strong>Paste text</strong>
+  <div class="card compact-card" data-menu="paste">
+    <strong class="menu-trigger">Paste text</strong>
     <p class="muted">Paste Hebrew/Greek text here. Each line becomes a verse/section.</p>
     <textarea id="pasteBox" dir="rtl" class="heb" placeholder="Paste Hebrew text here..."></textarea>
     <input id="refBox" type="hidden" value="">
@@ -1129,8 +1308,8 @@ body.dark-mode .password-gate-card h2{color:#ececec}
     </div>
   </div>
 
-  <div class="card compact-card">
-    <strong class="save-tools-title">Project save / restore</strong>
+  <div class="card compact-card" data-menu="project">
+    <strong class="save-tools-title menu-trigger">Project</strong>
     <div class="row">
       <button class="btn good" id="saveLocalBtn">Save Project</button>
       <button class="btn" id="loadLocalBtn">Load Saved Project</button>
@@ -1149,7 +1328,9 @@ body.dark-mode .password-gate-card h2{color:#ececec}
       <button class="btn" data-tab="table">Table View</button>
       <!-- Legend tab removed -->
     </div>
-    <p class="muted">Click a word, then use <span class="kbd">Enter</span> break clause, <span class="kbd">Tab</span> indent, <span class="kbd">Backspace</span> unindent/remove break, <span class="kbd">n</span> note, <span class="kbd">t</span> gloss, <span class="kbd">p</span> predicate, <span class="kbd">s</span> subject, <span class="kbd">Delete</span> or <span class="kbd">Shift+Backspace</span> hide/restore word, arrow keys navigate words/clauses.</p>
+    <div class="workspace-help-row">
+      <button type="button" class="btn" id="helpBtn" aria-haspopup="dialog" aria-controls="helpModal" title="Keyboard shortcuts and tips">? Help</button>
+    </div>
     <div class="toolbar-section"><div class="row" id="colorToolbar">
       <strong class="small toolbar-label">Text color:</strong>
       <button class="btn" data-text-color="#000000">Black</button>
@@ -1260,6 +1441,32 @@ body.dark-mode .password-gate-card h2{color:#ececec}
 
 <div id="shortcutPicker" aria-hidden="true"><div id="shortcutPickerGrid"></div></div>
 <div class="modal" id="modal"><div class="panel"><h3 id="modalTitle">Input</h3><p id="modalText"></p><textarea id="modalInput"></textarea><div class="row"><button class="btn primary" id="modalOk">OK</button><button class="btn" id="modalCancel">Cancel</button></div></div></div>
+
+
+
+<div class="modal" id="helpModal" aria-hidden="true" role="dialog" aria-labelledby="helpModalTitle">
+  <div class="panel help-panel">
+    <h3 id="helpModalTitle">Keyboard shortcuts &amp; tips</h3>
+    <p class="muted">Select a word in the Contour Editor, then use these shortcuts (when not typing in a text field).</p>
+    <table class="help-table">
+      <thead><tr><th>Key</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td><span class="kbd">Enter</span></td><td>Break clause at selected word</td></tr>
+        <tr><td><span class="kbd">Tab</span> / <span class="kbd">Backspace</span></td><td>Indent / outdent clause</td></tr>
+        <tr><td><span class="kbd">n</span></td><td>Add or edit a word note</td></tr>
+        <tr><td><span class="kbd">t</span></td><td>Add or edit a gloss (translation)</td></tr>
+        <tr><td><span class="kbd">p</span> / <span class="kbd">s</span></td><td>Toggle predicate / subject marking</td></tr>
+        <tr><td><span class="kbd">Delete</span> / <span class="kbd">Shift+Backspace</span></td><td>Hide or restore selected word</td></tr>
+        <tr><td>Arrow keys</td><td>Navigate words and clauses (RTL-aware)</td></tr>
+        <tr><td><span class="kbd">b</span> / <span class="kbd">i</span> / <span class="kbd">u</span></td><td>Bold / italic / underline</td></tr>
+        <tr><td><span class="kbd">Shift+U</span></td><td>Double underline</td></tr>
+        <tr><td><span class="kbd">c</span> / <span class="kbd">h</span></td><td>Open color / highlight picker</td></tr>
+      </tbody>
+    </table>
+    <p class="muted small">Use Generate text, Paste text, or Load sample from the top bar to load a passage. Your work autosaves in this browser.</p>
+    <div class="row"><button type="button" class="btn primary" id="helpModalClose">Close</button></div>
+  </div>
+</div>
 
 
 <div id="commentPopover" class="comment-popover">
@@ -1457,7 +1664,7 @@ function locOK(l){return l&&state.verses[l.v]&&state.verses[l.v].clauses[l.c]&&s
 function normalizeHebrewWord(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05C7]/g,'').replace(/[־־]/g,'').replace(/[.,;:!?()\[\]{}"'׳״·;⸀⸂⸃]/g,'').toLowerCase().trim();}
 function selectedWordKey(){return locOK(state.selected)?normalizeHebrewWord(state.verses[state.selected.v].clauses[state.selected.c].words[state.selected.w].text):'';}
 let commentAnchorStart=null;
-let commentsPanelCollapsed=false;
+let commentsPanelCollapsed=true;
 function ensureComments(){if(!Array.isArray(state.comments))state.comments=[];}
 function cloneLoc(l){return l?{v:+l.v,c:+l.c,w:+l.w}:null;}
 function locEqual(a,b){return !!(a&&b&&a.v===b.v&&a.c===b.c&&a.w===b.w);}
@@ -1540,7 +1747,7 @@ let autosaveReady=false;
 function render(){applyLanguageLayout();renderEditor();renderTable();renderLegendEditor();renderInclusioManager();renderCommentsPanel();setTimeout(updateCommentPopover,0);if(autosaveReady)autoSaveProject();}
 function wordFormatClasses(w,l){let f=w.format||{};let suppressCommentStart=l&&isCommentBoundary(l,'start')&&!w.bracketSource;let suppressCommentEnd=l&&isCommentBoundary(l,'end')&&!w.bracketSource;return `${f.bold?'fmt-bold':''} ${f.italic?'fmt-italic':''} ${f.underline?'fmt-underline':''} ${f.doubleUnderline?'fmt-double-underline':''} ${f.highlight?'fmt-highlight':''} ${(w.bracketStart&&!suppressCommentStart)?'bracket-start':''} ${(w.bracketEnd&&!suppressCommentEnd)?'bracket-end':''}`;}
 function wordInlineStyle(w){let styles=[];if(w.color)styles.push('color:'+esc(w.color));if(w.format&&w.format.highlight)styles.push('background-color:'+esc(w.format.highlight));let bc=w.bracketColor||w.inclusioColor;if(bc)styles.push('--bracket-color:'+esc(bc));return styles.join(';');}
-function renderEditor(){const ed=document.getElementById('editor');const layout=getLanguageLayout();const scriptStyle=`direction:${layout.dir};text-align:${layout.textAlign};font-family:${layout.fontFamily}`;ensureComments();if(!state.verses.length){ed.innerHTML='<span class="muted" dir="ltr">Paste text above to begin.</span>';hideCommentPopover();return;}let html='';let activeKey=selectedWordKey();state.verses.forEach((v,vi)=>{html+=`<div class="muted" dir="ltr">${esc(v.ref)}</div>`;v.clauses.forEach((c,ci)=>{let sel=state.selected&&state.selected.v==vi&&state.selected.c==ci;let marginStyle=layout.indentSide==='left'?`margin-left:${c.indent*36}px`:`margin-right:${c.indent*36}px`;html+=`<div class="clause ${sel?'selected':''}" data-v="${vi}" data-c="${ci}" dir="${layout.dir}" style="${marginStyle};${scriptStyle}">`;c.words.forEach((w,wi)=>{let l={v:vi,c:ci,w:wi};let ids=commentIdsForLoc(l);let commentClass=ids.length?'comment-anchored':'';let activeCommentClass=(state.activeCommentId&&ids.includes(state.activeCommentId))?'comment-active':'';let wsel=state.selected&&state.selected.v==vi&&state.selected.c==ci&&state.selected.w==wi;let same=activeKey && normalizeHebrewWord(w.text)===activeKey && !wsel;html+=`<span class="word ${wsel?'selected':''} ${same?'sameword':''} ${commentClass} ${activeCommentClass} ${w.deleted?'deleted':''} ${w.specials.includes('predicate')?'pred':''} ${w.specials.includes('subject')?'subj':''} ${wordFormatClasses(w,l)}" data-v="${vi}" data-c="${ci}" data-w="${wi}" style="${wordInlineStyle(w)}">${esc(w.text)}</span>${commentMarkersForLoc(l)} `});html+='</div>';});});ed.innerHTML=html;document.querySelectorAll('.word').forEach(el=>el.onclick=(ev)=>{let clicked={v:+el.dataset.v,c:+el.dataset.c,w:+el.dataset.w};if(ev.shiftKey&&locOK(state.selected)){applyBracketRange(state.selected,clicked);return;}state.selected=clicked;let ids=commentIdsForLoc(clicked);if(ids.length)state.activeCommentId=ids[0];render();});document.querySelectorAll('.comment-marker').forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();activateComment(el.dataset.commentId);});}
+function renderEditor(){const ed=document.getElementById('editor');const layout=getLanguageLayout();const scriptStyle=`direction:${layout.dir};text-align:${layout.textAlign};font-family:${layout.fontFamily}`;ensureComments();if(!state.verses.length){ed.innerHTML='<div class="editor-empty-state" dir="ltr"><p class="editor-empty-title">No text loaded yet</p><p class="muted">Generate a passage from WLC, paste Hebrew/Greek text, or load the Ruth sample.</p><div class="editor-empty-actions"><button type="button" class="btn primary" id="emptyGenerateBtn">Generate Ruth 3:4</button><button type="button" class="btn" id="emptyPasteBtn">Paste text</button><button type="button" class="btn good" id="emptySampleBtn">Load sample</button></div></div>';bindEmptyStateActions();hideCommentPopover();return;}let html='';let activeKey=selectedWordKey();state.verses.forEach((v,vi)=>{html+=`<div class="muted" dir="ltr">${esc(v.ref)}</div>`;v.clauses.forEach((c,ci)=>{let sel=state.selected&&state.selected.v==vi&&state.selected.c==ci;let marginStyle=layout.indentSide==='left'?`margin-left:${c.indent*36}px`:`margin-right:${c.indent*36}px`;html+=`<div class="clause ${sel?'selected':''}" data-v="${vi}" data-c="${ci}" dir="${layout.dir}" style="${marginStyle};${scriptStyle}">`;c.words.forEach((w,wi)=>{let l={v:vi,c:ci,w:wi};let ids=commentIdsForLoc(l);let commentClass=ids.length?'comment-anchored':'';let activeCommentClass=(state.activeCommentId&&ids.includes(state.activeCommentId))?'comment-active':'';let wsel=state.selected&&state.selected.v==vi&&state.selected.c==ci&&state.selected.w==wi;let same=activeKey && normalizeHebrewWord(w.text)===activeKey && !wsel;html+=`<span class="word ${wsel?'selected':''} ${same?'sameword':''} ${commentClass} ${activeCommentClass} ${w.deleted?'deleted':''} ${w.specials.includes('predicate')?'pred':''} ${w.specials.includes('subject')?'subj':''} ${wordFormatClasses(w,l)}" data-v="${vi}" data-c="${ci}" data-w="${wi}" style="${wordInlineStyle(w)}">${esc(w.text)}</span>${commentMarkersForLoc(l)} `});html+='</div>';});});ed.innerHTML=html;document.querySelectorAll('.word').forEach(el=>el.onclick=(ev)=>{let clicked={v:+el.dataset.v,c:+el.dataset.c,w:+el.dataset.w};if(ev.shiftKey&&locOK(state.selected)){applyBracketRange(state.selected,clicked);return;}state.selected=clicked;let ids=commentIdsForLoc(clicked);if(ids.length)state.activeCommentId=ids[0];render();});document.querySelectorAll('.comment-marker').forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();activateComment(el.dataset.commentId);});}
 function clauseRows(){let rows=[];state.verses.forEach((v,vi)=>v.clauses.forEach((c,ci)=>{let words=c.words.filter(w=>!w.deleted).map(w=>w.text).join(' ');let notes=c.words.filter(w=>w.note).map(w=>'['+w.text+'] — '+w.note).join('; ');let trans=c.words.filter(w=>w.translation).map(w=>'['+w.text+'] — '+w.translation).join('; ');rows.push({vi,ci,ref:v.ref,clause:ci+1,hebrew:words,indent:c.indent,notes,translation:trans,ann:c.ann||{}});}));return rows;}
 function renderTable(){let rows=clauseRows();let textHeader=(state.language==='greek'?'Greek Text':'Hebrew Text');let textClass=(state.language==='greek'?'greek':'heb');let ltr=' class="ann-ltr" dir="ltr"';let html='<table id="annTable" dir="ltr"><thead><tr><th class="'+textClass+'">'+textHeader+'</th><th'+ltr+'>Translation</th><th'+ltr+'>Gloss</th><th'+ltr+'>Parsing</th><th'+ltr+'>Notes</th>';state.columns.forEach(col=>html+=`<th class="ann-ltr" dir="ltr">${esc(col)}</th>`);html+='</tr></thead><tbody>';rows.forEach(r=>{html+=`<tr data-v="${r.vi}" data-c="${r.ci}"><td class="${textClass}">${esc(r.hebrew)}</td><td class="ann-ltr" dir="ltr" contenteditable data-col="Translation">${esc(r.ann['Translation']||'')}</td><td class="ann-ltr" dir="ltr">${esc(r.translation)}</td><td class="ann-ltr" dir="ltr" contenteditable data-col="Parsing">${esc(r.ann['Parsing']||'')}</td><td class="ann-ltr" dir="ltr">${esc(r.notes)}</td>`;state.columns.forEach(col=>html+=`<td class="ann-ltr" dir="ltr" contenteditable data-col="${esc(col)}">${esc(r.ann[col]||'')}</td>`);html+='</tr>';});html+='</tbody></table>';const tableWrap=document.getElementById('tableWrap');tableWrap.innerHTML=html;tableWrap.dir='ltr';tableWrap.style.direction='ltr';tableWrap.style.textAlign='left';document.querySelectorAll('#annTable td[contenteditable]').forEach(td=>td.oninput=()=>{let tr=td.closest('tr'),c=state.verses[+tr.dataset.v].clauses[+tr.dataset.c];c.ann=c.ann||{};c.ann[td.dataset.col]=td.innerText;if(autosaveReady)autoSaveProject();});}
 function insertBreak(){let l=state.selected;if(!locOK(l)||l.w===0)return;let cl=state.verses[l.v].clauses[l.c];let newc={indent:cl.indent,words:cl.words.slice(l.w),specials:[],ann:{}};cl.words=cl.words.slice(0,l.w);state.verses[l.v].clauses.splice(l.c+1,0,newc);state.selected={v:l.v,c:l.c+1,w:0};render();}
@@ -1776,8 +1983,36 @@ document.getElementById('pasteBox').addEventListener('paste',e=>{
   box.value=box.value.slice(0,start)+cleaned+box.value.slice(end);
   box.selectionStart=box.selectionEnd=start+cleaned.length;
 });
-document.getElementById('makeText').onclick=()=>{generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value);box.value=cleaned;parseText(cleaned,document.getElementById('refBox').value);};
-document.getElementById('sampleText').onclick=()=>{document.getElementById('textSource').value='hebrew';setupBooks();state.language='hebrew';document.getElementById('refBox').value='Ruth 3:4';document.getElementById('pasteBox').value='וִיהִי בְשָׁכְבוֹ וְיָדַעַתְּ אֶת־הַמָּקוֹם אֲשֶׁר יִשְׁכַּב־שָׁם וּבָאת וְגִלִּית מַרְגְּלֹתָיו וְשָׁכָבְתְּי';parseText(document.getElementById('pasteBox').value,document.getElementById('refBox').value);};
+function loadSampleText(){
+  document.getElementById('textSource').value='hebrew';
+  setupBooks();
+  state.language='hebrew';
+  document.getElementById('refBox').value='Ruth 3:4';
+  document.getElementById('pasteBox').value='וִיהִי בְשָׁכְבוֹ וְיָדַעַתְּ אֶת־הַמָּקוֹם אֲשֶׁר יִשְׁכַּב־שָׁם וּבָאת וְגִלִּית מַרְגְּלֹתָיו וְשָׁכָבְתְּי';
+  parseText(document.getElementById('pasteBox').value,document.getElementById('refBox').value);
+}
+async function loadSampleWlcPassage(){
+  document.getElementById('textSource').value='hebrew';
+  syncLanguageFromSource();
+  setupBooks();
+  document.getElementById('bookSelect').value='08O';
+  document.getElementById('startChapter').value=3;
+  document.getElementById('startVerse').value=4;
+  document.getElementById('endChapter').value=3;
+  document.getElementById('endVerse').value=4;
+  await generateWlc();
+  closeTopMenus();
+}
+function bindEmptyStateActions(){
+  var g=document.getElementById('emptyGenerateBtn');
+  var p=document.getElementById('emptyPasteBtn');
+  var s=document.getElementById('emptySampleBtn');
+  if(g)g.onclick=function(){closeTopMenus();loadSampleWlcPassage();};
+  if(p)p.onclick=function(){openTopMenu('paste');setTimeout(function(){var b=document.getElementById('pasteBox');if(b)b.focus();},120);};
+  if(s)s.onclick=function(){loadSampleText();};
+}
+document.getElementById('makeText').onclick=()=>{generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value);box.value=cleaned;parseText(cleaned,document.getElementById('refBox').value);closeTopMenus();};
+document.getElementById('sampleText').onclick=loadSampleText;
 
 function ensureLegend(){if(!Array.isArray(state.legend))state.legend=[];}
 function legendTypeLabel(type){return ({highlight:'Highlight color',textColor:'Text color',bracket:'Brackets',bold:'Bold',italic:'Italic',underline:'Underline',doubleUnderline:'Double underline',predicate:'Predicate',subject:'Subject'}[type]||type);}
@@ -3020,6 +3255,81 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
   }else{
     installInspectorToggle();installManualModal();installManualButton();relabel();
   }
+})();
+
+/* Phase A UX: click menus, help modal, empty state actions */
+(function(){
+  let openCard=null;
+  const backdrop=document.getElementById('topMenuBackdrop');
+
+  function closeTopMenus(){
+    document.querySelectorAll('.top-stack .card.compact-card.menu-open').forEach(function(card){
+      card.classList.remove('menu-open');
+      var t=card.querySelector('.menu-trigger');
+      if(t)t.setAttribute('aria-expanded','false');
+    });
+    if(backdrop){backdrop.classList.remove('show');backdrop.setAttribute('aria-hidden','true');}
+    openCard=null;
+  }
+
+  window.openTopMenu=function(name){
+    closeTopMenus();
+    var card=document.querySelector('.top-stack .card.compact-card[data-menu="'+name+'"]');
+    if(!card)return;
+    card.classList.add('menu-open');
+    var t=card.querySelector('.menu-trigger');
+    if(t)t.setAttribute('aria-expanded','true');
+    if(backdrop){backdrop.classList.add('show');backdrop.setAttribute('aria-hidden','false');}
+    openCard=card;
+  };
+  window.closeTopMenus=closeTopMenus;
+
+  function initTopMenus(){
+    document.querySelectorAll('.top-stack .card.compact-card .menu-trigger').forEach(function(trigger){
+      trigger.setAttribute('role','button');
+      trigger.setAttribute('tabindex','0');
+      trigger.setAttribute('aria-haspopup','true');
+      trigger.setAttribute('aria-expanded','false');
+      trigger.addEventListener('click',function(e){
+        e.stopPropagation();
+        var card=trigger.closest('.card.compact-card');
+        if(!card)return;
+        if(card.classList.contains('menu-open'))closeTopMenus();
+        else openTopMenu(card.dataset.menu||'');
+      });
+      trigger.addEventListener('keydown',function(e){
+        if(e.key==='Enter'||e.key===' '){e.preventDefault();trigger.click();}
+      });
+    });
+    if(backdrop)backdrop.addEventListener('click',closeTopMenus);
+    document.addEventListener('click',function(e){
+      if(!openCard)return;
+      if(openCard.contains(e.target))return;
+      closeTopMenus();
+    });
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape')closeTopMenus();
+    });
+  }
+
+  function initHelpModal(){
+    var modal=document.getElementById('helpModal');
+    var btn=document.getElementById('helpBtn');
+    var close=document.getElementById('helpModalClose');
+    if(!modal||!btn)return;
+    function open(){modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
+    function shut(){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
+    btn.onclick=open;
+    if(close)close.onclick=shut;
+    modal.addEventListener('click',function(e){if(e.target===modal)shut();});
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape'&&modal.classList.contains('show'))shut();
+    });
+  }
+
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){initTopMenus();initHelpModal();});
+  }else{initTopMenus();initHelpModal();}
 })();
 
 </script>
