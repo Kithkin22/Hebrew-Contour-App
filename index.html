@@ -1139,7 +1139,15 @@ body.dark-mode .top-stack .card.compact-card.menu-open > .save-tools-title{
 }
 .menu-trigger:focus-visible{outline:2px solid var(--ui-blue,#1f5f99);outline-offset:2px;}
 .workspace-help-row{display:flex;justify-content:flex-end;align-items:center;margin:0 0 10px;gap:8px;}
-#helpBtn{min-width:34px;padding:7px 12px;font-weight:800;}
+#helpBtn,#feedbackBtn{min-width:34px;padding:7px 12px;font-weight:800;}
+#feedbackBtn{font-weight:600;}
+.feedback-panel{max-width:520px;}
+.feedback-panel label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px;color:var(--ui-text,#1f2d3d);}
+.feedback-panel select,.feedback-panel textarea,.feedback-panel input[type="text"],.feedback-panel input[type="email"]{width:100%;box-sizing:border-box;font:inherit;border:1px solid var(--ui-line,#d8e1ea);border-radius:8px;padding:9px 10px;background:var(--ui-surface,#fff);color:var(--ui-text,#1f2d3d);}
+.feedback-panel textarea{min-height:120px;resize:vertical;}
+.feedback-status{margin:10px 0 0;font-size:13px;}
+.feedback-status.ok{color:#3c763d;}
+.feedback-status.err{color:#a94442;}
 .help-panel{max-width:560px;}
 .help-panel h3{margin-top:0;}
 .help-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;}
@@ -1441,6 +1449,7 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
       <!-- Legend tab removed -->
     </div>
     <div class="workspace-help-row">
+      <button type="button" class="btn" id="feedbackBtn" aria-haspopup="dialog" aria-controls="feedbackModal" title="Send feedback or report a problem">Feedback</button>
       <button type="button" class="btn" id="helpBtn" aria-haspopup="dialog" aria-controls="helpModal" title="Keyboard shortcuts and tips">? Help</button>
     </div>
     <div class="toolbar-section"><div class="row" id="colorToolbar">
@@ -1577,6 +1586,30 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
     </table>
     <p class="muted small">Use Generate text, Paste text, or Load sample from the top bar to load a passage. Your work autosaves in this browser.</p>
     <div class="row"><button type="button" class="btn primary" id="helpModalClose">Close</button></div>
+  </div>
+</div>
+
+<div class="modal" id="feedbackModal" aria-hidden="true" role="dialog" aria-labelledby="feedbackModalTitle">
+  <div class="panel feedback-panel">
+    <h3 id="feedbackModalTitle">Send feedback</h3>
+    <p class="muted small">Report a bug, suggest a feature, or share how the app is working for you.</p>
+    <form id="feedbackForm">
+      <label for="feedbackCategory">Type</label>
+      <select id="feedbackCategory" name="category">
+        <option value="bug">Bug / something broken</option>
+        <option value="feature">Feature idea</option>
+        <option value="general" selected>General feedback</option>
+      </select>
+      <label for="feedbackMessage">Message</label>
+      <textarea id="feedbackMessage" name="message" required placeholder="What happened? What would help?" maxlength="4000"></textarea>
+      <label for="feedbackContact">Contact (optional)</label>
+      <input type="text" id="feedbackContact" name="contact" placeholder="Name or email if you want a reply" maxlength="200" autocomplete="email">
+      <p id="feedbackStatus" class="feedback-status hidden" role="status"></p>
+      <div class="row" style="margin-top:14px">
+        <button type="submit" class="btn primary" id="feedbackSubmitBtn">Send feedback</button>
+        <button type="button" class="btn" id="feedbackModalClose">Cancel</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -3538,9 +3571,78 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     });
   }
 
+
+  function initFeedbackModal(){
+    var modal=document.getElementById('feedbackModal');
+    var btn=document.getElementById('feedbackBtn');
+    var close=document.getElementById('feedbackModalClose');
+    var form=document.getElementById('feedbackForm');
+    var statusEl=document.getElementById('feedbackStatus');
+    var submitBtn=document.getElementById('feedbackSubmitBtn');
+    if(!modal||!btn||!form)return;
+    function setStatus(msg,kind){
+      if(!statusEl)return;
+      statusEl.textContent=msg||'';
+      statusEl.classList.remove('hidden','ok','err');
+      if(!msg){statusEl.classList.add('hidden');return;}
+      statusEl.classList.add(kind==='ok'?'ok':'err');
+    }
+    function open(){
+      setStatus('');
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden','false');
+      var msg=document.getElementById('feedbackMessage');
+      if(msg)msg.focus();
+    }
+    function shut(){
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden','true');
+      setStatus('');
+    }
+    btn.onclick=open;
+    if(close)close.onclick=shut;
+    modal.addEventListener('click',function(e){if(e.target===modal)shut();});
+    document.addEventListener('keydown',function(e){
+      if(e.key==='Escape'&&modal.classList.contains('show'))shut();
+    });
+    form.addEventListener('submit',async function(e){
+      e.preventDefault();
+      var category=(document.getElementById('feedbackCategory')||{}).value||'general';
+      var message=String((document.getElementById('feedbackMessage')||{}).value||'').trim();
+      var contact=String((document.getElementById('feedbackContact')||{}).value||'').trim();
+      if(message.length<5){setStatus('Please enter at least a few words.','err');return;}
+      if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Sending…';}
+      setStatus('');
+      var payload={
+        category:category,
+        message:message,
+        contact:contact,
+        context:{
+          ref:(typeof state!=='undefined'&&state.ref)||'',
+          language:(typeof state!=='undefined'&&state.language)||'',
+          url:location.href,
+          userAgent:navigator.userAgent
+        }
+      };
+      try{
+        var res=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        var data={};
+        try{data=await res.json();}catch(err){}
+        if(!res.ok)throw new Error((data&&data.error)||('Request failed ('+res.status+')'));
+        setStatus('Thank you — your feedback was saved.','ok');
+        form.reset();
+        setTimeout(shut,1400);
+      }catch(err){
+        setStatus(err.message||'Could not send feedback. Try again later.','err');
+      }finally{
+        if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='Send feedback';}
+      }
+    });
+  }
+
   if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){initTopMenus();initHelpModal();});
-  }else{initTopMenus();initHelpModal();}
+    document.addEventListener('DOMContentLoaded',function(){initTopMenus();initHelpModal();initFeedbackModal();});
+  }else{initTopMenus();initHelpModal();initFeedbackModal();}
 })();
 
 </script>

@@ -15,3 +15,16 @@ This folder contains the installable PWA version of the Hebrew Contour Table App
 4. Tap Add to Home Screen.
 
 After the first load, the app should continue to open offline from the Home Screen.
+
+## User feedback
+
+The app includes a **Feedback** button in the workspace toolbar. Submissions are appended to [`feedback/entries.jsonl`](feedback/entries.jsonl) in this repository via a Vercel serverless function.
+
+### Vercel setup
+
+In the Vercel project, add environment variables:
+
+- `GITHUB_TOKEN` — personal access token with `repo` scope
+- `GITHUB_REPO` — `Kithkin22/Hebrew-Contour-App`
+
+Redeploy after saving the variables.
