@@ -1469,7 +1469,7 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
   <div class="card compact-card" data-menu="paste">
     <strong class="menu-trigger">Paste text</strong>
     <p class="muted">Paste Hebrew/Greek text here. Each line becomes a verse/section.</p>
-    <textarea id="pasteBox" dir="rtl" class="heb" placeholder="Paste Hebrew text here..."></textarea>
+    <textarea id="pasteBox" dir="rtl" class="heb" placeholder=""></textarea>
     <input id="refBox" type="hidden" value="">
     <div class="row">
       <button class="btn primary" id="makeText">Create Text from Paste</button>
@@ -1802,7 +1802,8 @@ function applyLanguageLayout(){
   if(paste){
     paste.classList.remove('heb','greek');
     paste.classList.add(layout.textClass);
-    paste.placeholder=layout.language==='greek'?'Paste Greek text here...':'Paste Hebrew text here...';
+    paste.placeholder=(document.activeElement===paste&&!paste.value.trim())
+      ?(layout.language==='greek'?'Paste Greek text here...':'Paste Hebrew text here...'):'';
     applyScriptTypography(paste,layout);
   }
   const modalInp=document.getElementById('modalInput');
@@ -2174,6 +2175,14 @@ document.getElementById('pasteBox').addEventListener('paste',e=>{
   const start=box.selectionStart,end=box.selectionEnd;
   box.value=box.value.slice(0,start)+cleaned+box.value.slice(end);
   box.selectionStart=box.selectionEnd=start+cleaned.length;
+});
+document.getElementById('pasteBox').addEventListener('focus',function(){
+  if(this.value.trim())return;
+  const layout=getLanguageLayout();
+  this.placeholder=layout.language==='greek'?'Paste Greek text here...':'Paste Hebrew text here...';
+});
+document.getElementById('pasteBox').addEventListener('blur',function(){
+  this.placeholder='';
 });
 function loadSampleText(){
   document.getElementById('textSource').value='hebrew';
