@@ -1,7 +1,8 @@
-const CACHE_NAME = 'contour-app-pwa-v15';
+const CACHE_NAME = 'contour-app-pwa-v16';
 const APP_ASSETS = [
   './',
   './index.html',
+  './gate.js',
   './manifest.json',
   './sefaria-bdb.js',
   './icons/icon-192.png',
@@ -22,6 +23,20 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  const networkFirst = url.pathname.endsWith('/index.html') || url.pathname.endsWith('/gate.js');
+
+  if (networkFirst) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        return response;
+      }).catch(() => caches.match(event.request).then(cached => cached || caches.match('./index.html')))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
       const copy = response.clone();
