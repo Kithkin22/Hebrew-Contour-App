@@ -1436,9 +1436,10 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
       <button class="btn good" id="downloadProjectBtn">Download Project (.json)</button>
       <button class="btn" id="importProjectBtn">Import Project (.json)</button>
       <input type="file" id="projectFileInput" accept="application/json,.json" class="hidden">
+      <button class="btn danger" id="clearTableBtn">Clear Table</button>
       <button class="btn danger" id="clearAutosaveBtn">Clear Autosave</button>
     </div>
-    <p id="saveStatus" class="muted small">Autosave is on. Your work is saved in this browser automatically.</p>
+    <p id="saveStatus" class="muted small">Opens with a blank table. Use Save Project to keep work in this browser.</p>
   </div>
 </div>
 
@@ -2183,6 +2184,22 @@ document.getElementById('addColumn').onclick=()=>promptModal('Add Column','Colum
 document.getElementById('resetColumns').onclick=()=>{state.columns=[];renderTable();};
 const PROJECT_STORAGE_KEY='hebrewContourApp.currentProject.v1';
 const PROJECT_AUTOSAVE_KEY='hebrewContourApp.autosave.v1';
+function freshProjectState(){return {ref:'',verses:[],selected:null,columns:[],language:'hebrew',legend:[],inclusios:[],comments:[],activeCommentId:null,arcs:[],activeArcId:null};}
+function clearTableProject(silent){
+  if(!silent&&!confirm('Clear all text, annotations, and table content? This cannot be undone unless you saved a project file.'))return;
+  state=freshProjectState();
+  generatedRefs=[];
+  const pasteBox=document.getElementById('pasteBox');
+  const refBox=document.getElementById('refBox');
+  if(pasteBox)pasteBox.value='';
+  if(refBox)refBox.value='';
+  try{localStorage.removeItem(PROJECT_STORAGE_KEY);localStorage.removeItem(PROJECT_AUTOSAVE_KEY);}catch(e){}
+  const wasReady=autosaveReady;
+  autosaveReady=false;
+  render();
+  autosaveReady=wasReady;
+  updateSaveStatus('Table cleared.');
+}
 function projectPayload(){return {app:'Hebrew Contour Table App',version:'1.3.7',savedAt:new Date().toISOString(),state:state,generatedRefs:generatedRefs};}
 function restoreProjectPayload(payload){
   try{
@@ -2250,6 +2267,7 @@ document.getElementById('loadLocalBtn').onclick=loadProjectLocal;
 document.getElementById('downloadProjectBtn').onclick=downloadProjectFile;
 document.getElementById('importProjectBtn').onclick=()=>document.getElementById('projectFileInput').click();
 document.getElementById('projectFileInput').onchange=e=>importProjectFile(e.target.files[0]);
+document.getElementById('clearTableBtn').onclick=()=>clearTableProject(false);
 document.getElementById('clearAutosaveBtn').onclick=clearAutosave;
 
 document.querySelectorAll('[data-text-color]').forEach(btn=>btn.onclick=()=>setSelectedColor(btn.dataset.textColor));
@@ -2496,19 +2514,14 @@ window.addEventListener('resize',()=>setTimeout(renderArcOverlay,50));
   }
 })();
 
-// Initial load order matters: do NOT autosave the default blank/demo state before
-// restore any autosaved work before enabling background autosave.
-// Previous versions called render() after autosaveReady=true, which overwrote
-// the saved session before silent restore could load it.
+// Always open with a blank table; use Save Project / Load Saved Project manually.
 let appStarted=false;
 function startApp(){
   if(appStarted)return;
   appStarted=true;
   autosaveReady=false;
-  const restored=restoreAutosaveSilently();
+  render();
   autosaveReady=true;
-  if(!restored)render();
-  autoSaveProject();
 }
 autosaveReady=false;
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initPasswordGate);else initPasswordGate();
