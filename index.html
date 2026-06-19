@@ -331,13 +331,56 @@
   color:#286090;
   border-bottom-color:#286090;
 }
-#annotationShortcutHint{
-  margin-left:auto;
-  color:#667;
-  font-size:13px;
-  font-weight:700;
-  white-space:nowrap;
+#annotationShortcutsBar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:5px 14px;
+  background:#f8fafc;
+  border-bottom:1px solid #d8dee6;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
 }
+.shortcut-bar-label{
+  flex-shrink:0;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#64748b;
+}
+.shortcut-inline-text{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  flex-wrap:nowrap;
+  white-space:nowrap;
+  font-size:11px;
+  font-weight:600;
+  color:#64748b;
+}
+.shortcut-inline-text abbr{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  text-decoration:none;
+  cursor:help;
+}
+.shortcut-inline-text .dot{
+  color:#cbd5e1;
+  user-select:none;
+  font-weight:700;
+}
+.keycap-sm{
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  font-size:10px;
+  border-radius:4px;
+}
+body.dark-mode #annotationShortcutsBar{background:#1a2430;border-bottom-color:#314253;}
+body.dark-mode .shortcut-bar-label,body.dark-mode .shortcut-inline-text{color:#a9b6c5;}
 .annotation-tab-panel{
   display:none;
   padding:12px;
@@ -361,7 +404,7 @@
 @media(max-width:850px){
   #annotationTabsRow{gap:10px;overflow-x:auto}
   .annotation-tab-btn{font-size:15px;white-space:nowrap}
-  #annotationShortcutHint{display:none}
+  #annotationShortcutsBar{display:none}
 }
 
 
@@ -1303,30 +1346,7 @@ body.dark-mode #persistentShowComments{
   padding-top:8px!important;
   border-top:1px solid var(--ui-line,#d8e1ea)!important;
 }
-#annotationShortcutHint{
-  display:flex!important;
-  align-items:center;
-  gap:5px;
-  flex-wrap:wrap;
-  margin-left:auto;
-}
-#annotationShortcutHint .shortcut-label{
-  font-weight:700;
-  color:var(--ui-muted,#64748b);
-  font-size:12px;
-  margin-right:6px;
-}
-#annotationShortcutHint .shortcut-item{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  white-space:nowrap;
-}
-#annotationShortcutHint .shortcut-action{
-  font-size:11px;
-  font-weight:600;
-  color:var(--ui-muted,#64748b);
-}
+
 .keycap{
   display:inline-flex;
   align-items:center;
@@ -2160,8 +2180,28 @@ async function loadSampleWlcPassage(){
 function bindEmptyStateActions(){
   var g=document.getElementById('emptyGenerateBtn');
   var p=document.getElementById('emptyPasteBtn');
-  if(g)g.onclick=function(){openTopMenu('generate');setTimeout(function(){var b=document.getElementById('passageReference')||document.getElementById('bookSelect');if(b)b.focus();},120);};
-  if(p)p.onclick=function(){openTopMenu('paste');setTimeout(function(){var b=document.getElementById('pasteBox');if(b)b.focus();},120);};
+  function openMenuFromEmpty(name,focusId){
+    return function(e){
+      if(e){e.preventDefault();e.stopPropagation();}
+      var openFn=window.openTopMenu;
+      if(typeof openFn!=='function')return;
+      openFn(name);
+      setTimeout(function(){
+        var card=document.querySelector('.top-stack .card.compact-card[data-menu="'+name+'"]');
+        if(card)card.scrollIntoView({behavior:'smooth',block:'start'});
+        var b=document.getElementById(focusId)||document.getElementById('bookSelect');
+        if(b)b.focus({preventScroll:true});
+      },80);
+    };
+  }
+  if(g){
+    g.onclick=openMenuFromEmpty('generate','passageReference');
+    g.addEventListener('mousedown',function(e){e.stopPropagation();});
+  }
+  if(p){
+    p.onclick=openMenuFromEmpty('paste','pasteBox');
+    p.addEventListener('mousedown',function(e){e.stopPropagation();});
+  }
 }
 document.getElementById('makeText').onclick=()=>{generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value);box.value=cleaned;parseText(cleaned,document.getElementById('refBox').value);closeTopMenus();};
 document.getElementById('sampleText').onclick=loadSampleText;
@@ -2632,14 +2672,16 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
         <button type="button" class="annotation-tab-btn" data-panel="ann-arcs">Arcs</button>
         <button type="button" class="annotation-tab-btn" data-panel="ann-inclusio">Inclusio</button>
         <button type="button" class="annotation-tab-btn" data-panel="ann-export">Export</button>
-        <span id="annotationShortcutHint" aria-label="Keyboard shortcuts for selected word">
-          <span class="shortcut-label">Shortcuts</span>
-          <span class="shortcut-item" title="Bold selected word"><kbd class="keycap">b</kbd><span class="shortcut-action">Bold</span></span>
-          <span class="shortcut-item" title="Italic selected word"><kbd class="keycap">i</kbd><span class="shortcut-action">Italic</span></span>
-          <span class="shortcut-item" title="Underline selected word"><kbd class="keycap">u</kbd><span class="shortcut-action">Underline</span></span>
-          <span class="shortcut-item" title="Double underline selected word"><kbd class="keycap">Shift+U</kbd><span class="shortcut-action">Double</span></span>
-          <span class="shortcut-item" title="Text color picker"><kbd class="keycap">c</kbd><span class="shortcut-action">Color</span></span>
-          <span class="shortcut-item" title="Highlight color picker"><kbd class="keycap">h</kbd><span class="shortcut-action">Highlight</span></span>
+      </div>
+      <div id="annotationShortcutsBar" aria-label="Keyboard shortcuts for selected word">
+        <span class="shortcut-bar-label">Keys</span>
+        <span class="shortcut-inline-text">
+          <abbr title="Bold"><kbd class="keycap keycap-sm">b</kbd> bold</abbr><span class="dot" aria-hidden="true">·</span>
+          <abbr title="Italic"><kbd class="keycap keycap-sm">i</kbd> italic</abbr><span class="dot" aria-hidden="true">·</span>
+          <abbr title="Underline"><kbd class="keycap keycap-sm">u</kbd> underline</abbr><span class="dot" aria-hidden="true">·</span>
+          <abbr title="Double underline"><kbd class="keycap keycap-sm">⇧U</kbd> double</abbr><span class="dot" aria-hidden="true">·</span>
+          <abbr title="Text color picker"><kbd class="keycap keycap-sm">c</kbd> color</abbr><span class="dot" aria-hidden="true">·</span>
+          <abbr title="Highlight picker"><kbd class="keycap keycap-sm">h</kbd> highlight</abbr>
         </span>
       </div>
       <div id="ann-color" class="annotation-tab-panel active"></div>
