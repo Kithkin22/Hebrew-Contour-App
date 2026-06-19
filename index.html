@@ -2849,68 +2849,6 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 
 
 
-/* Sefaria BDB lookup for hover inspector */
-(function(){
-  const CACHE={};
-  function stripHtml(html){
-    const d=document.createElement('div');
-    d.innerHTML=String(html||'');
-    return (d.textContent||'').replace(/\s+/g,' ').trim();
-  }
-  function firstDefinition(content){
-    function walk(senses){
-      for(const s of (senses||[])){
-        if(s.definition){
-          const t=stripHtml(s.definition);
-          if(t) return t.length>140?t.slice(0,137)+'…':t;
-        }
-        const inner=walk(s.senses);
-        if(inner) return inner;
-      }
-      return '';
-    }
-    return walk((content&&content.senses)||[]);
-  }
-  function grammarText(content){
-    for(const s of ((content&&content.senses)||[])){
-      const g=s.grammar;
-      if(!g) continue;
-      const parts=[g.verbal_stem,g.morphology].concat(g.binyan_form||[]).filter(Boolean);
-      if(parts.length) return parts.map(stripHtml).join(' · ');
-    }
-    return '';
-  }
-  function normKey(word){
-    return String(word||'').normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05C7]/g,'').replace(/[־־]/g,'').trim().toLowerCase();
-  }
-  function bdbUrl(headword){
-    return 'https://www.sefaria.org/BDB,'+encodeURIComponent(headword||'')+'?lang=bi';
-  }
-  window.lookupSefariaBDB=async function(word){
-    const w=String(word||'').trim();
-    if(!w||!/[֐-׿]/.test(w)) return null;
-    const key=normKey(w);
-    if(CACHE[key]) return CACHE[key];
-    try{
-      const resp=await fetch('https://www.sefaria.org/api/words/'+encodeURIComponent(w)+'?never_split=1');
-      if(!resp.ok) return null;
-      const entries=await resp.json();
-      const bdb=(entries||[]).find(e=>e.parent_lexicon==='BDB Dictionary');
-      if(!bdb) return null;
-      const result={
-        headword:bdb.headword||w,
-        lemma:bdb.headword||w,
-        gloss:firstDefinition(bdb.content),
-        parsing:grammarText(bdb.content),
-        url:bdbUrl(bdb.headword||w)
-      };
-      CACHE[key]=result;
-      return result;
-    }catch(err){
-      console.warn('Sefaria BDB lookup failed',err);
-      return null;
-    }
-  };
 })();
 
 
@@ -2976,10 +2914,20 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     document.getElementById('wiWord').textContent = word || '—';
     document.getElementById('wiRoot').textContent = data.root || '—';
     document.getElementById('wiParsing').textContent = data.parsing || data.morph || '—';
+    const wiBdbGloss=document.getElementById('wiBdbGloss');
+    const wiBdbLink=document.getElementById('wiBdbLink');
+    if(wiBdbGloss) wiBdbGloss.textContent='Loading…';
+    if(wiBdbLink) wiBdbLink.style.display='none';
     if(typeof applyLanguageLayout==='function') applyLanguageLayout();
 
     positionInspector(el);
     box.setAttribute('aria-hidden','false');
+
+    if((!window.state||state.language!=='greek')&&typeof window.applyBdbToInspector==='function'){
+      window.applyBdbToInspector(word, document.getElementById('wiRoot'), document.getElementById('wiParsing'), el);
+    }else if(wiBdbGloss && window.state&&state.language==='greek'){
+      wiBdbGloss.textContent='—';
+    }
   }
 
   function hideInspector(){
@@ -3543,16 +3491,23 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     link.style.display=bdb.url?'inline-block':'none';
     if(row) row.style.display='';
   }
-  async function applyBdbToInspector(word, wiRoot, wiParsing){
+  async function applyBdbToInspector(word, wiRoot, wiParsing, wordEl){
     if(typeof window.lookupSefariaBDB!=='function') return;
     if(window.state&&state.language==='greek'){fillBdbFields(null);return;}
-    const bdb=await window.lookupSefariaBDB(word);
+    const passageRef=typeof window.passageRefForWordEl==='function'?window.passageRefForWordEl(wordEl):((window.state&&state.ref)||'');
+    const bdb=await window.lookupSefariaBDB(word,{passageRef});
     if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
-    if(!bdb) return;
-    if(wiRoot && (!wiRoot.textContent || wiRoot.textContent==='—') && bdb.lemma) wiRoot.textContent=bdb.lemma;
-    if(wiParsing && (!wiParsing.textContent || wiParsing.textContent==='—') && bdb.parsing) wiParsing.textContent=bdb.parsing;
+    if(!bdb){fillBdbFields(null);return;}
+    if(wiRoot){
+      const rootText=bdb.root||bdb.lemma||'';
+      if(rootText && (wiRoot.textContent==='—' || !wiRoot.textContent.trim())) wiRoot.textContent=rootText;
+    }
+    if(wiParsing && bdb.parsing && bdb.parsing!=='—'){
+      if(wiParsing.textContent==='—' || !wiParsing.textContent.trim()) wiParsing.textContent=bdb.parsing;
+    }
     fillBdbFields(bdb);
   }
+  window.applyBdbToInspector=applyBdbToInspector;
   function enhance(wordEl){
     if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
     relabel();
@@ -3570,6 +3525,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     }else if(looksLikeStrong(wiRoot.textContent)){
       wiRoot.textContent='—';
     }
+    applyBdbToInspector(word, wiRoot, wiParsing, wordEl);
   }
 
   document.addEventListener('mouseover', function(e){
@@ -3741,5 +3697,6 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
 })();
 
 </script>
+<script src="sefaria-bdb.js"></script>
 </body>
 </html>
