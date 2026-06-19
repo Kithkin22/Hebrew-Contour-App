@@ -1105,9 +1105,21 @@ body.dark-mode .password-gate-card h2{color:#ececec}
 
 /* Phase A — click-to-open top menus, empty state, help modal */
 #topMenuBackdrop{
-  position:fixed;inset:0;background:rgba(10,20,32,.38);z-index:2500;display:none;pointer-events:none;
+  position:fixed;inset:0;z-index:2500;display:none;pointer-events:none;
+  background:rgba(10,20,32,.45);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  opacity:0;
+  transition:opacity .18s ease;
 }
-#topMenuBackdrop.show{display:block;}
+#topMenuBackdrop.show{display:block;pointer-events:auto;opacity:1;}
+body.top-menu-open{overflow:hidden;}
+body.top-menu-open .top-menu-hint,
+body.top-menu-open .top-stack .card.compact-card:not(.menu-open){
+  opacity:0!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
 .top-stack .card.compact-card:hover > p,
 .top-stack .card.compact-card:hover > div,
 .top-stack .card.compact-card:hover > textarea,
@@ -1288,15 +1300,22 @@ body.dark-mode #persistentShowComments{
 
 /* User feedback: click-menu panels, keycap shortcuts */
 .top-stack .card.compact-card.menu-open{
-  position:relative;
-  z-index:3001;
-  align-self:flex-start;
+  position:fixed!important;
+  left:50%!important;
+  top:max(20px, 6vh)!important;
+  transform:translateX(-50%)!important;
+  z-index:3001!important;
+  align-self:auto!important;
   background:var(--ui-surface,#fff)!important;
   border:1px solid var(--ui-line,#d8e1ea)!important;
   border-radius:14px!important;
-  box-shadow:0 18px 42px rgba(20,37,56,.18)!important;
+  box-shadow:0 24px 48px rgba(20,37,56,.28)!important;
   padding:12px 16px 16px!important;
-  min-width:min(720px, calc(100vw - 40px));
+  width:min(720px, calc(100vw - 32px))!important;
+  min-width:0!important;
+  max-height:calc(100vh - 40px)!important;
+  overflow-y:auto!important;
+  margin:0!important;
 }
 .top-stack .card.compact-card.menu-open::before,
 .top-stack .card.compact-card.menu-open::after,
@@ -3554,6 +3573,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
       var t=card.querySelector('.menu-trigger');
       if(t)t.setAttribute('aria-expanded','false');
     });
+    document.body.classList.remove('top-menu-open');
     if(backdrop){backdrop.classList.remove('show');backdrop.setAttribute('aria-hidden','true');}
     openCard=null;
   }
@@ -3562,6 +3582,7 @@ if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",
     closeTopMenus();
     var card=document.querySelector('.top-stack .card.compact-card[data-menu="'+name+'"]');
     if(!card)return;
+    document.body.classList.add('top-menu-open');
     card.classList.add('menu-open');
     var t=card.querySelector('.menu-trigger');
     if(t)t.setAttribute('aria-expanded','true');
