@@ -931,7 +931,11 @@ body.dark-mode #annTable .muted {
   font-family:Inter, "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   direction:ltr;
   text-align:left;
-  pointer-events:none;
+  pointer-events:auto;
+}
+#wordInspector a{
+  pointer-events:auto;
+  cursor:pointer;
 }
 #wordInspector .wi-title{
   font-size:11px;
@@ -1298,6 +1302,25 @@ body.dark-mode #persistentShowComments{
 }
 #helpBtn[title]{cursor:help;}
 
+/* Discreet admin inbox link (feedback review) */
+.admin-link{
+  font-size:12px;
+  font-weight:600;
+  color:var(--ui-muted,#64748b);
+  text-decoration:none;
+  padding:4px 6px;
+  border-radius:6px;
+  opacity:.72;
+}
+.admin-link:hover,.admin-link:focus{
+  opacity:1;
+  color:var(--ui-blue,#286090);
+  text-decoration:underline;
+  outline:none;
+}
+body.dark-mode .admin-link{color:#94a3b8;}
+body.dark-mode .admin-link:hover,body.dark-mode .admin-link:focus{color:#6db5ff;}
+
 /* User feedback: click-menu panels, keycap shortcuts */
 .top-stack .card.compact-card.menu-open{
   position:fixed!important;
@@ -1525,6 +1548,7 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
     <div class="workspace-help-row">
       <button type="button" class="btn" id="feedbackBtn" aria-haspopup="dialog" aria-controls="feedbackModal" title="Send feedback or report a problem">Feedback</button>
       <button type="button" class="btn" id="helpBtn" aria-haspopup="dialog" aria-controls="helpModal" title="Keyboard shortcuts and tips">? Help</button>
+      <a href="/admin.html" id="adminLink" class="admin-link" title="Feedback admin inbox (password required)">Admin</a>
     </div>
     <div class="toolbar-section"><div class="row" id="colorToolbar">
       <strong class="small toolbar-label">Text color:</strong>
@@ -2783,6 +2807,7 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
 (function(){
   if(window.CONTOUR_INSPECTOR_ENABLED===undefined)window.CONTOUR_INSPECTOR_ENABLED=true;
   let inspectorTimer=null;
+  let hideInspectorTimer=null;
   const morphLookup = window.CONTOUR_MORPH_LOOKUP || {};
 
   function cleanWord(text){
@@ -2838,9 +2863,18 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
     const key=normalizedKey(word);
     const data=morphLookup[key] || morphLookup[word] || {};
 
+    let morphEntry=null;
+    try{
+      if(typeof window.CONTOUR_LOOKUP_MORPH==='function') morphEntry=window.CONTOUR_LOOKUP_MORPH(word, el);
+    }catch(e){}
+    const morphParsing=(morphEntry&&(morphEntry.parsing||morphEntry.morph||morphEntry.morphology))||'';
+    const localParsing=typeof window.mergeInspectorParsing==='function'
+      ? window.mergeInspectorParsing(morphEntry, morphParsing||data.parsing||data.morph)
+      : (morphParsing||data.parsing||data.morph||'—');
+
     document.getElementById('wiWord').textContent = word || '—';
-    document.getElementById('wiRoot').textContent = data.root || '—';
-    document.getElementById('wiParsing').textContent = data.parsing || data.morph || '—';
+    document.getElementById('wiRoot').textContent = (morphEntry&&(morphEntry.root||morphEntry.lemma)) || data.root || '—';
+    document.getElementById('wiParsing').textContent = localParsing || '—';
     const wiBdbGloss=document.getElementById('wiBdbGloss');
     const wiBdbLink=document.getElementById('wiBdbLink');
     if(wiBdbGloss) wiBdbGloss.textContent='Loading…';
@@ -2850,7 +2884,9 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
     positionInspector(el);
     box.setAttribute('aria-hidden','false');
 
-    if((!window.state||state.language!=='greek')&&typeof window.applyBdbToInspector==='function'){
+    if(window.state&&state.language==='greek'&&typeof window.applyGreekLexiconToInspector==='function'){
+      window.applyGreekLexiconToInspector(el, document.getElementById('wiWord'), document.getElementById('wiRoot'), document.getElementById('wiParsing'));
+    }else if((!window.state||state.language!=='greek')&&typeof window.applyBdbToInspector==='function'){
       window.applyBdbToInspector(word, document.getElementById('wiRoot'), document.getElementById('wiParsing'), el);
     }else if(wiBdbGloss && window.state&&state.language==='greek'){
       wiBdbGloss.textContent='—';
@@ -2859,6 +2895,7 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
 
   function hideInspector(){
     clearTimeout(inspectorTimer);
+    clearTimeout(hideInspectorTimer);
     const box=document.getElementById('wordInspector');
     if(box){
       box.style.display='none';
@@ -2866,19 +2903,40 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
     }
   }
 
+  function scheduleHideInspector(){
+    clearTimeout(hideInspectorTimer);
+    hideInspectorTimer=setTimeout(hideInspector, 250);
+  }
+
+  function cancelHideInspector(){
+    clearTimeout(hideInspectorTimer);
+  }
+
   document.addEventListener('mouseover', function(e){
     if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
+    const box=document.getElementById('wordInspector');
+    if(box && box.style.display!=='none' && (e.target===box||box.contains(e.target))){
+      cancelHideInspector();
+      return;
+    }
     const wordEl=e.target.closest && e.target.closest('.word');
     if(!wordEl) return;
     clearTimeout(inspectorTimer);
+    cancelHideInspector();
     inspectorTimer=setTimeout(()=>showInspector(wordEl), 250);
   }, true);
 
   document.addEventListener('mouseout', function(e){
+    const box=document.getElementById('wordInspector');
     const wordEl=e.target.closest && e.target.closest('.word');
-    if(!wordEl) return;
-    if(e.relatedTarget && wordEl.contains(e.relatedTarget)) return;
-    hideInspector();
+    const leavingInspector=box && box.style.display!=='none' && (e.target===box||box.contains(e.target));
+    if(!wordEl && !leavingInspector) return;
+    if(e.relatedTarget){
+      if(wordEl && wordEl.contains(e.relatedTarget)) return;
+      if(box && (box===e.relatedTarget || box.contains(e.relatedTarget))) return;
+      if(leavingInspector && e.relatedTarget.closest && e.relatedTarget.closest('.word')) return;
+    }
+    scheduleHideInspector();
   }, true);
 
   document.addEventListener('scroll', hideInspector, true);
@@ -3112,7 +3170,9 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
         const m = window.CONTOUR_LOOKUP_MORPH(word, wordEl);
         if(m){
           wiRoot.textContent = m.root || m.lemma || '—';
-          wiParsing.textContent = m.parsing || m.morph || '—';
+          wiParsing.textContent = typeof window.compactMorphHBParsing==='function'
+            ? (window.compactMorphHBParsing(m) || m.parsing || m.morph || '—')
+            : (m.parsing || m.morph || '—');
         }
       }, 280);
     }, true);
@@ -3206,7 +3266,9 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
 
     if(m){
       wiRoot.textContent=chooseLemmaRoot(m);
-      wiParsing.textContent=m.parsing || m.morph || m.morphology || '—';
+      wiParsing.textContent=typeof window.compactMorphHBParsing==='function'
+        ? (window.compactMorphHBParsing(m) || m.parsing || m.morph || m.morphology || '—')
+        : (m.parsing || m.morph || m.morphology || '—');
     }else{
       if(looksLikeStrong(wiRoot.textContent)) wiRoot.textContent='—';
     }
@@ -3429,9 +3491,14 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
       const rootText=bdb.root||bdb.lemma||'';
       if(rootText && (wiRoot.textContent==='—' || !wiRoot.textContent.trim())) wiRoot.textContent=rootText;
     }
-    if(wiParsing && bdb.parsing && bdb.parsing!=='—'){
-      if(wiParsing.textContent==='—' || !wiParsing.textContent.trim()) wiParsing.textContent=bdb.parsing;
-    }
+    let morphEntry=null;
+    try{
+      if(typeof window.CONTOUR_LOOKUP_MORPH==='function') morphEntry=window.CONTOUR_LOOKUP_MORPH(word, wordEl);
+    }catch(e){}
+    const mergedParsing=typeof window.mergeInspectorParsing==='function'
+      ? window.mergeInspectorParsing(morphEntry, bdb.parsing)
+      : (bdb.parsing||'—');
+    if(wiParsing && mergedParsing && mergedParsing!=='—') wiParsing.textContent=mergedParsing;
     fillBdbFields(bdb);
   }
   window.applyBdbToInspector=applyBdbToInspector;
@@ -3448,7 +3515,9 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
     const manual=lookupManual(wordEl, word);
     if(manual || morph){
       wiRoot.textContent=chooseRoot(morph, manual, word);
-      wiParsing.textContent=(manual&&manual.parsing) || (morph&&(morph.parsing||morph.morph||morph.morphology)) || '—';
+      wiParsing.textContent=(manual&&manual.parsing) || (typeof window.mergeInspectorParsing==='function'
+        ? window.mergeInspectorParsing(morph, morph&&(morph.parsing||morph.morph||morph.morphology))
+        : (morph&&(morph.parsing||morph.morph||morph.morphology))) || '—';
     }else if(looksLikeStrong(wiRoot.textContent)){
       wiRoot.textContent='—';
     }
@@ -3625,5 +3694,6 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
 
 </script>
 <script src="sefaria-bdb.js"></script>
+<script src="greek-lexicon.js"></script>
 </body>
 </html>

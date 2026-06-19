@@ -1,10 +1,11 @@
-const CACHE_NAME = 'contour-app-pwa-v17';
+const CACHE_NAME = 'contour-app-pwa-v20';
 const APP_ASSETS = [
   './',
   './index.html',
   './gate.js',
   './manifest.json',
   './sefaria-bdb.js',
+  './greek-lexicon.js',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
