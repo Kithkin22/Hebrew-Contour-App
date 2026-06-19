@@ -7,6 +7,33 @@
   const HTML_TAG_RE = /<[^>]+>/g;
   const CACHE = {};
 
+  const TERSE_POS_RE = /^[a-z](?:[-a-z0-9]{0,8})?$/i;
+  const STEM_SHORT = {
+    Qal:'Qal', 'Niph.':'Niph', Niphal:'Niph', 'Niph':'Niph',
+    'Pi.':'Piel', Piel:'Piel', 'Pu.':'Pual', Pual:'Pual',
+    'Hi.':'Hiph', Hiphil:'Hiph', 'Hiph':'Hiph',
+    'Ho.':'Hoph', Hophal:'Hoph', 'Hoph':'Hoph',
+    'Hith.':'Hith', Hithpael:'Hith', 'Hithp':'Hith',
+    "P'al":'Peal', Peal:'Peal', Poal:'Poal', Aphel:'Aphel'
+  };
+  const PREFIX_LABEL = {
+    C:'conj', R:'prep', T:'particle', S:'suffix', H:'art'
+  };
+  const OSIS_STEM = {
+    q:'Qal', Q:'Qal', n:'Niph', N:'Niph', p:'Piel', P:'Pual',
+    h:'Hiph', H:'Hoph', t:'Hith', r:'Piel', b:'Piel', c:'Hiph', v:'Qal'
+  };
+  const OSIS_TYPE = {
+    q:'perf', Q:'perf', s:'perf', S:'perf',
+    y:'impf', Y:'impf', i:'impf',
+    w:'wayy', W:'wayy',
+    r:'ptcp', R:'ptcp', p:'ptcp', P:'ptcp',
+    c:'infc', C:'infc', m:'infc',
+    a:'infa', A:'infa',
+    v:'imp', V:'imp',
+    u:'vol', U:'vol'
+  };
+
   function stripLexiconHtml(text){
     return String(text || '')
       .replace(HTML_TAG_RE, '')
@@ -69,16 +96,162 @@
     return '';
   }
 
-  function grammarText(content){
+  function normalizeStem(raw){
+    const text = stripLexiconHtml(raw).replace(/^[\u2014\-–—\s]+/, '').trim();
+    if(!text) return '';
+    return STEM_SHORT[text] || text.replace(/\.$/, '');
+  }
+
+  function isTersePosTag(text){
+    const t = String(text || '').trim();
+    return t.length > 0 && t.length <= 10 && TERSE_POS_RE.test(t);
+  }
+
+  function collectGrammarNodes(content, out){
+    if(!content || typeof content !== 'object') return;
+    if(content.grammar && typeof content.grammar === 'object') out.push(content.grammar);
+    for(const sense of (content.senses || [])){
+      collectGrammarNodes(sense, out);
+    }
+  }
+
+  function grammarMatchesSurface(grammar, surfaceWord){
+    const forms = grammar && grammar.binyan_form;
+    if(!forms || !forms.length || !surfaceWord) return false;
+    return forms.some(form => consonantsMatch(form, surfaceWord));
+  }
+
+  function formatGrammarNode(grammar){
+    if(!grammar) return '';
+    const stem = normalizeStem(grammar.verbal_stem);
+    const morph = stripLexiconHtml(grammar.morphology || '');
+    const parts = [];
+    if(stem) parts.push(stem);
+    if(morph && !isTersePosTag(morph)){
+      parts.push(compactEnglishMorphology(morph));
+    }
+    return parts.filter(Boolean).join(' ');
+  }
+
+  function compactEnglishMorphology(text){
+    return String(text || '')
+      .replace(/\bsequential imperfect\b/gi, 'wayy')
+      .replace(/\bsequential perfect\b/gi, 'seq-perf')
+      .replace(/\bimperfect\b/gi, 'impf')
+      .replace(/\bperfect\b/gi, 'perf')
+      .replace(/\bimperative\b/gi, 'imp')
+      .replace(/\bparticiple active\b/gi, 'ptcp act')
+      .replace(/\bparticiple passive\b/gi, 'ptcp pass')
+      .replace(/\bparticiple\b/gi, 'ptcp')
+      .replace(/\binfinitive construct\b/gi, 'infc')
+      .replace(/\binfinitive absolute\b/gi, 'infa')
+      .replace(/\b(\d)(?:st|nd|rd|th)\s+person\b/gi, '$1')
+      .replace(/\bmasculine\b/gi, 'm')
+      .replace(/\bfeminine\b/gi, 'f')
+      .replace(/\bcommon\b/gi, 'c')
+      .replace(/\bsingular\b/gi, 's')
+      .replace(/\bplural\b/gi, 'p')
+      .replace(/\btr\.\s*v\.?\b/gi, 'verb')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function grammarText(content, surfaceWord){
+    const grammars = [];
+    collectGrammarNodes(content, grammars);
+    if(grammars.length){
+      const matched = surfaceWord
+        ? grammars.find(g => grammarMatchesSurface(g, surfaceWord))
+        : null;
+      const chosen = matched || grammars.find(g => g.verbal_stem || g.morphology) || grammars[0];
+      const formatted = formatGrammarNode(chosen);
+      if(formatted) return formatted;
+    }
     const morphology = content && content.morphology;
-    if(morphology) return stripLexiconHtml(morphology);
-    for(const s of ((content && content.senses) || [])){
-      const g = s.grammar;
-      if(!g) continue;
-      const parts = [g.verbal_stem, g.morphology].concat(g.binyan_form || []).filter(Boolean);
-      if(parts.length) return parts.map(stripLexiconHtml).join(' · ');
+    if(morphology && !isTersePosTag(morphology)){
+      return stripLexiconHtml(morphology);
     }
     return '';
+  }
+
+  function decodeMorphHBCode(code){
+    const raw = String(code || '').trim();
+    if(!raw || !/^[A-Za-z0-9/]+$/.test(raw)) return '';
+    const prefixes = [];
+    const segments = raw.split('/');
+    let verbSeg = '';
+    segments.forEach(seg => {
+      if(/^V/i.test(seg)) verbSeg = seg;
+      else if(seg.length <= 3){
+        for(const ch of seg){
+          if(PREFIX_LABEL[ch]) prefixes.push(PREFIX_LABEL[ch]);
+        }
+      }
+    });
+    if(!verbSeg) return '';
+    const body = verbSeg.slice(1);
+    if(body.length < 2) return '';
+    const stem = OSIS_STEM[body[0]] || '';
+    const type = OSIS_TYPE[body[1]] || '';
+    const pgn = body.slice(2).replace(/(\d)([mfc])([sp])/i, (_, p, g, n) => p + g + n);
+    const parts = prefixes.concat([stem, type, pgn]).filter(Boolean);
+    return parts.join(' ');
+  }
+
+  function compactEnglishParsingList(text){
+    const chunks = String(text || '').split(/\s*;\s*/).map(part => {
+      return part
+        .replace(/^Conjunction\b/i, 'conj')
+        .replace(/^Preposition\b/i, 'prep')
+        .replace(/^Particle\b/i, 'part')
+        .replace(/^Suffix\b/i, 'suf')
+        .replace(/^Verb\b/i, '')
+        .replace(/\b(Qal|Niphal|Piel|Pual|Hiphil|Hophal|Hithpael|Peal|P'al|Aphel)\b/gi, m => normalizeStem(m))
+        .replace(/\bsequential imperfect\b/gi, 'wayy')
+        .replace(/\bsequential perfect\b/gi, 'seq-perf')
+        .replace(/\bimperfect\b/gi, 'impf')
+        .replace(/\bperfect\b/gi, 'perf')
+        .replace(/\bimperative\b/gi, 'imp')
+        .replace(/\bparticiple active\b/gi, 'ptcp act')
+        .replace(/\bparticiple passive\b/gi, 'ptcp pass')
+        .replace(/\bparticiple\b/gi, 'ptcp')
+        .replace(/\binfinitive construct\b/gi, 'infc')
+        .replace(/\binfinitive absolute\b/gi, 'infa')
+        .replace(/\b(\d)(?:st|nd|rd|th)\s+person\b/gi, '$1')
+        .replace(/\bmasculine\b/gi, 'm')
+        .replace(/\bfeminine\b/gi, 'f')
+        .replace(/\bcommon\b/gi, 'c')
+        .replace(/\bsingular\b/gi, 's')
+        .replace(/\bplural\b/gi, 'p')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\b(\d)\s+([mfc])\s+([sp])\b/gi, '$1$2$3');
+    }).filter(Boolean);
+    return chunks.join(' · ');
+  }
+
+  function compactMorphHBParsing(entry){
+    if(!entry) return '';
+    const text = String(entry.parsing || '').trim();
+    if(text) return compactEnglishParsingList(text);
+    return decodeMorphHBCode(entry.morph || entry.morphology || '');
+  }
+
+  function parsingRichness(text){
+    const t = String(text || '').trim();
+    if(!t || t === '—') return 0;
+    if(isTersePosTag(t)) return 1;
+    return t.split(/\s+/).length + (/\d/.test(t) ? 2 : 0);
+  }
+
+  function mergeInspectorParsing(morphEntry, sefariaParsing){
+    const morphText = compactMorphHBParsing(morphEntry);
+    const sefariaText = String(sefariaParsing || '').trim();
+    if(morphText && parsingRichness(morphText) >= parsingRichness(sefariaText)){
+      return morphText;
+    }
+    if(sefariaText && sefariaText !== '—') return sefariaText;
+    return morphText || '—';
   }
 
   function morphologyIndicatesRootless(morphology){
@@ -155,8 +328,8 @@
       extractShortGloss(bdbEntry && bdbEntry.content && bdbEntry.content.senses) ||
       '';
     const parsing =
-      grammarText(strongEntry && strongEntry.content) ||
-      grammarText(bdbEntry && bdbEntry.content) ||
+      grammarText(strongEntry && strongEntry.content, surfaceWord) ||
+      grammarText(bdbEntry && bdbEntry.content, surfaceWord) ||
       '';
     const rootSource = bdbEntry || strongEntry;
     const root = displayRoot(rootSource, lemma, surfaceWord);
@@ -211,6 +384,9 @@
       return null;
     }
   };
+
+  window.mergeInspectorParsing = mergeInspectorParsing;
+  window.compactMorphHBParsing = compactMorphHBParsing;
 
   window.passageRefForWordEl = function(wordEl){
     if(!wordEl || !window.state || !state.verses) return state && state.ref ? state.ref : '';
