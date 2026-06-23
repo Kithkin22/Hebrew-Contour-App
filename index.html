@@ -1347,6 +1347,15 @@ body.dark-mode #persistentShowComments{
 }
 body.dark-mode .admin-link{color:#94a3b8;}
 body.dark-mode .admin-link:hover,body.dark-mode .admin-link:focus{color:#6db5ff;}
+.admin-link.has-unread{color:var(--ui-blue,#286090);opacity:1;font-weight:700;}
+.admin-inbox-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:16px;height:16px;padding:0 4px;margin-left:4px;
+  font-size:10px;font-weight:800;line-height:1;border-radius:999px;
+  background:#d9534f;color:#fff;vertical-align:top;
+}
+.admin-inbox-badge.hidden{display:none!important;}
+body.dark-mode .admin-link.has-unread{color:#6db5ff;}
 
 /* User feedback: click-menu panels, keycap shortcuts */
 .top-stack .card.compact-card.menu-open{
@@ -1478,6 +1487,121 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
   .comments-panel.collapsed{display:none!important;}
 }
 
+
+/* Top menu layout fix — click-only stacked panels (v1.3.8e) */
+.top-stack .card.compact-card > .top-menu-panel{
+  display:none!important;
+}
+.top-stack .card.compact-card.menu-open > .top-menu-panel{
+  display:block!important;
+  margin-top:12px!important;
+}
+.top-menu-panel > *{
+  position:static!important;
+  left:auto!important;
+  top:auto!important;
+  width:100%!important;
+  max-width:100%!important;
+  margin:10px 0 0!important;
+  z-index:auto!important;
+}
+.top-menu-panel > *:first-child{
+  margin-top:0!important;
+}
+.top-menu-panel > .generator-source-row,
+.top-menu-panel > .generator-passage-row,
+.top-menu-panel > .generator-reference-row,
+.top-menu-panel > .row,
+.top-menu-panel > .save-tools{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+  gap:8px!important;
+}
+.top-menu-panel > #pasteBox{
+  display:block!important;
+  width:100%!important;
+  min-height:88px!important;
+  box-sizing:border-box!important;
+}
+.top-menu-panel > p.muted.small,
+.top-menu-panel > #saveStatus,
+.top-menu-panel > #wlcStatus{
+  display:block!important;
+  font-size:12px!important;
+  line-height:1.45!important;
+  color:var(--ui-muted,#64748b)!important;
+}
+.top-menu-panel > #saveStatus,
+.top-menu-panel > p.muted.small:last-child{
+  padding-top:10px!important;
+  margin-top:14px!important;
+  border-top:1px solid var(--ui-line,#d8e1ea)!important;
+}
+.top-stack .card.compact-card:not(.menu-open) > .top-menu-panel,
+.top-stack .card.compact-card:not(.menu-open):hover > p,
+.top-stack .card.compact-card:not(.menu-open):hover > div:not(.top-menu-panel),
+.top-stack .card.compact-card:not(.menu-open):hover > textarea,
+.top-stack .card.compact-card:not(.menu-open):hover > input,
+.top-stack .card.compact-card:not(.menu-open):hover > #pasteBox,
+.top-stack .card.compact-card:not(.menu-open):hover > #wlcStatus,
+.top-stack .card.compact-card:not(.menu-open):hover > .generator-source-row,
+.top-stack .card.compact-card:not(.menu-open):hover > .generator-passage-row,
+.top-stack .card.compact-card:not(.menu-open):hover > .generator-reference-row,
+.top-stack .card.compact-card:not(.menu-open):hover > .row,
+.top-stack .card.compact-card:not(.menu-open):focus-within > p,
+.top-stack .card.compact-card:not(.menu-open):focus-within > div:not(.top-menu-panel),
+.top-stack .card.compact-card:not(.menu-open):focus-within > textarea,
+.top-stack .card.compact-card:not(.menu-open):focus-within > input,
+.top-stack .card.compact-card:not(.menu-open):focus-within > #pasteBox,
+.top-stack .card.compact-card:not(.menu-open):focus-within > #wlcStatus,
+.top-stack .card.compact-card:not(.menu-open):focus-within > .generator-source-row,
+.top-stack .card.compact-card:not(.menu-open):focus-within > .generator-passage-row,
+.top-stack .card.compact-card:not(.menu-open):focus-within > .generator-reference-row,
+.top-stack .card.compact-card:not(.menu-open):focus-within > .row{
+  display:none!important;
+}
+.top-stack .card.compact-card:not(.menu-open):hover::before,
+.top-stack .card.compact-card:not(.menu-open):hover::after,
+.top-stack .card.compact-card:not(.menu-open):focus-within::before,
+.top-stack .card.compact-card:not(.menu-open):focus-within::after{
+  display:none!important;
+  content:none!important;
+}
+.top-stack .card.compact-card.menu-open:hover > .top-menu-panel,
+.top-stack .card.compact-card.menu-open:focus-within > .top-menu-panel,
+.top-stack .card.compact-card.menu-open:hover > .top-menu-panel > *,
+.top-stack .card.compact-card.menu-open:focus-within > .top-menu-panel > *,
+.top-stack .card.compact-card.menu-open:hover > p,
+.top-stack .card.compact-card.menu-open:hover > div,
+.top-stack .card.compact-card.menu-open:focus-within > p,
+.top-stack .card.compact-card.menu-open:focus-within > div,
+.top-stack .card.compact-card:has(.save-tools-title).menu-open:hover > .row,
+.top-stack .card.compact-card:has(.save-tools-title).menu-open:focus-within > .row,
+.top-stack .card.compact-card:nth-child(3).menu-open:hover > .row,
+.top-stack .card.compact-card:nth-child(3).menu-open:focus-within > .row{
+  position:static!important;
+  left:auto!important;
+  top:auto!important;
+}
+.top-stack .card.compact-card.menu-open:hover::before,
+.top-stack .card.compact-card.menu-open:hover::after,
+.top-stack .card.compact-card.menu-open:focus-within::before,
+.top-stack .card.compact-card.menu-open:focus-within::after{
+  display:none!important;
+  content:none!important;
+}
+.top-stack .card.compact-card.menu-open .project-actions-row .btn,
+.top-stack .card.compact-card.menu-open .row .btn{
+  flex:0 1 auto!important;
+}
+@media(max-width:900px){
+  .top-stack .card.compact-card.menu-open .row .btn,
+  .top-stack .card.compact-card.menu-open .project-actions-row .btn{
+    flex:1 1 calc(50% - 4px)!important;
+    min-width:0!important;
+  }
+}
 </style>
 </head>
 <body>
@@ -1499,12 +1623,14 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
   <p class="muted top-menu-hint">Click or tap a menu to generate text, paste from Logos, or save your project.</p>
   <div class="card compact-card" data-menu="generate">
     <strong class="menu-trigger">Generate text</strong>
-    <p class="muted">Choose Hebrew/WLC or Greek/SBLGNT, then generate into the editor.</p>
+    <div class="top-menu-panel">
+    <p class="muted">Choose Hebrew (WLC or BHSA) or Greek/SBLGNT, then generate into the editor.</p>
 
     <div class="generator-source-row">
       <label class="muted" for="textSource">Source:</label>
       <select id="textSource">
-        <option value="hebrew">Hebrew — WLC</option>
+        <option value="hebrew">Hebrew — WLC (offline)</option>
+        <option value="hebrew-bhsa">Hebrew — BHSA (online)</option>
         <option value="greek">Greek — SBLGNT</option>
       </select>
     </div>
@@ -1537,11 +1663,13 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
     </div>
 
     <p id="wlcStatus" class="muted"></p>
-    <p class="muted small">SBLGNT source files are provided by Faithlife/SBLGNT under CC BY 4.0; Hebrew source remains the bundled WLC.</p>
+    <p class="muted small">SBLGNT: Faithlife/SBLGNT (CC BY 4.0). Hebrew WLC: bundled Westminster Leningrad Codex. Hebrew BHSA: ETCBC / BHS via SHEBANQ (requires internet).</p>
+    </div>
   </div>
 
   <div class="card compact-card" data-menu="paste">
     <strong class="menu-trigger">Paste text</strong>
+    <div class="top-menu-panel">
     <p class="muted">Paste Hebrew/Greek text here. Each line becomes a verse/section.</p>
     <textarea id="pasteBox" dir="rtl" class="heb" placeholder=""></textarea>
     <input id="refBox" type="hidden" value="">
@@ -1549,11 +1677,13 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
       <button class="btn primary" id="makeText">Create Text from Paste</button>
       <button class="btn" id="sampleText">Load Sample</button>
     </div>
+    </div>
   </div>
 
   <div class="card compact-card" data-menu="project">
     <strong class="save-tools-title menu-trigger">Project</strong>
-    <div class="row">
+    <div class="top-menu-panel">
+    <div class="row project-actions-row">
       <button class="btn good" id="saveLocalBtn">Save Project</button>
       <button class="btn" id="loadLocalBtn">Load Saved Project</button>
       <button class="btn good" id="downloadProjectBtn">Download Project (.json)</button>
@@ -1563,6 +1693,7 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
       <button class="btn danger" id="clearAutosaveBtn">Clear Autosave</button>
     </div>
     <p id="saveStatus" class="muted small">Opens with a blank table. Use Save Project to keep work in this browser.</p>
+    </div>
   </div>
 </div>
 
@@ -1575,7 +1706,7 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
     <div class="workspace-help-row">
       <button type="button" class="btn" id="feedbackBtn" aria-haspopup="dialog" aria-controls="feedbackModal" title="Send feedback or report a problem">Feedback</button>
       <button type="button" class="btn" id="helpBtn" aria-haspopup="dialog" aria-controls="helpModal" title="Keyboard shortcuts and tips">? Help</button>
-      <a href="/admin.html" id="adminLink" class="admin-link" title="Feedback admin inbox (password required)">Admin</a>
+      <a href="/admin.html" id="adminLink" class="admin-link" title="Feedback admin inbox (password required)">Admin<span id="adminInboxBadge" class="admin-inbox-badge hidden" aria-hidden="true"></span></a>
     </div>
     <div class="toolbar-section"><div class="row" id="colorToolbar">
       <strong class="small toolbar-label">Text color:</strong>
@@ -1760,8 +1891,8 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
       </select>
       <label for="feedbackMessage">Message</label>
       <textarea id="feedbackMessage" name="message" required placeholder="What happened? What would help?" maxlength="4000"></textarea>
-      <label for="feedbackContact">Contact (optional)</label>
-      <input type="text" id="feedbackContact" name="contact" placeholder="Name or email if you want a reply" maxlength="200" autocomplete="email">
+      <label for="feedbackContact">Email (optional — for ticket updates)</label>
+      <input type="text" id="feedbackContact" name="contact" placeholder="your@email.com — we'll email when received and when fixed" maxlength="200" autocomplete="email">
       <p id="feedbackStatus" class="feedback-status hidden" role="status"></p>
       <div class="row" style="margin-top:14px">
         <button type="submit" class="btn primary" id="feedbackSubmitBtn">Send feedback</button>
@@ -2078,11 +2209,62 @@ function setupBooks(){
   const source=(document.getElementById('textSource')&&document.getElementById('textSource').value)||'hebrew';
   sel.innerHTML='';
   const books=source==='greek'?GREEK_BOOKS:parseBooks();
-  books.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name;if((source==='hebrew'&&b.name==='Ruth')||(source==='greek'&&b.id==='Matt'))o.selected=true;sel.appendChild(o);});
+  books.forEach(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.name;if(((source==='hebrew'||source==='hebrew-bhsa')&&b.name==='Ruth')||(source==='greek'&&b.id==='Matt'))o.selected=true;sel.appendChild(o);});
   const status=document.getElementById('wlcStatus');
-  if(status)status.textContent=source==='greek'?'Greek source: SBLGNT (fetched online from Faithlife/SBLGNT).':'Hebrew source: bundled WLC.';
+  if(status)status.textContent=source==='greek'?'Greek source: SBLGNT (fetched online from Faithlife/SBLGNT).':source==='hebrew-bhsa'?'Hebrew source: BHSA / ETCBC via SHEBANQ (requires internet).':'Hebrew source: bundled WLC (offline).';
 }
 function getWlcText(book,sc,sv,ec,ev){const out=[];let started=false;for(const line of WLC_TEXT.split(/\r?\n/)){if(!line.trim())continue;const parts=line.split('\t');if(parts.length<6)continue;const [b,c,v,_blank,_seq,txt]=parts;const cn=+c,vn=+v;if(b===book&&cn===+sc&&vn===+sv)started=true;if(started){if(b!==book)break;if(cn>+ec||(cn===+ec&&vn>+ev))break;out.push({chapter:cn,verse:vn,text:(txt||'').trim()});if(cn===+ec&&vn===+ev)break;}}return out;}
+const SHEBANQ_VERSE_API='https://shebanq.ancient-data.org/hebrew/verse.json';
+const BHSA_VERSION='4b';
+const BHSA_LATIN_BY_WLC={
+  '01O':'Genesis','02O':'Exodus','03O':'Leviticus','04O':'Numeri','05O':'Deuteronomium',
+  '06O':'Josua','07O':'Judices','08O':'Ruth','09O':'Samuel_I','10O':'Samuel_II',
+  '11O':'Reges_I','12O':'Reges_II','13O':'Chronica_I','14O':'Chronica_II','15O':'Esra',
+  '16O':'Nehemia','17O':'Esther','18O':'Iob','19O':'Psalmi','20O':'Proverbia',
+  '21O':'Ecclesiastes','22O':'Canticum','23O':'Jesaia','24O':'Jeremia','25O':'Threni',
+  '26O':'Ezechiel','27O':'Daniel','28O':'Hosea','29O':'Joel','30O':'Amos','31O':'Obadia',
+  '32O':'Jona','33O':'Micha','34O':'Nahum','35O':'Habakuk','36O':'Zephania','37O':'Haggai',
+  '38O':'Sacharia','39O':'Maleachi'
+};
+function cleanBhsaVerse(raw){
+  return String(raw||'')
+    .replace(/<[^>]*>/g,'')
+    .replace(/&nbsp;/gi,' ')
+    .replace(/\{[פסמת]\}/g,'')
+    .replace(/\u05C3+/g,'')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+async function fetchShebanqVerse(bhsaLatin,chapter,verse){
+  const url=new URL(SHEBANQ_VERSE_API);
+  url.searchParams.set('version',BHSA_VERSION);
+  url.searchParams.set('book',bhsaLatin);
+  url.searchParams.set('chapter',String(chapter));
+  url.searchParams.set('verse',String(verse));
+  const response=await fetch(url,{headers:{Accept:'application/json'}});
+  if(!response.ok)return null;
+  const data=await response.json();
+  if(!data.good||!data.data||!data.data.text)return null;
+  return cleanBhsaVerse(data.data.text);
+}
+async function getBhsaText(wlcBookId,sc,sv,ec,ev){
+  const bhsaLatin=BHSA_LATIN_BY_WLC[wlcBookId];
+  if(!bhsaLatin)throw new Error('No BHSA book mapping for '+wlcBookId);
+  const refs=getWlcText(wlcBookId,sc,sv,ec,ev);
+  if(!refs.length)return [];
+  const out=[];
+  for(const ref of refs){
+    const text=await fetchShebanqVerse(bhsaLatin,ref.chapter,ref.verse);
+    if(!text){
+      if(!out.length)throw new Error(`BHSA lookup failed for ${bhsaLatin} ${ref.chapter}:${ref.verse}.`);
+      break;
+    }
+    out.push({chapter:ref.chapter,verse:ref.verse,text});
+    if(ref.chapter===+ec&&ref.verse===+ev)break;
+  }
+  if(!out.length)throw new Error('No Hebrew text returned from BHSA for that reference.');
+  return out;
+}
 async function fetchSblgntBook(bookId){
   const book=GREEK_BOOKS.find(b=>b.id===bookId);
   if(!book)throw new Error('Unknown Greek book');
@@ -2233,17 +2415,25 @@ async function generateWlc(){
       status.textContent='Loading Greek text from SBLGNT...';
       verses=await getSblgntText(book,sc,sv,ec,ev);
       state.language='greek';
+    }else if(source==='hebrew-bhsa'){
+      status.textContent='Loading Hebrew text from BHSA (SHEBANQ)...';
+      verses=await getBhsaText(book,sc,sv,ec,ev);
+      state.language='hebrew';
     }else{
       verses=getWlcText(book,sc,sv,ec,ev);
       state.language='hebrew';
     }
-  }catch(e){status.textContent='Could not load Greek text. Check your internet connection or use paste mode.';return;}
+  }catch(e){
+    status.textContent=source==='greek'?'Could not load Greek text. Check your internet connection or use paste mode.':source==='hebrew-bhsa'?'Could not load BHSA text. Check your internet connection or use WLC/paste mode.':'Could not load Hebrew text.';
+    return;
+  }
   if(!verses.length){status.textContent='No text found for that range.';return;}
   generatedRefs=verses.map(v=>`${bname} ${v.chapter}:${v.verse}`);
   document.getElementById('pasteBox').value=verses.map(v=>v.text).join('\n');
   document.getElementById('pasteBox').dir=source==='greek'?'ltr':'rtl';
   document.getElementById('refBox').value=`${bname} ${sc}:${sv}${(sc!==ec||sv!==ev)?'-'+ec+':'+ev:''}`;
-  status.textContent=`Loaded ${verses.length} verse(s) from ${document.getElementById('refBox').value} (${source==='greek'?'SBLGNT':'WLC'}).`;
+  const sourceLabel=source==='greek'?'SBLGNT':source==='hebrew-bhsa'?'BHSA':'WLC';
+  status.textContent=`Loaded ${verses.length} verse(s) from ${document.getElementById('refBox').value} (${sourceLabel}).`;
   parseText(document.getElementById('pasteBox').value,document.getElementById('refBox').value);
 }
 setupBooks();
@@ -3734,6 +3924,45 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
   }
 
 
+  function initAdminInboxBadge(){
+    var link=document.getElementById('adminLink');
+    var badge=document.getElementById('adminInboxBadge');
+    if(!link||!badge)return;
+    var pollMs=120000;
+    var storageKey='feedbackInboxLastSeenAt';
+    function setBadge(count){
+      if(!count){
+        link.classList.remove('has-unread');
+        badge.classList.add('hidden');
+        badge.textContent='';
+        badge.setAttribute('aria-hidden','true');
+        link.removeAttribute('aria-label');
+        return;
+      }
+      link.classList.add('has-unread');
+      badge.classList.remove('hidden');
+      badge.textContent=count>9?'9+':String(count);
+      badge.setAttribute('aria-hidden','false');
+      link.setAttribute('aria-label','Admin — '+count+' new feedback message'+(count===1?'':'s'));
+    }
+    async function refresh(){
+      try{
+        var since=localStorage.getItem(storageKey)||'';
+        var url='/api/feedback-summary'+(since?('?since='+encodeURIComponent(since)):'');
+        var res=await fetch(url,{cache:'no-store'});
+        if(!res.ok)return;
+        var data=await res.json();
+        var unread=typeof data.unreadOpenCount==='number'?data.unreadOpenCount:0;
+        setBadge(unread);
+      }catch(e){}
+    }
+    refresh();
+    setInterval(refresh,pollMs);
+    document.addEventListener('visibilitychange',function(){
+      if(!document.hidden)refresh();
+    });
+  }
+
   function initFeedbackModal(){
     var modal=document.getElementById('feedbackModal');
     var btn=document.getElementById('feedbackBtn');
@@ -3791,7 +4020,10 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
         var data={};
         try{data=await res.json();}catch(err){}
         if(!res.ok)throw new Error((data&&data.error)||('Request failed ('+res.status+')'));
-        setStatus('Thank you — your feedback was saved.','ok');
+        var okMsg='Thank you — your feedback was saved.';
+        if(data&&data.id)okMsg+=' Ticket '+data.id+'.';
+        if(data&&data.ticketEmail)okMsg+=' Check your email for updates.';
+        setStatus(okMsg,'ok');
         form.reset();
         setTimeout(shut,1400);
       }catch(err){
@@ -3803,8 +4035,8 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
   }
 
   if(document.readyState==='loading'){
-    document.addEventListener('DOMContentLoaded',function(){initTopMenus();initHelpModal();initFeedbackModal();});
-  }else{initTopMenus();initHelpModal();initFeedbackModal();}
+    document.addEventListener('DOMContentLoaded',function(){initTopMenus();initHelpModal();initFeedbackModal();initAdminInboxBadge();});
+  }else{initTopMenus();initHelpModal();initFeedbackModal();initAdminInboxBadge();}
 })();
 
 </script>

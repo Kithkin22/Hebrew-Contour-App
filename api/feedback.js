@@ -1,4 +1,9 @@
-const { appendFeedbackEntry } = require('./feedback-store');
+const { appendFeedbackEntry, patchFeedbackEntry } = require('./feedback-store');
+const {
+  extractTicketEmail,
+  sendAdminNewFeedback,
+  sendUserTicketReceived,
+} = require('./feedback-email');
 
 function json(res, status, body) {
   res.statusCode = status;
@@ -35,6 +40,7 @@ module.exports = async function handler(req, res) {
   const category = String(body.category || 'general').trim().slice(0, 40);
   const message = String(body.message || '').trim();
   const contact = String(body.contact || '').trim().slice(0, 200);
+  const ticketEmail = extractTicketEmail(contact);
 
   if (!message || message.length < 5) {
     return json(res, 400, { error: 'Please enter at least a few words of feedback.' });
@@ -48,15 +54,41 @@ module.exports = async function handler(req, res) {
     category,
     message,
     contact: contact || null,
+    ticketEmail,
     status: 'open',
     fixedAt: null,
+    userNotifiedReceivedAt: null,
+    userNotifiedFixedAt: null,
     context: body.context && typeof body.context === 'object' ? body.context : {},
     receivedAt: new Date().toISOString(),
   };
 
   try {
     await appendFeedbackEntry(entry);
-    return json(res, 200, { ok: true, id: entry.id });
+
+    sendAdminNewFeedback(entry).catch((err) => {
+      console.error('Admin feedback notification error:', err);
+    });
+
+    if (ticketEmail) {
+      sendUserTicketReceived(entry)
+        .then(async (result) => {
+          if (result.sent) {
+            await patchFeedbackEntry(entry.id, {
+              userNotifiedReceivedAt: new Date().toISOString(),
+            });
+          }
+        })
+        .catch((err) => {
+          console.error('User ticket received email error:', err);
+        });
+    }
+
+    return json(res, 200, {
+      ok: true,
+      id: entry.id,
+      ticketEmail: ticketEmail || null,
+    });
   } catch (err) {
     console.error('Feedback save failed:', err);
     return json(res, 503, {

@@ -34,6 +34,12 @@
   .fixed-row{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;font-weight:600}
   .empty{padding:32px;text-align:center;color:#64748b;border:1px dashed #cfd9e4;border-radius:10px;background:#fff}
   .hidden{display:none!important}
+  .settings{margin-bottom:18px}
+  .settings h2{margin:0 0 6px;font-size:18px}
+  .settings textarea{width:100%;box-sizing:border-box;min-height:72px;padding:10px 12px;border:1px solid #cfd9e4;border-radius:8px;font:inherit;resize:vertical}
+  .settings-actions{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .settings-status{font-size:13px;color:#64748b}
+  .ticket-id{font-size:12px;color:#64748b;font-family:ui-monospace,Menlo,monospace}
   @media (prefers-color-scheme:dark){
     body{background:#111b26;color:#e8eef5}
     .gate,.panel,.item,.empty{background:#17212b;border-color:#314253;color:#e8eef5}
@@ -55,7 +61,19 @@
 
   <div id="adminPanel" class="hidden">
     <h1>Feedback inbox</h1>
-    <p class="muted">Mark items fixed when addressed. Only you can access this page.</p>
+    <p class="muted">Mark items fixed when addressed. Users with an email get ticket updates automatically.</p>
+
+    <div class="panel settings">
+      <h2>Admin notification emails</h2>
+      <p class="muted">New feedback alerts go here (one per line or comma-separated). Saved in the repo — not tied to your GitHub account email.</p>
+      <textarea id="notifyEmails" placeholder="you@example.com&#10;colleague@example.com"></textarea>
+      <div class="settings-actions">
+        <button type="button" id="saveSettingsBtn">Save notification emails</button>
+        <span class="settings-status" id="settingsStatus"></span>
+      </div>
+      <p class="muted" id="envFallbackNote"></p>
+    </div>
+
     <div class="toolbar">
       <button type="button" class="filter active" data-filter="all">All</button>
       <button type="button" class="filter secondary" data-filter="open">Open</button>
@@ -69,9 +87,11 @@
 </div>
 <script>
 const SESSION_KEY = 'contourFeedbackAdminPassword';
+const INBOX_SEEN_KEY = 'feedbackInboxLastSeenAt';
 let adminPassword = '';
 let allEntries = [];
 let activeFilter = 'all';
+let notifySettings = { notifyEmails: [], envFallback: [] };
 
 function $(id){ return document.getElementById(id); }
 
@@ -122,17 +142,21 @@ function renderList(){
     const fixed = entryStatus(entry) === 'fixed';
     const ctx = entry.context || {};
     const meta = [
+      'Ticket ' + (entry.id || '—'),
       formatWhen(entry.receivedAt),
       entry.category || 'general',
+      entry.ticketEmail ? ('Email: ' + entry.ticketEmail) : (entry.contact ? ('Contact: ' + entry.contact) : 'No reply email'),
+      entry.userNotifiedReceivedAt ? 'Received email sent' : (entry.ticketEmail ? 'Received email pending' : ''),
+      entry.userNotifiedFixedAt ? 'Fixed email sent' : '',
       ctx.ref ? ('Ref: ' + ctx.ref) : '',
-      ctx.language ? ('Lang: ' + ctx.language) : '',
-      entry.contact ? ('Contact: ' + entry.contact) : ''
+      ctx.language ? ('Lang: ' + ctx.language) : ''
     ].filter(Boolean).join(' · ');
-    return '<article class="item' + (fixed ? ' fixed' : '') + '" data-id="' + entry.id + '">' +
+    return '<article class="item' + (fixed ? ' fixed' : '') + '" data-id="' + escapeHtml(entry.id) + '">' +
       '<div class="item-head">' +
-        '<span class="badge ' + (entry.category || 'general') + '">' + (entry.category || 'general') + '</span>' +
+        '<span class="badge ' + (entry.category || 'general') + '">' + escapeHtml(entry.category || 'general') + '</span>' +
         (fixed ? '<span class="badge fixed">Fixed</span>' : '<span class="badge">Open</span>') +
       '</div>' +
+      '<div class="ticket-id">' + escapeHtml(entry.id || '') + '</div>' +
       '<div class="message">' + escapeHtml(entry.message || '') + '</div>' +
       '<div class="meta">' + escapeHtml(meta) + '</div>' +
       '<label class="fixed-row"><input type="checkbox"' + (fixed ? ' checked' : '') + ' data-fixed-toggle="' + entry.id + '"> Mark fixed</label>' +
@@ -171,9 +195,70 @@ function escapeHtml(s){
   });
 }
 
+function markInboxSeen(){
+  var latest = '';
+  allEntries.forEach(function(entry){
+    if(entry.receivedAt && entry.receivedAt > latest) latest = entry.receivedAt;
+  });
+  try{
+    localStorage.setItem(INBOX_SEEN_KEY, latest || new Date().toISOString());
+  }catch(e){}
+}
+
+function renderSettings(){
+  const box = $('notifyEmails');
+  const note = $('envFallbackNote');
+  const status = $('settingsStatus');
+  if(box){
+    const emails = (notifySettings.notifyEmails && notifySettings.notifyEmails.length)
+      ? notifySettings.notifyEmails
+      : (notifySettings.envFallback || []);
+    box.value = emails.join('\n');
+  }
+  if(note){
+    const fallback = notifySettings.envFallback || [];
+    const saved = notifySettings.notifyEmails || [];
+    if(!saved.length && fallback.length){
+      note.textContent = 'Using FEEDBACK_NOTIFY_EMAIL from Vercel until you save addresses here: ' + fallback.join(', ');
+      note.classList.remove('hidden');
+    }else{
+      note.textContent = '';
+      note.classList.add('hidden');
+    }
+  }
+  if(status && notifySettings.updatedAt){
+    status.textContent = 'Last saved ' + formatWhen(notifySettings.updatedAt);
+  }
+}
+
+async function saveSettings(){
+  const box = $('notifyEmails');
+  const status = $('settingsStatus');
+  if(!box) return;
+  $('saveSettingsBtn').disabled = true;
+  if(status) status.textContent = 'Saving…';
+  try{
+    const data = await api('/api/feedback-admin', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveSettings', notifyEmails: box.value })
+    });
+    notifySettings = Object.assign(notifySettings, data.settings || {});
+    renderSettings();
+    if(status) status.textContent = 'Saved.';
+  }catch(err){
+    if(status) status.textContent = '';
+    alert(err.message || 'Could not save settings.');
+  }finally{
+    $('saveSettingsBtn').disabled = false;
+  }
+}
+
 async function loadEntries(){
   const data = await api('/api/feedback-admin', { method: 'GET' });
   allEntries = Array.isArray(data.entries) ? data.entries : [];
+  notifySettings = data.settings || notifySettings;
+  renderSettings();
+  markInboxSeen();
   renderList();
 }
 
@@ -215,6 +300,9 @@ $('adminPassword').addEventListener('keydown', function(e){
 });
 $('refreshBtn').addEventListener('click', function(){
   loadEntries().catch(function(err){ alert(err.message); });
+});
+$('saveSettingsBtn').addEventListener('click', function(){
+  saveSettings();
 });
 $('logoutBtn').addEventListener('click', function(){
   sessionStorage.removeItem(SESSION_KEY);

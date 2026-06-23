@@ -1,5 +1,15 @@
 const crypto = require('crypto');
-const { readFeedbackFile, updateFeedbackStatus } = require('./feedback-store');
+const {
+  readFeedbackFile,
+  readFeedbackSettings,
+  writeFeedbackSettings,
+  patchFeedbackEntry,
+  updateFeedbackStatus,
+} = require('./feedback-store');
+const {
+  parseEmailList,
+  sendUserTicketFixed,
+} = require('./feedback-email');
 
 function json(res, status, body) {
   res.statusCode = status;
@@ -67,16 +77,48 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const { entries } = await readFeedbackFile();
+      const [{ entries }, settings] = await Promise.all([
+        readFeedbackFile(),
+        readFeedbackSettings(),
+      ]);
       const sorted = entries.slice().sort((a, b) => {
         const ta = Date.parse(a.receivedAt || '') || 0;
         const tb = Date.parse(b.receivedAt || '') || 0;
         return tb - ta;
       });
-      return json(res, 200, { entries: sorted });
+      return json(res, 200, {
+        entries: sorted,
+        settings: {
+          notifyEmails: settings.notifyEmails || [],
+          envFallback: settings.envFallback || [],
+          updatedAt: settings.updatedAt || null,
+        },
+      });
     } catch (err) {
       console.error('Feedback admin list failed:', err);
       return json(res, 503, { error: err.message || 'Could not load feedback.' });
+    }
+  }
+
+  if (req.method === 'POST' && body && body.action === 'saveSettings') {
+    const emails = parseEmailList(body.notifyEmails);
+    if (!emails.length) {
+      return json(res, 400, {
+        error: 'Enter at least one valid admin notification email.',
+      });
+    }
+    try {
+      const saved = await writeFeedbackSettings({ notifyEmails: emails });
+      return json(res, 200, {
+        ok: true,
+        settings: {
+          notifyEmails: saved.notifyEmails,
+          updatedAt: saved.updatedAt,
+        },
+      });
+    } catch (err) {
+      console.error('Feedback settings save failed:', err);
+      return json(res, 503, { error: err.message || 'Could not save settings.' });
     }
   }
 
@@ -88,8 +130,28 @@ module.exports = async function handler(req, res) {
       return json(res, 400, { error: 'Status must be open or fixed.' });
     }
     try {
-      await updateFeedbackStatus(id, status);
-      return json(res, 200, { ok: true, id, status });
+      const { entry, previousStatus } = await updateFeedbackStatus(id, status);
+
+      if (
+        status === 'fixed' &&
+        previousStatus !== 'fixed' &&
+        (entry.ticketEmail || entry.contact) &&
+        !entry.userNotifiedFixedAt
+      ) {
+        sendUserTicketFixed(entry)
+          .then(async (result) => {
+            if (result.sent) {
+              await patchFeedbackEntry(id, {
+                userNotifiedFixedAt: new Date().toISOString(),
+              });
+            }
+          })
+          .catch((err) => {
+            console.error('User ticket fixed email error:', err);
+          });
+      }
+
+      return json(res, 200, { ok: true, id, status, entry });
     } catch (err) {
       console.error('Feedback admin update failed:', err);
       return json(res, 503, { error: err.message || 'Could not update feedback.' });
