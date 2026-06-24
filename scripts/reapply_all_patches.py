@@ -42,6 +42,7 @@ PATCH_SCRIPTS = [
     "apply_parallel_verse_align.py",
     "apply_parallel_align_ux.py",
     "apply_parallel_shift_right.py",
+    "apply_parallel_align_simplify.py",
     "apply_workspace_maximize.py",
 ]
 
