@@ -41,6 +41,7 @@ PATCH_SCRIPTS = [
     "apply_comment_ltr_fix.py",
     "apply_parallel_verse_align.py",
     "apply_parallel_align_ux.py",
+    "apply_parallel_shift_right.py",
     "apply_workspace_maximize.py",
 ]
 
