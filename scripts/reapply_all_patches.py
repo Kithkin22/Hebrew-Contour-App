@@ -39,6 +39,7 @@ PATCH_SCRIPTS = [
     "apply_project_file_menu.py",
     "apply_parallel_pane_load.py",
     "apply_comment_ltr_fix.py",
+    "apply_parallel_verse_align.py",
 ]
 
 # Full WLC bundle is ~16.5MB; truncated restores are usually <15MB.
