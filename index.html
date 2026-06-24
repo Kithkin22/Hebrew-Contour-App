@@ -178,7 +178,7 @@
 }
 .top-stack .card.compact-card:nth-child(1) > strong:first-child::before{content:"＋";}
 .top-stack .card.compact-card:nth-child(2) > strong:first-child::before{content:"📋";}
-.top-stack .card.compact-card:nth-child(3) > .save-tools-title::before{content:"📁";}
+.top-stack .card.compact-card:nth-child(3) > .save-tools-title::before{content:"File";}
 .top-stack .card.compact-card > strong:first-child::after,
 .top-stack .card.compact-card > .save-tools-title::after{
   content:"▾";
@@ -742,9 +742,9 @@ body.dark-mode .kbd{
 
 /* d-clean patch: project label, neutral comments, black contour dark mode */
 
-/* Rename the blue File-style button back to Project */
+/* File menu trigger label */
 .top-stack .card.compact-card:has(.save-tools-title) > .save-tools-title::before{
-  content:"Project" !important;
+  content:"File" !important;
 }
 
 /* Keep comments visually neutral; no red accent/pink active state */
@@ -1267,12 +1267,12 @@ body.dark-mode .top-stack .card.compact-card.menu-open > .save-tools-title{
 }
 .top-stack .card.compact-card[data-menu="generate"] > .menu-trigger::before{content:"＋ ";}
 .top-stack .card.compact-card[data-menu="paste"] > .menu-trigger::before{content:"📋 ";}
-.top-stack .card.compact-card[data-menu="project"] > .save-tools-title::before{content:"📁 ";}
+.top-stack .card.compact-card[data-menu="project"] > .save-tools-title::before{content:"File";}
 .top-stack .card.compact-card:nth-child(1) > strong:first-child::before,
 .top-stack .card.compact-card:nth-child(2) > strong:first-child::before,
 .top-stack .card.compact-card:nth-child(3) > .save-tools-title::before{content:none!important;}
 .top-stack .card.compact-card:has(.save-tools-title) > .save-tools-title::before{
-  content:"📁 " !important;
+  content:"File" !important;
 }
 #showCommentsPanel{
   position:static!important;
@@ -1346,6 +1346,53 @@ body.dark-mode #persistentShowComments{
   outline:none;
 }
 body.dark-mode .admin-link{color:#94a3b8;}
+
+
+.file-menu-card{position:relative!important;overflow:visible!important;}
+.file-menu-card.menu-open{z-index:4001!important;}
+.file-menu-card > .file-menu-dropdown{display:none;}
+.file-menu-card.menu-open > .file-menu-dropdown{display:block;}
+.file-menu-dropdown{
+  position:absolute;top:calc(100% + 4px);left:0;min-width:248px;max-width:min(320px,92vw);
+  background:var(--ui-surface,#fff);border:1px solid var(--ui-line,#d8e1ea);border-radius:10px;
+  box-shadow:0 12px 32px rgba(15,39,64,.16);padding:6px 0;z-index:4002;
+}
+.file-menu-current{padding:8px 14px 6px;font-size:12px;color:var(--ui-muted,#64748b);border-bottom:1px solid var(--ui-line,#d8e1ea);margin-bottom:4px;}
+.file-menu-current #currentProjectName{color:var(--ui-text,#1f2d3d);font-weight:700;}
+.file-menu-list,.file-submenu{list-style:none;margin:0;padding:0;}
+.file-menu-list > li,.file-submenu > li{position:relative;margin:0;padding:0;}
+.file-menu-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;box-sizing:border-box;
+  border:0;background:transparent;color:var(--ui-text,#1f2d3d);font:inherit;font-size:13px;text-align:left;
+  padding:8px 14px;cursor:pointer;white-space:nowrap;
+}
+.file-menu-item:hover,.file-menu-item:focus{background:#eef5fb;outline:none;}
+.file-menu-item.is-current{font-weight:700;}
+.file-menu-chevron{color:var(--ui-muted,#64748b);font-size:15px;line-height:1;margin-left:12px;}
+.file-menu-meta{display:block;font-size:11px;font-weight:400;color:var(--ui-muted,#64748b);margin-top:2px;white-space:normal;}
+.file-menu-empty{display:block;padding:8px 14px;font-size:12px;color:var(--ui-muted,#64748b);}
+.file-menu-separator{height:1px;margin:4px 0;background:var(--ui-line,#d8e1ea);}
+.file-menu-status{padding:6px 14px 8px;margin:0;font-size:11px;border-top:1px solid var(--ui-line,#d8e1ea);}
+.file-submenu{
+  display:none;position:absolute;left:100%;top:-4px;min-width:220px;max-width:min(320px,88vw);
+  background:var(--ui-surface,#fff);border:1px solid var(--ui-line,#d8e1ea);border-radius:10px;
+  box-shadow:0 12px 32px rgba(15,39,64,.16);padding:6px 0;z-index:4003;
+}
+.file-menu-has-submenu:hover > .file-submenu,
+.file-menu-has-submenu.submenu-open > .file-submenu,
+.file-menu-has-submenu:focus-within > .file-submenu{display:block;}
+.file-menu-has-submenu > .file-menu-item{padding-right:10px;}
+.top-stack .card.compact-card.file-menu-card.menu-open::before,
+.top-stack .card.compact-card.file-menu-card.menu-open::after{display:none!important;content:none!important;}
+.top-stack .card.compact-card.file-menu-card.menu-open{
+  position:relative!important;left:auto!important;top:auto!important;transform:none!important;
+  width:auto!important;min-width:0!important;max-height:none!important;overflow:visible!important;
+  box-shadow:none!important;padding:0!important;border:0!important;background:transparent!important;
+}
+body.dark-mode .file-menu-dropdown,body.dark-mode .file-submenu{background:#17212b;border-color:#314253;}
+body.dark-mode .file-menu-item{color:#e8eef5;}
+body.dark-mode .file-menu-item:hover,body.dark-mode .file-menu-item:focus{background:#233241;}
+body.dark-mode .file-menu-current #currentProjectName{color:#e8eef5;}
 body.dark-mode .admin-link:hover,body.dark-mode .admin-link:focus{color:#6db5ff;}
 .admin-link.has-unread{color:var(--ui-blue,#286090);opacity:1;font-weight:700;}
 .admin-inbox-badge{
@@ -1680,20 +1727,55 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
     </div>
   </div>
 
-  <div class="card compact-card" data-menu="project">
-    <strong class="save-tools-title menu-trigger">Project</strong>
-    <div class="top-menu-panel">
-    <div class="row project-actions-row">
-      <button class="btn good" id="saveLocalBtn">Save Project</button>
-      <button class="btn" id="loadLocalBtn">Load Saved Project</button>
-      <button class="btn good" id="downloadProjectBtn">Download Project (.json)</button>
-      <button class="btn" id="importProjectBtn">Import Project (.json)</button>
-      <input type="file" id="projectFileInput" accept="application/json,.json" class="hidden">
-      <button class="btn danger" id="clearTableBtn">Clear Table</button>
-      <button class="btn danger" id="clearAutosaveBtn">Clear Autosave</button>
+  <div class="card compact-card file-menu-card" data-menu="project" id="projectFileMenuCard">
+    <strong class="save-tools-title menu-trigger" id="projectMenuTrigger">File</strong>
+    <div class="file-menu-dropdown" id="projectFileMenuDropdown" role="menu" aria-hidden="true">
+      <div class="file-menu-current">Current: <span id="currentProjectName">Untitled Project</span></div>
+      <ul class="file-menu-list" role="none">
+        <li role="none"><button type="button" class="file-menu-item" data-action="new-project" role="menuitem">New Project</button></li>
+        <li role="none" class="file-menu-has-submenu">
+          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Open Project <span class="file-menu-chevron" aria-hidden="true">›</span></button>
+          <ul class="file-submenu" id="openProjectSubmenu" role="menu"></ul>
+        </li>
+        <li role="none"><button type="button" class="file-menu-item" data-action="save-project" role="menuitem">Save Project</button></li>
+        <li role="none"><button type="button" class="file-menu-item" data-action="save-as" role="menuitem">Save As…</button></li>
+        <li role="none" class="file-menu-separator" aria-hidden="true"></li>
+        <li role="none" class="file-menu-has-submenu">
+          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Export <span class="file-menu-chevron" aria-hidden="true">›</span></button>
+          <ul class="file-submenu" role="menu">
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-pdf" role="menuitem">Contour as PDF</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-word" role="menuitem">Contour as Word</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-html" role="menuitem">Contour as HTML</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-pdf" role="menuitem">Table as PDF</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-word" role="menuitem">Table as Word</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-project-json" role="menuitem">Project as JSON</button></li>
+          </ul>
+        </li>
+        <li role="none" class="file-menu-has-submenu">
+          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Import <span class="file-menu-chevron" aria-hidden="true">›</span></button>
+          <ul class="file-submenu" role="menu">
+            <li role="none"><button type="button" class="file-menu-item" data-action="import-text" role="menuitem">Import Text</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="import-project" role="menuitem">Import Project File</button></li>
+          </ul>
+        </li>
+        <li role="none" class="file-menu-has-submenu">
+          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Open Recent <span class="file-menu-chevron" aria-hidden="true">›</span></button>
+          <ul class="file-submenu" id="recentProjectsSubmenu" role="menu"></ul>
+        </li>
+        <li role="none" class="file-menu-separator" aria-hidden="true"></li>
+        <li role="none" class="file-menu-has-submenu">
+          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Project Settings <span class="file-menu-chevron" aria-hidden="true">›</span></button>
+          <ul class="file-submenu" role="menu">
+            <li role="none"><button type="button" class="file-menu-item" data-action="settings-rename" role="menuitem">Rename Project</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="settings-duplicate" role="menuitem">Duplicate Project</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="settings-clear" role="menuitem">Clear Table</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="settings-delete" role="menuitem">Delete Project</button></li>
+          </ul>
+        </li>
+      </ul>
+      <p id="saveStatus" class="file-menu-status muted small"></p>
     </div>
-    <p id="saveStatus" class="muted small">Opens with a blank table. Use Save Project to keep work in this browser.</p>
-    </div>
+    <input type="file" id="projectFileInput" accept="application/json,.json" class="hidden">
   </div>
 </div>
 
@@ -1859,7 +1941,7 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
         <tr><td><span class="kbd">c</span> / <span class="kbd">h</span></td><td>Open color / highlight picker</td></tr>
       </tbody>
     </table>
-    <p class="muted small">The app opens with a blank table. Use Generate text, Paste text, or Load sample to load a passage. Enable <strong>Parallel passages</strong> (desktop) for side-by-side comparison with verse alignment and cross-pane arcs. Table edits autosave; use Project → Save Project to keep work after refresh.</p>
+    <p class="muted small">Use Generate text, Paste text, or Load sample to load a passage. Each passage is its own project — use <strong>Project</strong> (File menu) to save, open recent, export, and import. Enable <strong>Parallel passages</strong> (desktop) for side-by-side comparison.</p>
     <div class="row"><button type="button" class="btn primary" id="helpModalClose">Close</button></div>
   </div>
 </div>
@@ -2506,87 +2588,48 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
 });
 document.getElementById('addColumn').onclick=()=>promptModal('Add Column','Column name:', '', v=>{if(v.trim() && v.trim().toLowerCase()!=='parsing')state.columns.push(v.trim());renderTable();});
 document.getElementById('resetColumns').onclick=()=>{state.columns=[];renderTable();};
-const PROJECT_STORAGE_KEY='hebrewContourApp.currentProject.v1';
-const PROJECT_AUTOSAVE_KEY='hebrewContourApp.autosave.v1';
-function freshProjectState(){return {ref:'',verses:[],selected:null,columns:[],language:'hebrew',legend:[],inclusios:[],comments:[],activeCommentId:null,arcs:[],activeArcId:null};}
-function freshProjectBundle(){return {parallelEnabled:false,activePane:0,crossArcs:[],generatedRefsByPane:[[],[]],panes:[freshProjectState(),freshProjectState()]};}
-function clearTableProject(silent){
-  if(!silent&&!confirm('Clear all text, annotations, and table content? This cannot be undone unless you saved a project file.'))return;
-  state=freshProjectState();
-  generatedRefs=[];
-  const pasteBox=document.getElementById('pasteBox');
-  const refBox=document.getElementById('refBox');
-  if(pasteBox)pasteBox.value='';
-  if(refBox)refBox.value='';
-  try{localStorage.removeItem(PROJECT_STORAGE_KEY);localStorage.removeItem(PROJECT_AUTOSAVE_KEY);}catch(e){}
-  const wasReady=autosaveReady;
-  autosaveReady=false;
-  render();
-  autosaveReady=wasReady;
-  updateSaveStatus('Table cleared.');
-}
-function projectPayload(){return projectPayloadParallel();}
-function restoreProjectPayload(payload){
-  try{
-    let data=(payload&&payload.state)?payload:{state:payload};
-    if(data.state&&Array.isArray(data.state.verses)&&!data.state.panes){data={state:data.state,generatedRefs:data.generatedRefs||payload.generatedRefs};}
-    applyProjectPayloadParallel(data);
-    render();
-    updateSaveStatus('Project loaded.');
-    return true;
-  }catch(e){alert('Could not load that project file/save.');return false;}
-}
+function freshProjectState(){return freshPaneState();}
+function freshProjectBundle(){return {parallelEnabled:false,activePane:0,crossArcs:[],generatedRefsByPane:[[],[]],panes:[freshPaneState(),freshPaneState()]};}
+const PROJECTS_STORE_KEY='hebrewContourApp.projects.v1';
+const CURRENT_PROJECT_ID_KEY='hebrewContourApp.currentProjectId.v1';
+const LEGACY_STORAGE_KEY='hebrewContourApp.currentProject.v1';
+const LEGACY_AUTOSAVE_KEY='hebrewContourApp.autosave.v1';
+const APP_VERSION='1.3.9';
+let projectStore={currentProjectId:null,projects:{}};
+function newProjectId(){return 'p_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);}
+function defaultProjectName(){const ref=(state&&state.ref)?String(state.ref).trim():'';return ref||'Untitled Project';}
+function readProjectStoreRaw(){try{const raw=localStorage.getItem(PROJECTS_STORE_KEY);if(raw)return JSON.parse(raw);}catch(e){}return null;}
+function writeProjectStore(){localStorage.setItem(PROJECTS_STORE_KEY,JSON.stringify({currentProjectId:projectStore.currentProjectId,projects:projectStore.projects}));localStorage.setItem(CURRENT_PROJECT_ID_KEY,projectStore.currentProjectId||'');}
+function getCurrentProjectRecord(){return projectStore.currentProjectId?projectStore.projects[projectStore.currentProjectId]||null:null;}
+function updateCurrentProjectLabel(){const el=document.getElementById('currentProjectName');const rec=getCurrentProjectRecord();if(el)el.textContent=rec?rec.name:'Untitled Project';}
+function payloadHasContent(payload){if(!payload)return false;const st=(payload.state)?payload.state:payload;if(Array.isArray(st.panes))return st.panes.some(p=>p&&Array.isArray(p.verses)&&p.verses.length);return Array.isArray(st.verses)&&st.verses.length;}
+function projectPayload(){const rec=getCurrentProjectRecord();const base=projectPayloadParallel();base.projectName=rec?rec.name:defaultProjectName();return base;}
+function uniqueProjectName(base){let name=(base||'Untitled Project').trim()||'Untitled Project';if(!projectStore.projects||!Object.values(projectStore.projects).some(p=>p.name===name))return name;let n=2;while(Object.values(projectStore.projects).some(p=>p.name===name+' ('+n+')'))n++;return name+' ('+n+')';}
+function migrateLegacyProjects(){if(readProjectStoreRaw())return false;let legacy=null;try{const raw=localStorage.getItem(LEGACY_AUTOSAVE_KEY)||localStorage.getItem(LEGACY_STORAGE_KEY);if(raw)legacy=JSON.parse(raw);}catch(e){}const id=newProjectId();const now=new Date().toISOString();let name='Untitled Project';if(legacy&&legacy.state){if(legacy.state.ref)name=String(legacy.state.ref).trim();else if(legacy.state.panes&&legacy.state.panes[0]&&legacy.state.panes[0].ref)name=String(legacy.state.panes[0].ref).trim();else if(payloadHasContent(legacy))name='Recovered Autosave';}projectStore={currentProjectId:id,projects:{}};if(legacy&&payloadHasContent(legacy)){projectStore.projects[id]={id,name,createdAt:legacy.savedAt||now,updatedAt:legacy.savedAt||now,appVersion:APP_VERSION,payload:legacy};}else{syncStateBundle();projectStore.projects[id]={id,name,createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:projectPayloadParallel()};}writeProjectStore();try{localStorage.removeItem(LEGACY_AUTOSAVE_KEY);localStorage.removeItem(LEGACY_STORAGE_KEY);}catch(e){}return !!legacy;}
+function restoreProjectPayload(payload){try{let data=(payload&&payload.state)?payload:{state:payload};if(data.state&&Array.isArray(data.state.verses)&&!data.state.panes){applyProjectPayloadParallel({state:data.state,generatedRefs:data.generatedRefs||payload.generatedRefs,generatedRefsByPane:[data.generatedRefs||payload.generatedRefs||[],[]]});}else{applyProjectPayloadParallel(payload);}render();return true;}catch(e){alert('Could not load that project file/save.');return false;}}
+function persistCurrentProject(silent){const id=projectStore.currentProjectId;if(!id)return;const now=new Date().toISOString();syncStateBundle();const payload=projectPayload();let rec=projectStore.projects[id];if(rec){rec.payload=payload;rec.updatedAt=now;if((!rec.name||rec.name==='Untitled Project')&&defaultProjectName()!=='Untitled Project')rec.name=defaultProjectName();}else{rec={id,name:defaultProjectName(),createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload};projectStore.projects[id]=rec;}writeProjectStore();updateCurrentProjectLabel();renderProjectFileSubmenus();if(!silent){updateSaveStatus('Saved: '+rec.name+' · '+new Date().toLocaleTimeString());}}
+function autoSaveProject(){try{persistCurrentProject(true);const rec=getCurrentProjectRecord();updateSaveStatus('Autosaved: '+(rec?rec.name:'project')+' · '+new Date().toLocaleTimeString());}catch(e){updateSaveStatus('Autosave unavailable in this browser.');}}
+function switchToProject(id){if(!projectStore.projects[id])return false;if(id!==projectStore.currentProjectId)persistCurrentProject(true);projectStore.currentProjectId=id;writeProjectStore();const rec=projectStore.projects[id];if(!restoreProjectPayload(rec.payload))return false;updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('Opened: '+rec.name);return true;}
+function sortedProjectEntries(){return Object.values(projectStore.projects).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||''));}
+function renderProjectFileSubmenus(){const openList=document.getElementById('openProjectSubmenu');const recentList=document.getElementById('recentProjectsSubmenu');const entries=sortedProjectEntries();const cur=projectStore.currentProjectId;function fillList(list,items,emptyMsg){if(!list)return;list.innerHTML='';if(!items.length){list.innerHTML='<li role="none"><span class="file-menu-empty">'+esc(emptyMsg)+'</span></li>';return;}items.forEach(p=>{const li=document.createElement('li');li.setAttribute('role','none');const btn=document.createElement('button');btn.type='button';btn.className='file-menu-item'+(p.id===cur?' is-current':'');btn.setAttribute('role','menuitem');btn.dataset.projectId=p.id;const when=new Date(p.updatedAt||p.createdAt).toLocaleString();btn.innerHTML=esc(p.name||'Untitled Project')+(p.id===cur?' <span class="file-menu-meta">(current)</span>':'')+'<span class="file-menu-meta">'+esc(when)+'</span>';btn.onclick=function(e){e.stopPropagation();openProjectById(p.id);};li.appendChild(btn);list.appendChild(li);});}fillList(openList,entries,'No saved projects yet.');fillList(recentList,entries.slice(0,12),'No recent projects yet.');}
+function openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}
+function initProjectManager(){const stored=readProjectStoreRaw();if(stored&&stored.projects){projectStore={currentProjectId:stored.currentProjectId,projects:stored.projects||{}};}else{migrateLegacyProjects();}if(!projectStore.currentProjectId||!projectStore.projects[projectStore.currentProjectId]){const ids=Object.keys(projectStore.projects).sort((a,b)=>(projectStore.projects[b].updatedAt||'').localeCompare(projectStore.projects[a].updatedAt||''));if(ids.length){projectStore.currentProjectId=ids[0];}else{const id=newProjectId();const now=new Date().toISOString();syncStateBundle();projectStore.currentProjectId=id;projectStore.projects[id]={id,name:'Untitled Project',createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:projectPayloadParallel()};writeProjectStore();}}const rec=getCurrentProjectRecord();if(rec&&rec.payload&&payloadHasContent(rec.payload)){try{restoreProjectPayload(rec.payload);updateSaveStatus('Restored: '+rec.name+' · last edited '+new Date(rec.updatedAt||rec.createdAt).toLocaleString());}catch(e){updateSaveStatus('Could not restore '+rec.name+'. Starting blank.');}}updateCurrentProjectLabel();renderProjectFileSubmenus();initProjectFileMenu();}
+function createNewProject(name){persistCurrentProject(true);const id=newProjectId();const now=new Date().toISOString();const n=uniqueProjectName((name||'').trim()||'Untitled Project');stateBundle=freshProjectBundle();state=stateBundle.panes[0];generatedRefs=stateBundle.generatedRefsByPane[0]=[];const pasteBox=document.getElementById('pasteBox');const refBox=document.getElementById('refBox');if(pasteBox){pasteBox.value='';pasteBox.dir='rtl';}if(refBox)refBox.value='';syncStateBundle();projectStore.projects[id]={id,name:n,createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:projectPayloadParallel()};projectStore.currentProjectId=id;writeProjectStore();const wasReady=autosaveReady;autosaveReady=false;render();autosaveReady=wasReady;updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('New project: '+n);}
+function clearTableProject(silent){if(!silent&&!confirm('Clear all text, annotations, and table content in this project?'))return;state=freshProjectState();generatedRefs=[];stateBundle.panes[stateBundle.activePane]=state;stateBundle.generatedRefsByPane[stateBundle.activePane]=generatedRefs;const pasteBox=document.getElementById('pasteBox');const refBox=document.getElementById('refBox');if(pasteBox)pasteBox.value='';if(refBox)refBox.value='';persistCurrentProject(true);const wasReady=autosaveReady;autosaveReady=false;render();autosaveReady=wasReady;updateSaveStatus('Table cleared.');}
 function updateSaveStatus(msg){let el=document.getElementById('saveStatus');if(el)el.textContent=msg;}
-function autoSaveProject(){
-  try{localStorage.setItem(PROJECT_AUTOSAVE_KEY,JSON.stringify(projectPayload()));updateSaveStatus('Autosaved: '+new Date().toLocaleTimeString());}catch(e){updateSaveStatus('Autosave unavailable in this browser.');}
-}
-function saveProjectLocal(){
-  try{localStorage.setItem(PROJECT_STORAGE_KEY,JSON.stringify(projectPayload()));autoSaveProject();alert('Project saved in this browser. Use “Load Saved Project” to restore it later.');}catch(e){alert('Could not save in this browser. Try Download Project instead.');}
-}
-function loadProjectLocal(){
-  let raw=localStorage.getItem(PROJECT_STORAGE_KEY)||localStorage.getItem(PROJECT_AUTOSAVE_KEY);
-  if(!raw){alert('No saved project found in this browser.');return;}
-  try{restoreProjectPayload(JSON.parse(raw));}catch(e){alert('Could not load the saved project.');}
-}
-function downloadProjectFile(){
-  let payload=JSON.stringify(projectPayload(),null,2);
-  let ref=(state.ref||'hebrew-contour-project').replace(/[^A-Za-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'')||'hebrew-contour-project';
-  let a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([payload],{type:'application/json'}));
-  a.download=ref+'.json';
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-  updateSaveStatus('Project file downloaded.');
-}
-function importProjectFile(file){
-  if(!file)return;
-  let reader=new FileReader();
-  reader.onload=()=>{try{restoreProjectPayload(JSON.parse(reader.result));localStorage.setItem(PROJECT_STORAGE_KEY,JSON.stringify(projectPayload()));autoSaveProject();}catch(e){alert('Could not import that project JSON file.');}};
-  reader.readAsText(file);
-}
-function clearAutosave(){
-  if(confirm('Clear autosaved and browser-saved project data on this device? This will not delete any downloaded .json project files.')){
-    localStorage.removeItem(PROJECT_STORAGE_KEY);localStorage.removeItem(PROJECT_AUTOSAVE_KEY);updateSaveStatus('Autosave cleared.');
-  }
-}
-function restoreAutosaveSilently(){
-  let raw=localStorage.getItem(PROJECT_AUTOSAVE_KEY)||localStorage.getItem(PROJECT_STORAGE_KEY);
-  if(!raw)return false;
-  try{
-    let data=JSON.parse(raw);
-    if(!restoreProjectPayload(data))return false;
-    let when=data.savedAt?new Date(data.savedAt).toLocaleString():'a previous session';
-    updateSaveStatus('Restored autosaved work from '+when+'.');
-    return true;
-  }catch(e){return false;}
-}
-document.getElementById('saveLocalBtn').onclick=saveProjectLocal;
-document.getElementById('loadLocalBtn').onclick=loadProjectLocal;
-document.getElementById('downloadProjectBtn').onclick=downloadProjectFile;
-document.getElementById('importProjectBtn').onclick=()=>document.getElementById('projectFileInput').click();
-document.getElementById('projectFileInput').onchange=e=>importProjectFile(e.target.files[0]);
-document.getElementById('clearTableBtn').onclick=()=>clearTableProject(false);
-document.getElementById('clearAutosaveBtn').onclick=clearAutosave;
+function saveProjectLocal(){try{persistCurrentProject(false);}catch(e){alert('Could not save in this browser. Try Export JSON instead.');}}
+function saveProjectAs(){const cur=getCurrentProjectRecord();if(!cur)return;promptModal('Save As','Save project as:',cur.name,name=>{const n=(name||'').trim();if(!n)return;persistCurrentProject(true);const id=newProjectId();const now=new Date().toISOString();projectStore.projects[id]={id,name:uniqueProjectName(n),createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:JSON.parse(JSON.stringify(projectPayload()))};projectStore.currentProjectId=id;writeProjectStore();updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('Saved as: '+projectStore.projects[id].name);});}
+function newProjectPrompt(){promptModal('New project','Name this passage worksheet:','Untitled Project',name=>{if((name||'').trim()){createNewProject(name);closeProjectFileMenu();}});}
+function renameCurrentProject(){const cur=getCurrentProjectRecord();if(!cur)return;promptModal('Rename project','Project name:',cur.name,name=>{const n=(name||'').trim();if(!n)return;cur.name=n;writeProjectStore();updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('Renamed to: '+n);});}
+function duplicateCurrentProject(){const cur=getCurrentProjectRecord();if(!cur)return;persistCurrentProject(true);promptModal('Duplicate project','Name for the copy:',cur.name+' copy',name=>{const n=(name||'').trim();if(!n)return;const id=newProjectId();const now=new Date().toISOString();projectStore.projects[id]={id,name:uniqueProjectName(n),createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:JSON.parse(JSON.stringify(projectPayload()))};switchToProject(id);closeProjectFileMenu();});}
+function deleteCurrentProject(){const cur=getCurrentProjectRecord();if(!cur)return;if(!confirm('Delete project "'+cur.name+'"? Export it first if you may need it later.'))return;delete projectStore.projects[cur.id];const ids=Object.keys(projectStore.projects).sort((a,b)=>(projectStore.projects[b].updatedAt||'').localeCompare(projectStore.projects[a].updatedAt||''));if(ids.length){projectStore.currentProjectId=ids[0];writeProjectStore();switchToProject(ids[0]);}else{createNewProject('Untitled Project');updateSaveStatus('Project deleted. Started a new blank project.');}closeProjectFileMenu();}
+function downloadProjectFile(){persistCurrentProject(true);const rec=getCurrentProjectRecord();let payload=JSON.stringify(projectPayload(),null,2);let ref=(rec?rec.name:state.ref||'hebrew-contour-project').replace(/[^A-Za-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'')||'hebrew-contour-project';let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([payload],{type:'application/json'}));a.download=ref+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);updateSaveStatus('Exported: '+ref+'.json');}
+function importProjectFile(file){if(!file)return;let reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!payloadHasContent(data)&&!(data&&data.state))throw new Error('Missing project state');persistCurrentProject(true);const id=newProjectId();const now=new Date().toISOString();const st=(data&&data.state)?data.state:data;const baseName=(data.projectName||(st.ref)||(st.panes&&st.panes[0]&&st.panes[0].ref)||file.name.replace(/\.json$/i,'')||'Imported Project').trim();const name=uniqueProjectName(baseName);projectStore.projects[id]={id,name,createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:(data&&data.state)?data:{state:st,generatedRefs:data.generatedRefs||[]}};projectStore.currentProjectId=id;writeProjectStore();restoreProjectPayload(projectStore.projects[id].payload);updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('Imported: '+name);closeProjectFileMenu();}catch(e){alert('Could not import that project JSON file.');}};reader.readAsText(file);}
+function closeProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const dd=document.getElementById('projectFileMenuDropdown');const trigger=document.getElementById('projectMenuTrigger');if(card)card.classList.remove('menu-open');if(dd){dd.setAttribute('aria-hidden','true');}if(trigger)trigger.setAttribute('aria-expanded','false');document.querySelectorAll('.file-menu-has-submenu.submenu-open').forEach(el=>el.classList.remove('submenu-open'));}
+function openProjectFileMenu(){if(typeof closeTopMenus==='function')closeTopMenus();const card=document.getElementById('projectFileMenuCard');const dd=document.getElementById('projectFileMenuDropdown');const trigger=document.getElementById('projectMenuTrigger');if(!card||!dd)return;renderProjectFileSubmenus();card.classList.add('menu-open');dd.setAttribute('aria-hidden','false');if(trigger)trigger.setAttribute('aria-expanded','true');}
+function toggleProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');if(card&&card.classList.contains('menu-open'))closeProjectFileMenu();else openProjectFileMenu();}
+function handleProjectFileAction(action){closeProjectFileMenu();switch(action){case 'new-project':newProjectPrompt();break;case 'save-project':saveProjectLocal();break;case 'save-as':saveProjectAs();break;case 'export-contour-pdf':exportContourPdf();break;case 'export-contour-word':exportContourDocx();break;case 'export-contour-html':exportContourHtml();break;case 'export-table-pdf':if(isParallelActive())exportTablePdfParallel();else exportTablePdf();break;case 'export-table-word':document.getElementById('docxExport').click();break;case 'export-project-json':downloadProjectFile();break;case 'import-text':if(typeof openTopMenu==='function')openTopMenu('paste');break;case 'import-project':document.getElementById('projectFileInput').click();break;case 'settings-rename':renameCurrentProject();break;case 'settings-duplicate':duplicateCurrentProject();break;case 'settings-clear':clearTableProject(false);break;case 'settings-delete':deleteCurrentProject();break;default:break;}}
+function initProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const trigger=document.getElementById('projectMenuTrigger');const dd=document.getElementById('projectFileMenuDropdown');if(!card||!trigger||!dd)return;window.closeProjectFileMenu=closeProjectFileMenu;window.openProjectFileMenu=openProjectFileMenu;trigger.setAttribute('role','button');trigger.setAttribute('tabindex','0');trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(e){e.stopPropagation();toggleProjectFileMenu();});trigger.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleProjectFileMenu();}});dd.querySelectorAll('[data-action]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();handleProjectFileAction(btn.getAttribute('data-action'));});});card.querySelectorAll('.file-menu-has-submenu > .file-menu-item').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const li=btn.parentElement;if(!li)return;if(window.matchMedia('(hover: none)').matches||e.detail>0){li.classList.toggle('submenu-open');}});});document.getElementById('projectFileInput').onchange=function(e){importProjectFile(e.target.files[0]);e.target.value='';};document.addEventListener('click',function(e){if(!card.classList.contains('menu-open'))return;if(card.contains(e.target))return;closeProjectFileMenu();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&card.classList.contains('menu-open'))closeProjectFileMenu();});}
 
 document.querySelectorAll('[data-text-color]').forEach(btn=>btn.onclick=()=>setSelectedColor(btn.dataset.textColor));
 document.getElementById('applyCustomColor').onclick=()=>setSelectedColor(document.getElementById('customTextColor').value);
@@ -2744,6 +2787,22 @@ function exportContourDocx(){
   let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:contourDocxXml()}];
   let fname=askExportFilename(suggestedExportBase('contour-editor'),'docx');if(!fname)return;let a=document.createElement('a');a.href=URL.createObjectURL(makeZip(files));a.download=fname;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
+function exportContourHtml(){
+  if(isParallelActive()){alert('For parallel passages, export each pane separately or use Word export.');return;}
+  if(!state.verses.length){alert('Create or generate text first.');return;}
+  const fname=askExportFilename(suggestedExportBase('contour-editor'),'html');if(!fname)return;
+  const editorHtml=document.getElementById('editor').innerHTML;
+  const isGreek=state.language==='greek';
+  const textDir=isGreek?'ltr':'rtl';
+  const textAlign=isGreek?'left':'right';
+  const textFont=isGreek?"'SBL Greek','Gentium Plus','Times New Roman',serif":"'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif";
+  const html='<!doctype html><html><head><meta charset="utf-8"><title>'+xmlEscape(state.ref||'Contour Export')+'</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}#printEditor{direction:'+textDir+';text-align:'+textAlign+';font-size:26px;line-height:2.1;font-family:'+textFont+'}.clause,.word{font-family:'+textFont+'}</style></head><body><div class="export-title">'+xmlEscape(state.ref||'Contour Export')+'</div>'+legendHtmlForExport()+'<div id="printEditor" dir="'+textDir+'">'+editorHtml+'</div>'+commentsHtmlForExport()+arcsHtmlForExport()+'</body></html>';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  a.download=fname;
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+}
 function exportContourPdf(){
   if(isParallelActive()){exportContourPdfParallel();return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
@@ -2834,13 +2893,13 @@ window.addEventListener('resize',()=>setTimeout(renderArcOverlay,50));
   }
 })();
 
-// Always open with a blank table; use Save Project / Load Saved Project manually.
 let appStarted=false;
 function startApp(){
   if(appStarted)return;
   appStarted=true;
   autosaveReady=false;
   initParallelMode();
+  initProjectManager();
   render();
   autosaveReady=true;
 }
@@ -3857,6 +3916,7 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
   const backdrop=document.getElementById('topMenuBackdrop');
 
   function closeTopMenus(){
+    if(typeof closeProjectFileMenu==='function')closeProjectFileMenu();
     document.querySelectorAll('.top-stack .card.compact-card.menu-open').forEach(function(card){
       card.classList.remove('menu-open');
       var t=card.querySelector('.menu-trigger');
@@ -3868,6 +3928,7 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
   }
 
   window.openTopMenu=function(name){
+    if(typeof closeProjectFileMenu==='function')closeProjectFileMenu();
     closeTopMenus();
     var card=document.querySelector('.top-stack .card.compact-card[data-menu="'+name+'"]');
     if(!card)return;
@@ -3881,7 +3942,7 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
   window.closeTopMenus=closeTopMenus;
 
   function initTopMenus(){
-    document.querySelectorAll('.top-stack .card.compact-card .menu-trigger').forEach(function(trigger){
+    document.querySelectorAll('.top-stack .card.compact-card:not(.file-menu-card) .menu-trigger').forEach(function(trigger){
       trigger.setAttribute('role','button');
       trigger.setAttribute('tabindex','0');
       trigger.setAttribute('aria-haspopup','true');
