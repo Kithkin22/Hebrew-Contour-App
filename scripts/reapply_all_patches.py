@@ -48,6 +48,7 @@ PATCH_SCRIPTS = [
     "apply_undo.py",
     "apply_parallel_verse_nudge.py",
     "apply_editable_ref_preserve.py",
+    "apply_parallel_align_copy.py",
     "apply_workspace_maximize.py",
 ]
 
