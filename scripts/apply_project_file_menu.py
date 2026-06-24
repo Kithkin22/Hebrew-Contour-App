@@ -33,14 +33,14 @@ PROJECT_HTML_OLD = """  <div class="card compact-card" data-menu="project">
   </div>"""
 
 PROJECT_HTML_NEW = """  <div class="card compact-card file-menu-card" data-menu="project" id="projectFileMenuCard">
-    <strong class="save-tools-title menu-trigger" id="projectMenuTrigger">Project</strong>
+    <strong class="save-tools-title menu-trigger" id="projectMenuTrigger">File</strong>
     <div class="file-menu-dropdown" id="projectFileMenuDropdown" role="menu" aria-hidden="true">
       <div class="file-menu-current">Current: <span id="currentProjectName">Untitled Project</span></div>
       <ul class="file-menu-list" role="none">
         <li role="none"><button type="button" class="file-menu-item" data-action="new-project" role="menuitem">New Project</button></li>
         <li role="none" class="file-menu-has-submenu">
-          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Open Project <span class="file-menu-chevron" aria-hidden="true">›</span></button>
-          <ul class="file-submenu" id="openProjectSubmenu" role="menu"></ul>
+          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Open Recent <span class="file-menu-chevron" aria-hidden="true">›</span></button>
+          <ul class="file-submenu" id="recentProjectsSubmenu" role="menu"></ul>
         </li>
         <li role="none"><button type="button" class="file-menu-item" data-action="save-project" role="menuitem">Save Project</button></li>
         <li role="none"><button type="button" class="file-menu-item" data-action="save-as" role="menuitem">Save As…</button></li>
@@ -62,10 +62,6 @@ PROJECT_HTML_NEW = """  <div class="card compact-card file-menu-card" data-menu=
             <li role="none"><button type="button" class="file-menu-item" data-action="import-text" role="menuitem">Import Text</button></li>
             <li role="none"><button type="button" class="file-menu-item" data-action="import-project" role="menuitem">Import Project File</button></li>
           </ul>
-        </li>
-        <li role="none" class="file-menu-has-submenu">
-          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Open Recent <span class="file-menu-chevron" aria-hidden="true">›</span></button>
-          <ul class="file-submenu" id="recentProjectsSubmenu" role="menu"></ul>
         </li>
         <li role="none" class="file-menu-separator" aria-hidden="true"></li>
         <li role="none" class="file-menu-has-submenu">
