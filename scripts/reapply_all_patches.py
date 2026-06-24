@@ -50,6 +50,7 @@ PATCH_SCRIPTS = [
     "apply_editable_ref_preserve.py",
     "apply_parallel_align_copy.py",
     "apply_parallel_cross_sameword.py",
+    "apply_parallel_pair_feedback.py",
     "apply_workspace_maximize.py",
 ]
 
