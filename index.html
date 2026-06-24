@@ -2435,6 +2435,7 @@ async function generateWlc(){
   const sourceLabel=source==='greek'?'SBLGNT':source==='hebrew-bhsa'?'BHSA':'WLC';
   status.textContent=`Loaded ${verses.length} verse(s) from ${document.getElementById('refBox').value} (${sourceLabel}).`;
   parseText(document.getElementById('pasteBox').value,document.getElementById('refBox').value);
+  if(typeof closeTopMenus==='function')closeTopMenus();
 }
 setupBooks();
 syncLanguageFromSource();
@@ -2479,7 +2480,6 @@ async function loadSampleWlcPassage(){
   document.getElementById('endChapter').value=3;
   document.getElementById('endVerse').value=4;
   await generateWlc();
-  closeTopMenus();
 }
 document.getElementById('makeText').onclick=()=>{generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value);box.value=cleaned;parseText(cleaned,document.getElementById('refBox').value);closeTopMenus();};
 document.getElementById('sampleText').onclick=loadSampleText;
