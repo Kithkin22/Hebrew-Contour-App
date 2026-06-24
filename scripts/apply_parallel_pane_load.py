@@ -39,7 +39,7 @@ FILE_MENU_NEW = """          <button type="button" class="file-menu-item" id="op
 REPLACEMENTS = [
     (
         "function openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}",
-        "function extractPaneFromPayload(payload,preferPane){const data=(payload&&payload.state)?payload:{state:payload||{}};const st=data.state||{};const pi=preferPane===1?1:0;if(st&&Array.isArray(st.panes)&&st.panes.length){const pane=Object.assign(freshPaneState(),st.panes[pi]||st.panes[0]||{});const refs=(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[pi])||(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[0])||payload.generatedRefs||data.generatedRefs||[];return{pane,generatedRefs:Array.isArray(refs)?refs.slice():[]};}return{pane:Object.assign(freshPaneState(),st),generatedRefs:Array.isArray(data.generatedRefs)?data.generatedRefs.slice():(Array.isArray(payload.generatedRefs)?payload.generatedRefs.slice():[])};}\nfunction loadProjectIntoPane(paneIndex,projectId){const pi=paneIndex===1?1:0;const rec=projectStore.projects[projectId];if(!rec||!rec.payload)return false;ensureStateBundle();syncStateBundle();const extracted=extractPaneFromPayload(rec.payload,pi);stateBundle.panes[pi]=extracted.pane;stateBundle.generatedRefsByPane[pi]=extracted.generatedRefs;if(stateBundle.activePane===pi){bindActivePane(pi);}else{stateBundle.panes[stateBundle.activePane]=state;}if(!stateBundle.parallelEnabled){stateBundle.parallelEnabled=true;const toggle=document.getElementById('parallelModeToggle');if(toggle)toggle.checked=true;}if(autosaveReady)autoSaveProject();render();updateSaveStatus('Loaded \"'+rec.name+'\" into '+paneLabel(pi));return true;}\nfunction openProjectInActivePane(id){if(!id)return;if(stateBundle.parallelEnabled){loadProjectIntoPane(stateBundle.activePane,id);closeProjectFileMenu();return;}openProjectById(id);}\nfunction openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}",
+        "function paneHasVerses(p){return !!(p&&Array.isArray(p.verses)&&p.verses.length);}function extractPaneFromPayload(payload,preferPane){const data=(payload&&payload.state)?payload:{state:payload||{}};const st=data.state||{};const pi=preferPane===1?1:0;if(st&&Array.isArray(st.panes)&&st.panes.length){let source=st.panes[pi];if(!paneHasVerses(source))source=st.panes.find(paneHasVerses)||st.panes[0]||{};const pane=Object.assign(freshPaneState(),source);let refs=Array.isArray(payload.generatedRefsByPane)?payload.generatedRefsByPane[pi]:null;if(!refs||!refs.length)refs=(Array.isArray(payload.generatedRefsByPane)?payload.generatedRefsByPane[0]:null)||payload.generatedRefs||data.generatedRefs||[];return{pane,generatedRefs:Array.isArray(refs)?refs.slice():[]};}return{pane:Object.assign(freshPaneState(),st),generatedRefs:Array.isArray(data.generatedRefs)?data.generatedRefs.slice():(Array.isArray(payload.generatedRefs)?payload.generatedRefs.slice():[])};}\nfunction loadProjectIntoPane(paneIndex,projectId){const pi=paneIndex===1?1:0;const rec=projectStore.projects[projectId];if(!rec||!rec.payload)return false;ensureStateBundle();syncStateBundle();const extracted=extractPaneFromPayload(rec.payload,pi);stateBundle.panes[pi]=extracted.pane;stateBundle.generatedRefsByPane[pi]=extracted.generatedRefs;if(stateBundle.activePane===pi){bindActivePane(pi);}else{stateBundle.panes[stateBundle.activePane]=state;}if(!stateBundle.parallelEnabled){stateBundle.parallelEnabled=true;const toggle=document.getElementById('parallelModeToggle');if(toggle)toggle.checked=true;}if(autosaveReady)autoSaveProject();render();updateSaveStatus('Loaded \"'+rec.name+'\" into '+paneLabel(pi));return true;}\nfunction openProjectInActivePane(id){if(!id)return;if(stateBundle.parallelEnabled){loadProjectIntoPane(stateBundle.activePane,id);closeProjectFileMenu();return;}openProjectById(id);}\nfunction openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}",
     ),
     (
         "function renderProjectFileSubmenus(){const recentList=document.getElementById('recentProjectsSubmenu');const entries=sortedProjectEntries();const cur=projectStore.currentProjectId;if(!recentList)return;recentList.innerHTML='';if(!entries.length){recentList.innerHTML='<li role=\"none\"><span class=\"file-menu-empty\">'+esc('No recent projects yet.')+'</span></li>';return;}entries.forEach(function(p){const li=document.createElement('li');li.setAttribute('role','none');const btn=document.createElement('button');btn.type='button';btn.className='file-menu-item'+(p.id===cur?' is-current':'');btn.setAttribute('role','menuitem');btn.dataset.projectId=p.id;const when=new Date(p.updatedAt||p.createdAt).toLocaleString();btn.innerHTML=esc(p.name||'Untitled Project')+(p.id===cur?' <span class=\"file-menu-meta\">(current)</span>':'')+'<span class=\"file-menu-meta\">'+esc(when)+'</span>';btn.onclick=function(e){e.stopPropagation();openProjectById(p.id);};li.appendChild(btn);recentList.appendChild(li);});}",
@@ -73,6 +73,33 @@ def verify(html: str) -> None:
         raise SystemExit("extractPaneFromPayload has a syntax error (extra '}')")
 
 
+EXTRACT_PANE_OLD = (
+    "function extractPaneFromPayload(payload,preferPane){const data=(payload&&payload.state)?payload:{state:payload||{}};"
+    "const st=data.state||{};const pi=preferPane===1?1:0;if(st&&Array.isArray(st.panes)&&st.panes.length){"
+    "const pane=Object.assign(freshPaneState(),st.panes[pi]||st.panes[0]||{});"
+    "const refs=(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[pi])||"
+    "(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[0])||"
+    "payload.generatedRefs||data.generatedRefs||[];"
+    "return{pane,generatedRefs:Array.isArray(refs)?refs.slice():[]};}"
+    "return{pane:Object.assign(freshPaneState(),st),generatedRefs:Array.isArray(data.generatedRefs)?"
+    "data.generatedRefs.slice():(Array.isArray(payload.generatedRefs)?payload.generatedRefs.slice():[])};}"
+)
+
+EXTRACT_PANE_NEW = (
+    "function paneHasVerses(p){return !!(p&&Array.isArray(p.verses)&&p.verses.length);}"
+    "function extractPaneFromPayload(payload,preferPane){const data=(payload&&payload.state)?payload:{state:payload||{}};"
+    "const st=data.state||{};const pi=preferPane===1?1:0;if(st&&Array.isArray(st.panes)&&st.panes.length){"
+    "let source=st.panes[pi];if(!paneHasVerses(source))source=st.panes.find(paneHasVerses)||st.panes[0]||{};"
+    "const pane=Object.assign(freshPaneState(),source);"
+    "let refs=Array.isArray(payload.generatedRefsByPane)?payload.generatedRefsByPane[pi]:null;"
+    "if(!refs||!refs.length)refs=(Array.isArray(payload.generatedRefsByPane)?payload.generatedRefsByPane[0]:null)||"
+    "payload.generatedRefs||data.generatedRefs||[];"
+    "return{pane,generatedRefs:Array.isArray(refs)?refs.slice():[]};}"
+    "return{pane:Object.assign(freshPaneState(),st),generatedRefs:Array.isArray(data.generatedRefs)?"
+    "data.generatedRefs.slice():(Array.isArray(payload.generatedRefs)?payload.generatedRefs.slice():[])};}"
+)
+
+
 def fix_syntax_bug(html: str) -> str:
     bad = "payload.generatedRefs.slice():[])}};}\nfunction loadProjectIntoPane"
     good = "payload.generatedRefs.slice():[])};}\nfunction loadProjectIntoPane"
@@ -82,9 +109,20 @@ def fix_syntax_bug(html: str) -> str:
     return html
 
 
+def fix_empty_pane_fallback(html: str) -> str:
+    if EXTRACT_PANE_NEW.split("function extractPaneFromPayload", 1)[0] in html:
+        return html
+    if EXTRACT_PANE_OLD not in html:
+        return html
+    html = html.replace(EXTRACT_PANE_OLD, EXTRACT_PANE_NEW, 1)
+    print("Fixed extractPaneFromPayload empty-pane fallback.")
+    return html
+
+
 def main():
     original = INDEX.read_text(encoding="utf-8")
     html = fix_syntax_bug(original)
+    html = fix_empty_pane_fallback(html)
     if MARKER in html:
         if html != original:
             verify(html)
