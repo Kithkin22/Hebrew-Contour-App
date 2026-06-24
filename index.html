@@ -1935,6 +1935,8 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
         <tr><td><span class="kbd">b</span> / <span class="kbd">i</span> / <span class="kbd">u</span></td><td>Bold / italic / underline</td></tr>
         <tr><td><span class="kbd">Shift+U</span></td><td>Double underline</td></tr>
         <tr><td><span class="kbd">c</span> / <span class="kbd">h</span></td><td>Open color / highlight picker</td></tr>
+        <tr><td><span class="kbd">Ctrl+Shift</span> + <span class="kbd">b</span> / <span class="kbd">i</span> / <span class="kbd">u</span> / <span class="kbd">c</span> / <span class="kbd">h</span></td><td>Apply bold / italic / underline / text color / highlight to <strong>all matching words</strong> (same surface form as selection, current passage)</td></tr>
+        <tr><td><span class="kbd">Ctrl+Shift</span> + <span class="kbd">Delete</span></td><td>Hide or restore <strong>all matching words</strong></td></tr>
       </tbody>
     </table>
     <p class="muted small">Use Generate text, Paste text, or Load sample to load a passage. Each passage is its own project — use <strong>Project</strong> (File menu) to save, open recent, export, and import. Enable <strong>Parallel passages</strong> (desktop) for side-by-side comparison.</p>
@@ -2153,7 +2155,7 @@ function cleanLogosPaste(text){
 function parseText(text,ref){state.legend=state.legend||[];state.inclusios=[];state.comments=[];state.arcs=[];state.activeArcId=null;state.activeCommentId=null;state.ref=ref||'';syncLanguageFromSource();const lines=text.split(/\n+/);state.verses=lines.map((line,i)=>({ref:(generatedRefs[i]|| (ref?ref+(text.includes('\n')?' line '+(i+1):''):'Line '+(i+1))),clauses:[{indent:0,words:line.trim().split(/\s+/).filter(Boolean).map(w=>({text:w,deleted:false,specials:[],note:'',translation:'',color:''})),ann:{}}]})).filter(v=>v.clauses[0].words.length);state.selected=null;render();}
 function locOK(l,pane){if(pane!=null||(l&&l.pane!=null))return locOKInPane(l,pane!=null?pane:l.pane);return l&&state.verses[l.v]&&state.verses[l.v].clauses[l.c]&&state.verses[l.v].clauses[l.c].words[l.w];}
 function normalizeHebrewWord(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05C7]/g,'').replace(/[־־]/g,'').replace(/[.,;:!?()\[\]{}"'׳״·;⸀⸂⸃]/g,'').toLowerCase().trim();}
-function selectedWordKey(){return locOK(state.selected)?normalizeHebrewWord(state.verses[state.selected.v].clauses[state.selected.c].words[state.selected.w].text):'';}
+function selectedWordKey(){return locOK(state.selected)?normalizeHebrewWord(state.verses[state.selected.v].clauses[state.selected.c].words[state.selected.w].text):'';}function forEachMatchingWord(key,cb){if(!key)return;state.verses.forEach((v,vi)=>v.clauses.forEach((c,ci)=>c.words.forEach((w,wi)=>{if(normalizeHebrewWord(w.text)===key)cb(w);})));}
 let commentAnchorStart=null;
 let commentsPanelCollapsed=false;
 function ensureComments(){if(!Array.isArray(state.comments))state.comments=[];}
@@ -2247,12 +2249,12 @@ function nextLoc(l,dir){if(!state.verses.length)return null;if(!locOK(l)){return
 function moveClause(delta){let l=state.selected;if(!locOK(l)){state.selected=nextLoc(null,1);renderEditor();return;}let v=l.v,c=l.c+delta,w=l.w;while(v>=0&&v<state.verses.length){if(c>=0&&c<state.verses[v].clauses.length){let words=state.verses[v].clauses[c].words;if(words.length){state.selected={v,c,w:Math.min(w,words.length-1)};renderEditor();return;}}if(delta>0){v++;c=0;}else{v--;if(v>=0)c=state.verses[v].clauses.length-1;}}}
 function moveWord(dir){let n=nextLoc(state.selected,dir);if(n){state.selected=n;renderEditor();}}
 function toggleSpecial(s){let l=state.selected;if(!locOK(l))return;let a=state.verses[l.v].clauses[l.c].words[l.w].specials;let i=a.indexOf(s);i<0?a.push(s):a.splice(i,1);render();}
-function setSelectedColor(color){let l=state.selected;if(!locOK(l)){alert('Select a Hebrew word first.');return;}state.verses[l.v].clauses[l.c].words[l.w].color=color;render();}
+function setSelectedColor(color,applyToAll){let l=state.selected;if(!locOK(l)){alert('Select a Hebrew word first.');return;}if(applyToAll){let key=selectedWordKey();forEachMatchingWord(key,w=>{w.color=color;});}else{state.verses[l.v].clauses[l.c].words[l.w].color=color;}render();}
 function selectedWordOrAlert(){let l=state.selected;if(!locOK(l)){alert('Select a Hebrew word first.');return null;}return state.verses[l.v].clauses[l.c].words[l.w];}
 function ensureFormat(w){w.format=w.format||{};return w.format;}
-function toggleSelectedFormat(kind){let w=selectedWordOrAlert();if(!w)return;let f=ensureFormat(w);f[kind]=!f[kind];render();}
-function setSelectedHighlight(color){let w=selectedWordOrAlert();if(!w)return;let f=ensureFormat(w);f.highlight=color||'';if(!f.highlight)delete f.highlight;render();}
-function clearSelectedFormatting(){let w=selectedWordOrAlert();if(!w)return;w.format={};render();}
+function toggleSelectedFormat(kind,applyToAll){let w=selectedWordOrAlert();if(!w)return;if(applyToAll){let key=selectedWordKey();let val=!ensureFormat(w)[kind];forEachMatchingWord(key,ww=>{ensureFormat(ww)[kind]=val;});}else{let f=ensureFormat(w);f[kind]=!f[kind];}render();}
+function setSelectedHighlight(color,applyToAll){let w=selectedWordOrAlert();if(!w)return;let hl=color||'';if(applyToAll){let key=selectedWordKey();forEachMatchingWord(key,ww=>{let f=ensureFormat(ww);f.highlight=hl;if(!f.highlight)delete f.highlight;});}else{let f=ensureFormat(w);f.highlight=hl;if(!f.highlight)delete f.highlight;}render();}
+function clearSelectedFormatting(applyToAll){let w=selectedWordOrAlert();if(!w)return;if(applyToAll){let key=selectedWordKey();forEachMatchingWord(key,ww=>{ww.format={};});}else{w.format={};}render();}
 function updateBracketStatus(msg){let el=document.getElementById('bracketStatus');if(el)el.textContent=msg||'Tip: select a start word, then Shift-click the end word.';}
 function locRank(l){let n=0;for(let vi=0;vi<state.verses.length;vi++){for(let ci=0;ci<state.verses[vi].clauses.length;ci++){if(vi===l.v&&ci===l.c)return n+l.w;n+=state.verses[vi].clauses[ci].words.length;}}return -1;}
 function orderedLocs(a,b){return locRank(a)<=locRank(b)?[a,b]:[b,a];}
@@ -2272,15 +2274,9 @@ function applyInclusioBrackets(doRender=true){ensureInclusios();clearInclusioWor
 function clearInclusioMarkers(){if(!confirm('Clear all inclusio markers?'))return;state.inclusios=[];clearInclusioWordMarkers();render();}
 function renderInclusioManager(){ensureInclusios();let box=document.getElementById('inclusioManager');if(!box)return;if(!state.inclusios.length){box.innerHTML='<span class="muted">No inclusios yet. Click New Inclusio to begin.</span>';return;}let html='<div class="row"><label>Active <select id="activeInclusioSelect">'+state.inclusios.map((x,i)=>`<option value="${x.id}">${esc(x.label||('Inclusio '+(i+1)))}</option>`).join('')+'</select></label></div>';html+='<table style="margin-top:8px"><thead><tr><th>Marker</th><th>Start</th><th>End</th><th>Legend Label</th><th>Remove</th></tr></thead><tbody>';state.inclusios.forEach((x,i)=>{html+=`<tr><td><span style="color:${esc(x.color)};font-weight:bold">[ ]</span></td><td>${esc(locToLabel(x.start))}</td><td>${esc(locToLabel(x.end))}</td><td contenteditable data-inc-label="${i}">${esc(x.label)}</td><td><button class="btn danger" data-inc-remove="${i}">Remove</button></td></tr>`;});html+='</tbody></table>';box.innerHTML=html;box.querySelectorAll('[data-inc-label]').forEach(td=>td.oninput=()=>{let i=+td.dataset.incLabel;state.inclusios[i].label=td.innerText;let le=state.legend&&state.legend.find(e=>e.type==='bracket'&&String(e.color||'').toLowerCase()===String(state.inclusios[i].color||'').toLowerCase());if(le)le.label=td.innerText;renderLegendEditor();autoSaveProject();});box.querySelectorAll('[data-inc-remove]').forEach(btn=>btn.onclick=()=>{let i=+btn.dataset.incRemove;state.inclusios.splice(i,1);applyInclusioBrackets();});}
 
-function toggleDeletedSelected(){
-  let l=state.selected;
-  if(!locOK(l)){alert('Select a word first.');return;}
-  let w=state.verses[l.v].clauses[l.c].words[l.w];
-  w.deleted=!w.deleted;
-  render();
-}
+function toggleDeletedSelected(applyToAll){let l=state.selected;if(!locOK(l)){alert('Select a word first.');return;}let w=state.verses[l.v].clauses[l.c].words[l.w];if(applyToAll){let key=selectedWordKey();let val=!w.deleted;forEachMatchingWord(key,ww=>{ww.deleted=val;});}else{w.deleted=!w.deleted;}render();}
 function promptModal(title,text,value,cb){document.getElementById('modalTitle').textContent=title;document.getElementById('modalText').textContent=text;let inp=document.getElementById('modalInput');inp.value=value||'';applyLanguageLayout();document.getElementById('modal').classList.add('show');inp.focus();document.getElementById('modalOk').onclick=()=>{document.getElementById('modal').classList.remove('show');cb(inp.value)};document.getElementById('modalCancel').onclick=()=>document.getElementById('modal').classList.remove('show');}
-document.addEventListener('keydown',e=>{if(e.target.matches('textarea,input,[contenteditable]'))return;if(e.key==='ArrowLeft'){e.preventDefault();moveWord(1);}else if(e.key==='ArrowRight'){e.preventDefault();moveWord(-1);}else if(e.key==='ArrowDown'){e.preventDefault();moveClause(1);}else if(e.key==='ArrowUp'){e.preventDefault();moveClause(-1);}else if(e.key==='Enter'){e.preventDefault();insertBreak();}else if(e.key==='Tab'){e.preventDefault();indent(1);}else if(e.key==='Backspace'){e.preventDefault();indent(-1);}else if(e.key==='Delete'||(e.key==='Backspace'&&e.shiftKey)){e.preventDefault();toggleDeletedSelected();}else if(e.key==='p')toggleSpecial('predicate');else if(e.key==='s')toggleSpecial('subject');else if(e.key==='n'){e.preventDefault();let l=state.selected;if(locOK(l)){let w=state.verses[l.v].clauses[l.c].words[l.w];promptModal('Word Note','Add parsing or note for selected word:',w.note,v=>{w.note=v;render();});}}else if(e.key==='t'){e.preventDefault();let l=state.selected;if(locOK(l)){let w=state.verses[l.v].clauses[l.c].words[l.w];promptModal('Word Gloss','Add gloss for selected word:',w.translation,v=>{w.translation=v;render();});}}});
+document.addEventListener('keydown',e=>{if(e.target.matches('textarea,input,[contenteditable]'))return;if(e.key==='ArrowLeft'){e.preventDefault();moveWord(1);}else if(e.key==='ArrowRight'){e.preventDefault();moveWord(-1);}else if(e.key==='ArrowDown'){e.preventDefault();moveClause(1);}else if(e.key==='ArrowUp'){e.preventDefault();moveClause(-1);}else if(e.key==='Enter'){e.preventDefault();insertBreak();}else if(e.key==='Tab'){e.preventDefault();indent(1);}else if(e.key==='Backspace'){e.preventDefault();indent(-1);}else if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==='Delete'||e.key==='Backspace')){e.preventDefault();toggleDeletedSelected(true);}else if(e.key==='Delete'||(e.key==='Backspace'&&e.shiftKey)){e.preventDefault();toggleDeletedSelected();}else if(e.key==='p')toggleSpecial('predicate');else if(e.key==='s')toggleSpecial('subject');else if(e.key==='n'){e.preventDefault();let l=state.selected;if(locOK(l)){let w=state.verses[l.v].clauses[l.c].words[l.w];promptModal('Word Note','Add parsing or note for selected word:',w.note,v=>{w.note=v;render();});}}else if(e.key==='t'){e.preventDefault();let l=state.selected;if(locOK(l)){let w=state.verses[l.v].clauses[l.c].words[l.w];promptModal('Word Gloss','Add gloss for selected word:',w.translation,v=>{w.translation=v;render();});}}});
 
 function parseBooks(){return BOOK_NAMES.trim().split(/\r?\n/).map(l=>{const [id,name]=l.split('	');return {id,name};}).filter(b=>b.id&&b.id.endsWith('O'));}
 function setupBooks(){
@@ -2922,7 +2918,7 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
    picker.style.left=(window.scrollX+r.left)+'px';
    picker.style.top=(window.scrollY+r.bottom+8)+'px';
  }
- function openColor(kind){
+ function openColor(kind,applyToAll){
    if(!selected()||!picker||!grid)return;
    const colors=kind==='c'
     ? ['#000000','#0b61a4','#b02a2a','#3c763d','#8a6d3b','#6f42c1','#d2691e','']
@@ -2932,8 +2928,8 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
      const b=document.createElement('button');
      if(c){b.style.background=c;} else {b.textContent='X';}
      b.onclick=function(){
-       if(kind==='c')setSelectedColor(c);
-       if(kind==='h')setSelectedHighlight(c);
+       if(kind==='c')setSelectedColor(c,applyToAll);
+       if(kind==='h')setSelectedHighlight(c,applyToAll);
        closeP();
      };
      grid.appendChild(b);
@@ -2953,8 +2949,8 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
    const applyBtn=document.createElement('button');
    applyBtn.textContent='Apply';
    applyBtn.onclick=function(){
-      if(kind==='c') setSelectedColor(customInput.value);
-      if(kind==='h') setSelectedHighlight(customInput.value);
+      if(kind==='c') setSelectedColor(customInput.value,applyToAll);
+      if(kind==='h') setSelectedHighlight(customInput.value,applyToAll);
       closeP();
    };
 
@@ -2965,12 +2961,21 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
    pos(); picker.classList.add('show');
  }
  document.addEventListener('keydown',function(e){
-   if(e.ctrlKey||e.metaKey||e.altKey)return;
+   const allMod=(e.ctrlKey||e.metaKey)&&e.shiftKey&&!e.altKey;
+   if((e.ctrlKey||e.metaKey||e.altKey)&&!allMod)return;
    const t=(document.activeElement&&document.activeElement.tagName)||'';
    if(/INPUT|TEXTAREA|SELECT/.test(t)||document.activeElement.isContentEditable)return;
    if(e.key==='Escape'){closeP();return;}
    if(!selected())return;
    const k=e.key.toLowerCase();
+   if(allMod){
+     if(k==='b'){e.preventDefault();toggleSelectedFormat('bold',true);}
+     else if(k==='i'){e.preventDefault();toggleSelectedFormat('italic',true);}
+     else if(k==='u'){e.preventDefault();toggleSelectedFormat('underline',true);}
+     else if(k==='c'){e.preventDefault();openColor('c',true);}
+     else if(k==='h'){e.preventDefault();openColor('h',true);}
+     return;
+   }
    if(k==='b'){e.preventDefault();toggleSelectedFormat('bold');}
    else if(k==='i'){e.preventDefault();toggleSelectedFormat('italic');}
    else if(k==='u'){e.preventDefault();toggleSelectedFormat(e.shiftKey?'doubleUnderline':'underline');}
