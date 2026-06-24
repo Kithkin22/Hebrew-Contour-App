@@ -170,7 +170,7 @@ def main():
             "help title",
         )
 
-    if "editor-empty-state" not in text or "bindEmptyStateActions();hideCommentPopover()" not in text:
+    if "editor-empty-state" not in text:
         pattern = (
             r"if\(!state\.verses\.length\)\{ed\.innerHTML="
             r"'<span class=\"muted\" dir=\"ltr\">Paste text above to begin\.</span>';"
@@ -186,11 +186,12 @@ def main():
             raise SystemExit(f"empty state: expected 1 regex match, found {n}")
         text = new_text
 
-    if text.count("</script>") != 1:
-        raise SystemExit("integrity check failed: missing or duplicate </script>")
-
     if "function startApp" not in text:
         raise SystemExit("integrity check failed: startApp missing")
+
+    if len(text) == original_len:
+        print("UI polish already applied.")
+        return
 
     INDEX.write_text(text, encoding="utf-8")
     print(f"Updated {INDEX} ({original_len} -> {len(text)} chars)")

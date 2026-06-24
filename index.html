@@ -1256,6 +1256,10 @@ body.dark-mode .top-stack .card.compact-card.menu-open > .save-tools-title{
 .help-table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;}
 .help-table th,.help-table td{border:1px solid var(--ui-line,#d8e1ea);padding:6px 8px;text-align:left;vertical-align:top;}
 .help-table th{background:var(--ui-surface-2,#f8fafc);}
+.help-section-title{font-size:15px;font-weight:800;margin:16px 0 8px;color:var(--ui-text,#1f2d3d);}
+.help-shortcut-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px 12px;margin:8px 0 16px;}
+.help-shortcut-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border:1px solid var(--ui-line,#d8e1ea);border-radius:8px;background:var(--ui-surface-2,#f8fafc);}
+.help-shortcut-name{font-size:13px;font-weight:600;color:var(--ui-text,#1f2d3d);}
 .editor-empty-state{text-align:center;padding:48px 24px;direction:ltr;}
 .editor-empty-title{font-size:20px;font-weight:800;margin:0 0 8px;color:var(--ui-text,#1f2d3d);}
 @media(max-width:900px){
@@ -1421,6 +1425,14 @@ body.dark-mode .admin-link:hover,body.dark-mode .admin-link:focus{color:#6db5ff;
 .admin-inbox-badge.hidden{display:none!important;}
 body.dark-mode .admin-link.has-unread{color:#6db5ff;}
 
+/* Greek inspector parity with Hebrew */
+#wiLemmaRow,#wiGlossRow,#wiStrongsRow{display:none;}
+#wiBdagRow{display:none;}
+#wiStrongs a{color:var(--ui-blue,#1f5f99);font-weight:800;text-decoration:none;}
+#wiStrongs a:hover{text-decoration:underline;}
+body.dark-mode #wiStrongs a{color:#6db5ff;}
+.wi-bdag-note{font-size:12px;line-height:1.4;}
+#wiLexiconGloss,#wiBdbGloss{font-size:13px;line-height:1.35;}
 /* User feedback: click-menu panels, keycap shortcuts */
 .top-stack .card.compact-card.menu-open{
   position:fixed!important;
@@ -1945,6 +1957,17 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
   <div class="panel help-panel">
     <h3 id="helpModalTitle">Keyboard shortcuts &amp; tips</h3>
     <p class="muted">Select a word in the Contour Editor, then use these shortcuts (when not typing in a text field).</p>
+
+    <h4 class="help-section-title">Formatting &amp; color</h4>
+    <div class="help-shortcut-grid" aria-label="Formatting keyboard shortcuts">
+      <div class="help-shortcut-item"><span class="help-shortcut-name">Bold</span><kbd class="keycap">b</kbd></div>
+      <div class="help-shortcut-item"><span class="help-shortcut-name">Italic</span><kbd class="keycap">i</kbd></div>
+      <div class="help-shortcut-item"><span class="help-shortcut-name">Underline</span><kbd class="keycap">u</kbd></div>
+      <div class="help-shortcut-item"><span class="help-shortcut-name">Double underline</span><kbd class="keycap">Shift+U</kbd></div>
+      <div class="help-shortcut-item"><span class="help-shortcut-name">Text color</span><kbd class="keycap">c</kbd></div>
+      <div class="help-shortcut-item"><span class="help-shortcut-name">Highlight</span><kbd class="keycap">h</kbd></div>
+    </div>
+    <h4 class="help-section-title">Contour editing</h4>
     <table class="help-table">
       <thead><tr><th>Key</th><th>Action</th></tr></thead>
       <tbody>
@@ -1955,9 +1978,6 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
         <tr><td><span class="kbd">p</span> / <span class="kbd">s</span></td><td>Toggle predicate / subject marking</td></tr>
         <tr><td><span class="kbd">Delete</span> / <span class="kbd">Shift+Backspace</span></td><td>Hide or restore selected word</td></tr>
         <tr><td>Arrow keys</td><td>Navigate words and clauses (RTL-aware)</td></tr>
-        <tr><td><span class="kbd">b</span> / <span class="kbd">i</span> / <span class="kbd">u</span></td><td>Bold / italic / underline</td></tr>
-        <tr><td><span class="kbd">Shift+U</span></td><td>Double underline</td></tr>
-        <tr><td><span class="kbd">c</span> / <span class="kbd">h</span></td><td>Open color / highlight picker</td></tr>
         <tr><td><span class="kbd">Ctrl+Shift</span> + <span class="kbd">b</span> / <span class="kbd">i</span> / <span class="kbd">u</span> / <span class="kbd">c</span> / <span class="kbd">h</span></td><td>Apply bold / italic / underline / text color / highlight to <strong>all matching words</strong> (same surface form as selection, current passage)</td></tr>
         <tr><td><span class="kbd">Ctrl+Shift</span> + <span class="kbd">Delete</span></td><td>Hide or restore <strong>all matching words</strong></td></tr>
       </tbody>
@@ -2514,6 +2534,7 @@ async function generateWlc(){
       status.textContent='Loading Greek text from SBLGNT...';
       verses=await getSblgntText(book,sc,sv,ec,ev);
       state.language='greek';
+      if(typeof window.loadGreekMorphgnt==='function'){try{await loadGreekMorphgnt(book);}catch(err){console.warn('MorphGNT load failed',err);}}
     }else if(source==='hebrew-bhsa'){
       status.textContent='Loading Hebrew text from BHSA (SHEBANQ)...';
       verses=await getBhsaText(book,sc,sv,ec,ev);
@@ -2631,7 +2652,7 @@ function sortedProjectEntries(){return Object.values(projectStore.projects).sort
 function updateOpenRecentMenuLabel(){const btn=document.getElementById('openRecentMenuBtn');if(!btn)return;const parallel=!!(stateBundle&&stateBundle.parallelEnabled);const label=parallel?'Open Recent in Active Pane':'Open Recent';const chev=btn.querySelector('.file-menu-chevron');btn.textContent=label+' ';if(chev)btn.appendChild(chev);}
 function renderPaneProjectDropdowns(){document.querySelectorAll('.parallel-pane-load').forEach(sel=>{const pane=+sel.dataset.pane;const prev=sel.value;sel.innerHTML='<option value="">Load saved project…</option>';sortedProjectEntries().forEach(p=>{const opt=document.createElement('option');opt.value=p.id;opt.textContent=p.name||'Untitled Project';sel.appendChild(opt);});sel.value=prev&&projectStore.projects[prev]?prev:'';if(!sel.dataset.bound){sel.dataset.bound='1';sel.onchange=()=>{const id=sel.value;if(!id)return;loadProjectIntoPane(pane,id);sel.value='';};}});}
 function renderProjectFileSubmenus(){const recentList=document.getElementById('recentProjectsSubmenu');const entries=sortedProjectEntries();const cur=projectStore.currentProjectId;const parallel=!!(stateBundle&&stateBundle.parallelEnabled);updateOpenRecentMenuLabel();renderPaneProjectDropdowns();if(!recentList)return;recentList.innerHTML='';if(!entries.length){recentList.innerHTML='<li role="none"><span class="file-menu-empty">'+esc('No recent projects yet.')+'</span></li>';return;}entries.forEach(function(p){const li=document.createElement('li');li.setAttribute('role','none');const btn=document.createElement('button');btn.type='button';btn.className='file-menu-item'+(p.id===cur&&!parallel?' is-current':'');btn.setAttribute('role','menuitem');btn.dataset.projectId=p.id;const when=new Date(p.updatedAt||p.createdAt).toLocaleString();btn.innerHTML=esc(p.name||'Untitled Project')+(p.id===cur&&!parallel?' <span class="file-menu-meta">(current)</span>':'')+'<span class="file-menu-meta">'+esc(when)+'</span>';btn.onclick=function(e){e.stopPropagation();if(parallel)openProjectInActivePane(p.id);else openProjectById(p.id);};li.appendChild(btn);recentList.appendChild(li);});}
-function extractPaneFromPayload(payload,preferPane){const data=(payload&&payload.state)?payload:{state:payload||{}};const st=data.state||{};const pi=preferPane===1?1:0;if(st&&Array.isArray(st.panes)&&st.panes.length){const pane=Object.assign(freshPaneState(),st.panes[pi]||st.panes[0]||{});const refs=(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[pi])||(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[0])||payload.generatedRefs||data.generatedRefs||[];return{pane,generatedRefs:Array.isArray(refs)?refs.slice():[]};}return{pane:Object.assign(freshPaneState(),st),generatedRefs:Array.isArray(data.generatedRefs)?data.generatedRefs.slice():(Array.isArray(payload.generatedRefs)?payload.generatedRefs.slice():[])}};}
+function extractPaneFromPayload(payload,preferPane){const data=(payload&&payload.state)?payload:{state:payload||{}};const st=data.state||{};const pi=preferPane===1?1:0;if(st&&Array.isArray(st.panes)&&st.panes.length){const pane=Object.assign(freshPaneState(),st.panes[pi]||st.panes[0]||{});const refs=(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[pi])||(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[0])||payload.generatedRefs||data.generatedRefs||[];return{pane,generatedRefs:Array.isArray(refs)?refs.slice():[]};}return{pane:Object.assign(freshPaneState(),st),generatedRefs:Array.isArray(data.generatedRefs)?data.generatedRefs.slice():(Array.isArray(payload.generatedRefs)?payload.generatedRefs.slice():[])};}
 function loadProjectIntoPane(paneIndex,projectId){const pi=paneIndex===1?1:0;const rec=projectStore.projects[projectId];if(!rec||!rec.payload)return false;ensureStateBundle();syncStateBundle();const extracted=extractPaneFromPayload(rec.payload,pi);stateBundle.panes[pi]=extracted.pane;stateBundle.generatedRefsByPane[pi]=extracted.generatedRefs;if(stateBundle.activePane===pi){bindActivePane(pi);}else{stateBundle.panes[stateBundle.activePane]=state;}if(!stateBundle.parallelEnabled){stateBundle.parallelEnabled=true;const toggle=document.getElementById('parallelModeToggle');if(toggle)toggle.checked=true;}if(autosaveReady)autoSaveProject();render();updateSaveStatus('Loaded "'+rec.name+'" into '+paneLabel(pi));return true;}
 function openProjectInActivePane(id){if(!id)return;if(stateBundle.parallelEnabled){loadProjectIntoPane(stateBundle.activePane,id);closeProjectFileMenu();return;}openProjectById(id);}
 function openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}
@@ -3594,6 +3615,7 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
     return /^H?\d+[A-Za-z]?$/.test(String(s||'').trim());
   }
   function removeGlossRow(){
+    if(window.state&&state.language==='greek') return;
     const gloss = document.getElementById('wiGloss');
     if(gloss && gloss.closest('.wi-row')) gloss.closest('.wi-row').remove();
   }
@@ -3670,6 +3692,8 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
   }
 
   document.addEventListener('mouseover', function(e){
+    if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
+    if(window.state&&state.language==='greek') return;
     const wordEl=e.target.closest && e.target.closest('.word');
     if(!wordEl) return;
     setTimeout(()=>enhance(wordEl), 430);
@@ -3860,9 +3884,9 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
   }
 
   function fillBdbFields(bdb){
-    const gloss=document.getElementById('wiBdbGloss');
-    const link=document.getElementById('wiBdbLink');
-    const row=document.getElementById('wiBdbRow');
+    const gloss=document.getElementById('wiLexiconGloss')||document.getElementById('wiBdbGloss');
+    const link=document.getElementById('wiLexiconLink')||document.getElementById('wiBdbLink');
+    const row=document.getElementById('wiLexiconRow')||document.getElementById('wiBdbRow');
     if(!gloss||!link) return;
     if(!bdb){
       gloss.textContent='—';

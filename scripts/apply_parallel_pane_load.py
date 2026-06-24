@@ -39,7 +39,7 @@ FILE_MENU_NEW = """          <button type="button" class="file-menu-item" id="op
 REPLACEMENTS = [
     (
         "function openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}",
-        "function extractPaneFromPayload(payload,preferPane){const data=(payload&&payload.state)?payload:{state:payload||{}};const st=data.state||{};const pi=preferPane===1?1:0;if(st&&Array.isArray(st.panes)&&st.panes.length){const pane=Object.assign(freshPaneState(),st.panes[pi]||st.panes[0]||{});const refs=(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[pi])||(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[0])||payload.generatedRefs||data.generatedRefs||[];return{pane,generatedRefs:Array.isArray(refs)?refs.slice():[]};}return{pane:Object.assign(freshPaneState(),st),generatedRefs:Array.isArray(data.generatedRefs)?data.generatedRefs.slice():(Array.isArray(payload.generatedRefs)?payload.generatedRefs.slice():[])}};}\nfunction loadProjectIntoPane(paneIndex,projectId){const pi=paneIndex===1?1:0;const rec=projectStore.projects[projectId];if(!rec||!rec.payload)return false;ensureStateBundle();syncStateBundle();const extracted=extractPaneFromPayload(rec.payload,pi);stateBundle.panes[pi]=extracted.pane;stateBundle.generatedRefsByPane[pi]=extracted.generatedRefs;if(stateBundle.activePane===pi){bindActivePane(pi);}else{stateBundle.panes[stateBundle.activePane]=state;}if(!stateBundle.parallelEnabled){stateBundle.parallelEnabled=true;const toggle=document.getElementById('parallelModeToggle');if(toggle)toggle.checked=true;}if(autosaveReady)autoSaveProject();render();updateSaveStatus('Loaded \"'+rec.name+'\" into '+paneLabel(pi));return true;}\nfunction openProjectInActivePane(id){if(!id)return;if(stateBundle.parallelEnabled){loadProjectIntoPane(stateBundle.activePane,id);closeProjectFileMenu();return;}openProjectById(id);}\nfunction openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}",
+        "function extractPaneFromPayload(payload,preferPane){const data=(payload&&payload.state)?payload:{state:payload||{}};const st=data.state||{};const pi=preferPane===1?1:0;if(st&&Array.isArray(st.panes)&&st.panes.length){const pane=Object.assign(freshPaneState(),st.panes[pi]||st.panes[0]||{});const refs=(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[pi])||(Array.isArray(payload.generatedRefsByPane)&&payload.generatedRefsByPane[0])||payload.generatedRefs||data.generatedRefs||[];return{pane,generatedRefs:Array.isArray(refs)?refs.slice():[]};}return{pane:Object.assign(freshPaneState(),st),generatedRefs:Array.isArray(data.generatedRefs)?data.generatedRefs.slice():(Array.isArray(payload.generatedRefs)?payload.generatedRefs.slice():[])};}\nfunction loadProjectIntoPane(paneIndex,projectId){const pi=paneIndex===1?1:0;const rec=projectStore.projects[projectId];if(!rec||!rec.payload)return false;ensureStateBundle();syncStateBundle();const extracted=extractPaneFromPayload(rec.payload,pi);stateBundle.panes[pi]=extracted.pane;stateBundle.generatedRefsByPane[pi]=extracted.generatedRefs;if(stateBundle.activePane===pi){bindActivePane(pi);}else{stateBundle.panes[stateBundle.activePane]=state;}if(!stateBundle.parallelEnabled){stateBundle.parallelEnabled=true;const toggle=document.getElementById('parallelModeToggle');if(toggle)toggle.checked=true;}if(autosaveReady)autoSaveProject();render();updateSaveStatus('Loaded \"'+rec.name+'\" into '+paneLabel(pi));return true;}\nfunction openProjectInActivePane(id){if(!id)return;if(stateBundle.parallelEnabled){loadProjectIntoPane(stateBundle.activePane,id);closeProjectFileMenu();return;}openProjectById(id);}\nfunction openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}",
     ),
     (
         "function renderProjectFileSubmenus(){const recentList=document.getElementById('recentProjectsSubmenu');const entries=sortedProjectEntries();const cur=projectStore.currentProjectId;if(!recentList)return;recentList.innerHTML='';if(!entries.length){recentList.innerHTML='<li role=\"none\"><span class=\"file-menu-empty\">'+esc('No recent projects yet.')+'</span></li>';return;}entries.forEach(function(p){const li=document.createElement('li');li.setAttribute('role','none');const btn=document.createElement('button');btn.type='button';btn.className='file-menu-item'+(p.id===cur?' is-current':'');btn.setAttribute('role','menuitem');btn.dataset.projectId=p.id;const when=new Date(p.updatedAt||p.createdAt).toLocaleString();btn.innerHTML=esc(p.name||'Untitled Project')+(p.id===cur?' <span class=\"file-menu-meta\">(current)</span>':'')+'<span class=\"file-menu-meta\">'+esc(when)+'</span>';btn.onclick=function(e){e.stopPropagation();openProjectById(p.id);};li.appendChild(btn);recentList.appendChild(li);});}",
@@ -68,12 +68,30 @@ def verify(html: str) -> None:
     ):
         if needle not in html:
             raise SystemExit(f"Missing expected content after patch: {needle}")
+    # Guard against a bad merge that leaves an extra brace in extractPaneFromPayload.
+    if "payload.generatedRefs.slice():[])}};}" in html:
+        raise SystemExit("extractPaneFromPayload has a syntax error (extra '}')")
+
+
+def fix_syntax_bug(html: str) -> str:
+    bad = "payload.generatedRefs.slice():[])}};}\nfunction loadProjectIntoPane"
+    good = "payload.generatedRefs.slice():[])};}\nfunction loadProjectIntoPane"
+    if bad in html:
+        html = html.replace(bad, good, 1)
+        print("Fixed extractPaneFromPayload syntax (extra brace).")
+    return html
 
 
 def main():
-    html = INDEX.read_text(encoding="utf-8")
+    original = INDEX.read_text(encoding="utf-8")
+    html = fix_syntax_bug(original)
     if MARKER in html:
-        print("Parallel pane load already applied.")
+        if html != original:
+            verify(html)
+            INDEX.write_text(html, encoding="utf-8")
+            print(f"Repaired parallel pane load ({len(html.encode('utf-8'))} bytes)")
+        else:
+            print("Parallel pane load already applied.")
         return
 
     if "loadProjectIntoPane" in html:

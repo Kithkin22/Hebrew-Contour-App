@@ -31,8 +31,17 @@ def replace_once(text, old, new, label):
 def main():
     text = INDEX.read_text(encoding="utf-8")
     before = len(text.encode("utf-8"))
-    text = replace_once(text, CONTACT_OLD, CONTACT_NEW, "contact field")
-    text = replace_once(text, SUCCESS_OLD, SUCCESS_NEW, "success message")
+    if CONTACT_NEW in text and "okMsg+=' Ticket '" in text:
+        print("Feedback tickets already applied.")
+        return
+    if CONTACT_OLD in text:
+        text = replace_once(text, CONTACT_OLD, CONTACT_NEW, "contact field")
+    elif CONTACT_NEW not in text:
+        raise SystemExit("contact field: expected old or new markup")
+    if SUCCESS_OLD in text:
+        text = replace_once(text, SUCCESS_OLD, SUCCESS_NEW, "success message")
+    elif "okMsg+=' Ticket '" not in text:
+        raise SystemExit("success message: expected old or new handler")
     INDEX.write_text(text, encoding="utf-8")
     after = len(text.encode("utf-8"))
     print(f"Patched index.html: {before} -> {after} bytes")

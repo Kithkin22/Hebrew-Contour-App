@@ -204,6 +204,7 @@ def replace_once(text, old, new, label):
 
 def main():
     text = INDEX.read_text(encoding="utf-8")
+    original_len = len(text)
 
     if "/* User feedback: click-menu panels" not in text:
         text = replace_once(
@@ -213,7 +214,8 @@ def main():
             "feedback CSS",
         )
 
-    text = text.replace("let commentsPanelCollapsed=true;", "let commentsPanelCollapsed=false;", 1)
+    if "let commentsPanelCollapsed=true;" in text:
+        text = text.replace("let commentsPanelCollapsed=true;", "let commentsPanelCollapsed=false;", 1)
 
     old_empty = re.search(
         r"if\(!state\.verses\.length\)\{ed\.innerHTML='[^']+';bindEmptyStateActions\(\);hideCommentPopover\(\);return;\}",
@@ -233,13 +235,9 @@ def main():
             1,
         )
 
-    if SHORTCUT_HINT_HTML not in text:
-        text = replace_once(
-            text,
-            '<span id="annotationShortcutHint">Shortcuts: b, i, u, Shift+U, c, h</span>',
-            SHORTCUT_HINT_HTML,
-            "shortcut hint",
-        )
+    old_hint = '<span id="annotationShortcutHint">Shortcuts: b, i, u, Shift+U, c, h</span>'
+    if SHORTCUT_HINT_HTML not in text and old_hint in text:
+        text = replace_once(text, old_hint, SHORTCUT_HINT_HTML, "shortcut hint")
 
     if "window.lookupSefariaBDB" not in text:
         text = replace_once(
@@ -267,27 +265,27 @@ def main():
             "inspector default flag",
         )
 
-    # Respect inspector toggle in first hover block
-    text = replace_once(
-        text,
-        "  function showInspector(el){\n    const box=document.getElementById('wordInspector');\n    if(!box||!el) return;",
-        "  function showInspector(el){\n    if(window.CONTOUR_INSPECTOR_ENABLED===false) return;\n    const box=document.getElementById('wordInspector');\n    if(!box||!el) return;",
-        "showInspector guard",
-    )
-    text = replace_once(
-        text,
-        "  document.addEventListener('mouseover', function(e){\n    const wordEl=e.target.closest && e.target.closest('.word');\n    if(!wordEl) return;\n    clearTimeout(inspectorTimer);\n    inspectorTimer=setTimeout(()=>showInspector(wordEl), 250);\n  }, true);",
-        "  document.addEventListener('mouseover', function(e){\n    if(window.CONTOUR_INSPECTOR_ENABLED===false) return;\n    const wordEl=e.target.closest && e.target.closest('.word');\n    if(!wordEl) return;\n    clearTimeout(inspectorTimer);\n    inspectorTimer=setTimeout(()=>showInspector(wordEl), 250);\n  }, true);",
-        "mouseover guard shell",
-    )
+    if "function showInspector(el){\n    if(window.CONTOUR_INSPECTOR_ENABLED===false) return;" not in text:
+        text = replace_once(
+            text,
+            "  function showInspector(el){\n    const box=document.getElementById('wordInspector');\n    if(!box||!el) return;",
+            "  function showInspector(el){\n    if(window.CONTOUR_INSPECTOR_ENABLED===false) return;\n    const box=document.getElementById('wordInspector');\n    if(!box||!el) return;",
+            "showInspector guard",
+        )
+    if "if(window.CONTOUR_INSPECTOR_ENABLED===false) return;\n    const wordEl=e.target.closest && e.target.closest('.word');\n    if(!wordEl) return;\n    clearTimeout(inspectorTimer);" in text:
+        pass
+    elif "clearTimeout(inspectorTimer);\n    inspectorTimer=setTimeout(()=>showInspector(wordEl), 250);" in text:
+        text = replace_once(
+            text,
+            "  document.addEventListener('mouseover', function(e){\n    const wordEl=e.target.closest && e.target.closest('.word');\n    if(!wordEl) return;\n    clearTimeout(inspectorTimer);\n    inspectorTimer=setTimeout(()=>showInspector(wordEl), 250);\n  }, true);",
+            "  document.addEventListener('mouseover', function(e){\n    if(window.CONTOUR_INSPECTOR_ENABLED===false) return;\n    const wordEl=e.target.closest && e.target.closest('.word');\n    if(!wordEl) return;\n    clearTimeout(inspectorTimer);\n    inspectorTimer=setTimeout(()=>showInspector(wordEl), 250);\n  }, true);",
+            "mouseover guard shell",
+        )
 
-    # Morph patch inspector guard
-    text = replace_once(
-        text,
-        "    document.addEventListener('mouseover', function(e){\n      const wordEl = e.target.closest && e.target.closest('.word');\n      if(!wordEl) return;\n      setTimeout(function(){\n        const wiWord = document.getElementById('wiWord');",
-        "    document.addEventListener('mouseover', function(e){\n      if(window.CONTOUR_INSPECTOR_ENABLED===false) return;\n      const wordEl = e.target.closest && e.target.closest('.word');\n      if(!wordEl) return;\n      setTimeout(function(){\n        const wiWord = document.getElementById('wiWord');",
-        "morph patch guard",
-    )
+    morph_old = "    document.addEventListener('mouseover', function(e){\n      const wordEl = e.target.closest && e.target.closest('.word');\n      if(!wordEl) return;\n      setTimeout(function(){\n        const wiWord = document.getElementById('wiWord');"
+    morph_new = "    document.addEventListener('mouseover', function(e){\n      if(window.CONTOUR_INSPECTOR_ENABLED===false) return;\n      const wordEl = e.target.closest && e.target.closest('.word');\n      if(!wordEl) return;\n      setTimeout(function(){\n        const wiWord = document.getElementById('wiWord');"
+    if morph_new not in text and morph_old in text:
+        text = replace_once(text, morph_old, morph_new, "morph patch guard")
 
     # BDB fill helper + enhance integration
     bdb_helper = """
@@ -345,19 +343,20 @@ def main():
   document.addEventListener('mouseover', function(e){
     if(window.CONTOUR_INSPECTOR_ENABLED===false){"""
 
-    if "applyBdbToInspector(word, wiRoot, wiParsing)" not in text:
+    if "applyBdbToInspector(word, wiRoot, wiParsing" not in text:
         text = replace_once(text, old_enhance_tail, new_enhance_tail, "enhance bdb call")
 
-    # Hide inspector + clear BDB when toggled off
-    text = replace_once(
-        text,
-        "    if(!enabled){\n      const box=document.getElementById('wordInspector');\n      if(box){box.style.display='none';box.setAttribute('aria-hidden','true');}\n    }",
-        "    if(!enabled){\n      const box=document.getElementById('wordInspector');\n      if(box){box.style.display='none';box.setAttribute('aria-hidden','true');}\n      clearTimeout(window.__inspectorHoverTimer);\n    }",
-        "toggle hide",
-    )
+    toggle_old = "    if(!enabled){\n      const box=document.getElementById('wordInspector');\n      if(box){box.style.display='none';box.setAttribute('aria-hidden','true');}\n    }"
+    toggle_new = "    if(!enabled){\n      const box=document.getElementById('wordInspector');\n      if(box){box.style.display='none';box.setAttribute('aria-hidden','true');}\n      clearTimeout(window.__inspectorHoverTimer);\n    }"
+    if toggle_new not in text and toggle_old in text:
+        text = replace_once(text, toggle_old, toggle_new, "toggle hide")
 
-    if text.count("</script>") != 1 or "function startApp" not in text:
+    if "function startApp" not in text:
         raise SystemExit("integrity check failed")
+
+    if len(text) == original_len:
+        print("User feedback already applied.")
+        return
 
     INDEX.write_text(text, encoding="utf-8")
     print(f"Updated {INDEX} ({len(text)} chars)")

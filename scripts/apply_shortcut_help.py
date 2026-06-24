@@ -75,6 +75,10 @@ def main():
     if len(text) < orig_len * 0.9 or "function startApp" not in text or not text.rstrip().endswith("</html>"):
         raise SystemExit("integrity check failed")
 
+    if len(text) == orig_len:
+        print("Shortcut help already applied.")
+        return
+
     INDEX.write_text(text, encoding="utf-8")
     print(f"Updated {INDEX} ({orig_len} -> {len(text)} bytes)")
 

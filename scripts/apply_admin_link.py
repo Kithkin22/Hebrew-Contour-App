@@ -58,17 +58,21 @@ def main():
             + "\n    </div>",
             "admin link HTML",
         )
+        INDEX.write_text(text, encoding="utf-8")
+        print(f"Updated {INDEX} ({len(text)} chars)")
+    else:
+        print("Admin link already applied.")
 
     sw = SW.read_text(encoding="utf-8")
-    if "contour-app-pwa-v19" in sw:
-        sw = sw.replace("contour-app-pwa-v19", "contour-app-pwa-v20", 1)
+    import re
+    m = re.search(r"contour-app-pwa-v(\d+)", sw)
+    if not m:
+        raise SystemExit("Unexpected service-worker cache version")
+    ver = int(m.group(1))
+    if ver < 20:
+        sw = sw.replace(f"contour-app-pwa-v{ver}", f"contour-app-pwa-v20", 1)
         SW.write_text(sw, encoding="utf-8")
         print(f"Bumped {SW} cache to v20")
-    elif "contour-app-pwa-v20" not in sw:
-        raise SystemExit("Unexpected service-worker cache version")
-
-    INDEX.write_text(text, encoding="utf-8")
-    print(f"Updated {INDEX} ({len(text)} chars)")
 
 
 if __name__ == "__main__":

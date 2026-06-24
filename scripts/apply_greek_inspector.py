@@ -26,12 +26,20 @@ def replace_once(text, old, new, label):
 
 def main():
     text = INDEX.read_text(encoding="utf-8")
+    orig_len = len(text)
+
+    if "/* Greek inspector parity" in text and "applyGreekLexiconToInspector" in text:
+        print("Greek inspector already applied.")
+        return
 
     if "/* Greek inspector parity" not in text:
+        css_anchor = "/* User feedback: click-menu panels, keycap shortcuts */"
+        if css_anchor not in text:
+            raise SystemExit("greek inspector css: anchor not found")
         text = replace_once(
             text,
-            "#helpBtn[title]{cursor:help;}\n\n/* User feedback:",
-            "#helpBtn[title]{cursor:help;}\n" + CSS + "\n/* User feedback:",
+            css_anchor,
+            CSS.strip() + "\n" + css_anchor,
             "greek inspector css",
         )
 
@@ -160,6 +168,10 @@ def main():
 
     if len(text) < 10_000_000 or "function startApp" not in text or not text.rstrip().endswith("</html>"):
         raise SystemExit("integrity check failed")
+
+    if len(text) == orig_len:
+        print("Greek inspector already applied.")
+        return
 
     INDEX.write_text(text, encoding="utf-8")
     print(f"Updated {INDEX}")
