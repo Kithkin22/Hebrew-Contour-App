@@ -47,6 +47,7 @@ PATCH_SCRIPTS = [
     "apply_parallel_verse_trim.py",
     "apply_undo.py",
     "apply_parallel_verse_nudge.py",
+    "apply_editable_ref_preserve.py",
     "apply_workspace_maximize.py",
 ]
 
