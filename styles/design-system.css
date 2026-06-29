@@ -388,12 +388,13 @@ body.dark-mode .hc-segmented-btn.active {
   background: var(--hc-surface-2);
   border-bottom: 1px solid var(--hc-border);
   border-right: 1px solid var(--hc-border);
-  padding: 10px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--hc-text-muted);
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--hc-text-secondary);
+  vertical-align: middle;
 }
 
 #annTable th:last-child,
@@ -405,9 +406,22 @@ body.dark-mode .hc-segmented-btn.active {
 .hc-table td {
   border-bottom: 1px solid var(--hc-border);
   border-right: 1px solid var(--hc-border);
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 12px 14px;
+  font-size: 16px;
+  line-height: 1.55;
+  vertical-align: middle;
+  min-height: 48px;
   transition: background var(--hc-duration-fast);
+}
+
+#annTable td.heb,
+#annTable td.greek,
+#annTable th.heb,
+#annTable th.greek {
+  font-size: 24px;
+  line-height: 1.65;
+  padding: 14px 16px;
+  min-height: 52px;
 }
 
 #annTable td:last-child,
@@ -703,7 +717,7 @@ textarea:focus {
   background: var(--hc-surface-2);
 }
 
-/* ── Table view (HCDS v1) ── */
+/* ── Table view (HCDS v1) — readable typography ── */
 .hc-shell-ready #tableWrap,
 #tableWrap {
   background: var(--hc-surface);
@@ -726,19 +740,49 @@ textarea:focus {
   z-index: 2;
   background: var(--hc-surface-2);
   border-bottom: 2px solid var(--hc-border-strong);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
   color: var(--hc-text-secondary);
-  padding: 10px 12px;
+  padding: 12px 14px;
+  vertical-align: middle;
+  min-height: 48px;
 }
 
 #annTable td,
 #annTable th {
   border: 1px solid var(--hc-border);
-  padding: 10px 12px;
-  vertical-align: top;
+  padding: 12px 14px;
+  vertical-align: middle;
+  line-height: 1.5;
+  min-height: 48px;
+}
+
+#annTable td.heb,
+#annTable td.greek,
+#annTable th.heb,
+#annTable th.greek {
+  font-family: var(--hc-font-hebrew);
+  font-size: 24px;
+  line-height: 1.65;
+  padding: 14px 16px;
+  min-height: 52px;
+}
+
+.lang-greek #annTable td.greek,
+.lang-greek #annTable th.greek {
+  font-family: var(--hc-font-greek);
+}
+
+#annTable td.ann-ltr,
+#annTable td[contenteditable] {
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+#annTable tbody tr {
+  min-height: 48px;
 }
 
 #annTable tbody tr:nth-child(even) td {
@@ -751,7 +795,6 @@ textarea:focus {
 
 #annTable td[contenteditable] {
   background: #fffdf8;
-  min-height: 1.5em;
 }
 
 body.dark-mode #annTable td[contenteditable] {

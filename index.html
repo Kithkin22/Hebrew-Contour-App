@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Hebrew/Greek Contour Table App</title>
-<link rel="stylesheet" href="styles/design-system.css?v=28">
-<link rel="stylesheet" href="styles/layout-modern.css?v=28">
-<link rel="stylesheet" href="styles/text-first.css?v=28">
-<link rel="stylesheet" href="css/app.css?v=28">
+<link rel="stylesheet" href="styles/design-system.css?v=32">
+<link rel="stylesheet" href="styles/layout-modern.css?v=32">
+<link rel="stylesheet" href="styles/text-first.css?v=32">
+<link rel="stylesheet" href="css/app.css?v=32">
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
@@ -92,39 +92,38 @@
       <ul class="file-menu-list" role="none">
         <li role="none"><button type="button" class="file-menu-item" data-action="new-project" role="menuitem">New Project</button></li>
         <li role="none" class="file-menu-has-submenu">
-          <button type="button" class="file-menu-item" id="openRecentMenuBtn" role="menuitem" aria-haspopup="true">Open Recent <span class="file-menu-chevron" aria-hidden="true">›</span></button>
+          <button type="button" class="file-menu-item" id="openRecentMenuBtn" role="menuitem" aria-haspopup="true">Open Project <span class="file-menu-chevron" aria-hidden="true">›</span></button>
           <ul class="file-submenu" id="recentProjectsSubmenu" role="menu"></ul>
         </li>
-        <li role="none"><button type="button" class="file-menu-item" data-action="save-project" role="menuitem">Save Project</button></li>
+        <li role="none"><button type="button" class="file-menu-item" data-action="save-project" role="menuitem">Save</button></li>
         <li role="none"><button type="button" class="file-menu-item" data-action="save-as" role="menuitem">Save As…</button></li>
         <li role="none" class="file-menu-separator" aria-hidden="true"></li>
         <li role="none" class="file-menu-has-submenu">
-          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Export <span class="file-menu-chevron" aria-hidden="true">›</span></button>
+          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Import <span class="file-menu-chevron" aria-hidden="true">›</span></button>
           <ul class="file-submenu" role="menu">
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-pdf" role="menuitem">Contour as PDF</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-word" role="menuitem">Contour as Word</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-html" role="menuitem">Contour as HTML</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-pdf" role="menuitem">Table as PDF</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-word" role="menuitem">Table as Word</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-project-json" role="menuitem">Project as JSON</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="import-morph" role="menuitem">Morph Data (.json)</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="import-project" role="menuitem">Contour Project</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="import-text" role="menuitem">Text</button></li>
           </ul>
         </li>
         <li role="none" class="file-menu-has-submenu">
-          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Import <span class="file-menu-chevron" aria-hidden="true">›</span></button>
+          <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Export <span class="file-menu-chevron" aria-hidden="true">›</span></button>
           <ul class="file-submenu" role="menu">
-            <li role="none"><button type="button" class="file-menu-item" data-action="import-text" role="menuitem">Import Text</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="import-project" role="menuitem">Import Project File</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-pdf" role="menuitem">Contour PDF</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-word" role="menuitem">Contour DOCX</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-pdf" role="menuitem">Table PDF</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-word" role="menuitem">Table DOCX</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-html" role="menuitem">HTML</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-project-json" role="menuitem">Project JSON</button></li>
           </ul>
         </li>
-        <li role="none" class="file-menu-separator" aria-hidden="true"></li>
-        <li role="none"><button type="button" class="file-menu-item" data-action="settings-rename" role="menuitem">Rename Project</button></li>
-        <li role="none"><button type="button" class="file-menu-item" data-action="settings-duplicate" role="menuitem">Duplicate Project</button></li>
-        <li role="none"><button type="button" class="file-menu-item" data-action="settings-delete" role="menuitem">Delete Project</button></li>
         <li role="none" class="file-menu-separator" aria-hidden="true"></li>
         <li role="none" class="file-menu-has-submenu">
           <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Project Settings <span class="file-menu-chevron" aria-hidden="true">›</span></button>
           <ul class="file-submenu" id="projectSettingsSubmenu" role="menu">
-            <li role="none"><span class="file-menu-empty">No additional settings.</span></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="settings-rename" role="menuitem">Rename Project…</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="settings-duplicate" role="menuitem">Duplicate Project…</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="settings-delete" role="menuitem">Delete Project…</button></li>
           </ul>
         </li>
       </ul>
@@ -404,6 +403,7 @@
 <script src="js/app/inspector.js"></script>
 <script src="js/app/inspector-morph.js"></script>
 <script src="js/app/ui-init.js"></script>
+<script src="js/hc-nav-menus.js" defer></script>
 <script src="js/ui-shell.js" defer></script>
 <script src="sefaria-bdb.js"></script>
 <script src="greek-lexicon.js"></script>

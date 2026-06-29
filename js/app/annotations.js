@@ -130,7 +130,8 @@
 
    btn.onclick=function(){
      try{ commentsPanelCollapsed=false; }catch(e){}
-     if(typeof renderCommentsPanel==='function') renderCommentsPanel();
+     if(typeof window.expandHcCommentsPanel==='function') window.expandHcCommentsPanel();
+     else if(typeof renderCommentsPanel==='function') renderCommentsPanel();
      const tab=document.querySelector('.hc-panel-tab[data-panel="comments"]');
      if(tab) tab.click();
      sync();

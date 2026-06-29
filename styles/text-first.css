@@ -69,7 +69,11 @@
 }
 
 /* ── Workspace header: one row, not a stack ── */
-.hc-shell-ready .hc-workspace-header {
+.hc-shell-ready .hc-workspace-header.hc-workspace-header-hidden {
+  display: none !important;
+}
+
+.hc-shell-ready .hc-workspace-header:not(.hc-workspace-header-hidden) {
   flex-direction: row !important;
   flex-wrap: wrap !important;
   align-items: center !important;
