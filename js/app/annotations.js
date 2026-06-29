@@ -121,10 +121,11 @@
 
    const wrap=document.createElement('div');
    wrap.id='legendBelowEditor';
+   wrap.className='collapsed';
 
    const head=document.createElement('div');
    head.id='legendBelowHeader';
-   head.textContent='▼ Legend / Key';
+   head.textContent='▶ Legend / Key';
 
    head.onclick=function(){
       wrap.classList.toggle('collapsed');

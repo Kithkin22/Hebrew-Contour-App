@@ -1,0 +1,223 @@
+/**
+ * Phase 0 — single compact application toolbar (visual/layout only).
+ */
+
+/* ── One horizontal toolbar bar ── */
+.top-stack {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+  margin: 0 0 4px !important;
+  padding: 3px 6px !important;
+  min-height: 34px !important;
+  background: var(--hc-surface, #fff) !important;
+  border: 1px solid var(--hc-border, #e5e7eb) !important;
+  border-radius: var(--hc-radius-md, 8px) !important;
+  box-shadow: var(--hc-shadow-xs, none) !important;
+}
+
+.app-toolbar-primary {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.app-toolbar-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.top-menu-hint {
+  display: none !important;
+}
+
+/* Menu triggers: Word/Logos compact size */
+.app-toolbar-primary .card.compact-card > strong:first-child,
+.app-toolbar-primary .card.compact-card > .save-tools-title {
+  min-height: 28px !important;
+  padding: 4px 10px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border-radius: var(--hc-radius-sm, 6px) !important;
+}
+
+.app-toolbar-primary .file-menu-card > .save-tools-title::before {
+  content: none !important;
+}
+
+.app-toolbar-primary .card[data-menu="generate"] > strong:first-child::before {
+  content: none !important;
+}
+
+.app-toolbar-primary .card[data-menu="paste"] > strong:first-child::before {
+  content: none !important;
+}
+
+/* Right-side toolbar buttons */
+.app-toolbar-actions .btn,
+.app-toolbar-actions .admin-link,
+#themeToggleBtn,
+#inspectorToggleBtn,
+#manualInspectorBtn {
+  min-height: 26px !important;
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  border-radius: var(--hc-radius-sm, 6px) !important;
+  white-space: nowrap;
+}
+
+#themeToggleBtn,
+#inspectorToggleBtn,
+#manualInspectorBtn {
+  border: 1px solid var(--hc-border, #e5e7eb);
+  background: var(--hc-surface, #fff);
+  color: var(--hc-text, #1a2332);
+  cursor: pointer;
+}
+
+#inspectorToggleBtn.off {
+  opacity: 0.75;
+}
+
+/* Never show morph controls in the top bar */
+.top-stack > #importMorphDataBtn,
+.top-stack > #clearMorphDataBtn,
+.app-toolbar-primary #importMorphDataBtn,
+.app-toolbar-primary #clearMorphDataBtn {
+  display: none !important;
+}
+
+/* ── Header: match toolbar thickness ── */
+#appRoot > header {
+  padding: 4px 10px !important;
+}
+
+#appRoot > header h1 {
+  font-size: 14px !important;
+}
+
+#appRoot > .wrap {
+  padding: 4px 6px 6px !important;
+}
+
+/* ── Workspace begins higher ── */
+.card.main-workspace {
+  padding: 4px 6px 6px !important;
+  margin-bottom: 0 !important;
+}
+
+.workspace-view-header {
+  flex-shrink: 0;
+  margin-bottom: 2px !important;
+}
+
+.main-workspace > .tabs.row,
+.workspace-view-header .tabs.row {
+  margin-bottom: 0 !important;
+  gap: 4px !important;
+}
+
+.main-workspace > .tabs .btn,
+.workspace-view-header .tabs .btn {
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  min-height: 26px !important;
+}
+
+/* Removed from workspace — hide legacy row if present */
+.workspace-help-row {
+  display: none !important;
+}
+
+/* ── Annotation ribbon: tighter ── */
+#annotationTabsShell {
+  margin: 2px 0 3px !important;
+}
+
+#annotationTabsRow {
+  padding: 0 6px !important;
+  gap: 6px !important;
+}
+
+.annotation-tab-btn {
+  padding: 5px 2px 3px !important;
+  font-size: 12px !important;
+}
+
+#annotationShortcutsBar {
+  display: none !important;
+}
+
+.annotation-tab-panel {
+  padding: 4px 6px !important;
+  max-height: 80px !important;
+}
+
+.annotation-tab-panel .btn {
+  min-height: 24px !important;
+  padding: 2px 7px !important;
+  font-size: 11px !important;
+}
+
+/* ── Parallel bar compact ── */
+#contourTab > .parallel-mode-bar,
+.parallel-mode-bar {
+  margin: 0 0 3px !important;
+  padding: 3px 6px !important;
+  gap: 4px 8px !important;
+  font-size: 11px !important;
+}
+
+#parallelAlignHint {
+  display: none !important;
+}
+
+.parallel-align-status {
+  margin: 0 !important;
+  padding: 2px 6px !important;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+  max-height: 2.6em !important;
+  overflow-y: auto !important;
+}
+
+/* ── Flex workspace fill ── */
+#contourWorkspaceShell:not(.hidden),
+#contourTab:not(.hidden),
+#singleEditorSection:not(.hidden),
+.parallel-compare:not(.hidden) {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+.contour-with-comments,
+.parallel-scroll-area,
+.contour-with-comments > #editorWrap,
+#editorWrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+
+@media (max-width: 900px) {
+  .top-stack {
+    flex-wrap: wrap !important;
+  }
+
+  .app-toolbar-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+}
