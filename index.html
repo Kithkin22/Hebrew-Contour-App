@@ -45,6 +45,8 @@
 /* parallel-align-copy-v1 */
 /* parallel-cross-sameword-v1 */
 /* parallel-pair-feedback-v1 */
+/* parallel-clear-table-v1 */
+
 
 
 
@@ -1802,8 +1804,105 @@ body{display:flex;flex-direction:column;}
 }
 .annotation-tab-panel{padding:8px!important;}
 .annotation-tab-panel .btn{padding:6px 9px!important;font-size:12px!important;}
-#contourTab{
+/* tab-switch-fix-v1 */
+/* tab-switch-fix-v2 */
+/* tab-switch-fix-v3 */
+/* editor-overflow-fix-v1 */
+.card.main-workspace,
+#contourTab,
+#singleEditorSection,
+.contour-with-comments,
+.parallel-compare,
+.parallel-scroll-area{
+  min-width:0;
+  overflow-x:hidden;
+}
+#parallelVerseRows{
+  min-width:0;
+}
+.parallel-verse-row{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+}
+.parallel-compare-head{
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+}
+.parallel-verse-cell,
+.parallel-verse-body,
+.parallel-pane-arc-wrap{
+  min-width:0;
+  max-width:100%;
+  overflow-wrap:break-word;
+  word-wrap:break-word;
+}
+.contour-with-comments>#editorWrap{
+  min-height:0;
+  max-height:100%;
+  align-self:stretch;
+}
+#editorWrap.editor-arc-wrap,
+#editorWrap{
+  min-width:0;
+  min-height:0;
+  height:auto!important;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#editor{
+  flex:none!important;
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+  overflow-wrap:break-word;
+  word-wrap:break-word;
+}
+#editor .clause,
+#editor .verse,
+.parallel-verse-body .clause,
+.parallel-verse-body .verse{
+  max-width:100%;
+  overflow-wrap:break-word;
+  word-wrap:break-word;
+}
+/* editor-overflow-fix-v2 */
+#appRoot>.wrap,
+#contourWorkspaceShell,
+#annotationTabsShell,
+#parallelCompareWrap,
+.parallel-pane-cell{
+  min-width:0;
+  overflow-x:hidden;
+}
+#editorWrap.editor-arc-wrap,
+#editorWrap{
+  width:100%;
+  box-sizing:border-box;
+  flex:1 1 0!important;
+}
+#editor .word,
+.parallel-verse-body .word{
+  max-width:100%;
+  overflow-wrap:break-word;
+  word-wrap:break-word;
+}
+
+
+#contourWorkspaceShell.hidden{display:none!important;}
+#contourWorkspaceShell:not(.hidden){
   flex:1;display:flex;flex-direction:column;min-height:0;
+}
+#annotationTabsShell.hidden{display:none!important;}
+#contourTab.hidden{display:none!important;}
+#contourTab:not(.hidden){
+  flex:1;display:flex;flex-direction:column;min-height:0;
+}
+#tableTab.hidden{display:none!important;}
+#tableTab:not(.hidden){
+  flex:1;display:flex;flex-direction:column;min-height:0;
+}
+body.workspace-table-view #persistentShowComments,
+body.workspace-table-view #commentPopover{
+  display:none!important;
 }
 #contourTab>.parallel-mode-bar{
   flex-shrink:0;margin:0 0 6px!important;padding:6px 8px!important;
@@ -1980,13 +2079,14 @@ body{display:flex;flex-direction:column;}
           </ul>
         </li>
         <li role="none" class="file-menu-separator" aria-hidden="true"></li>
+        <li role="none"><button type="button" class="file-menu-item" data-action="settings-rename" role="menuitem">Rename Project</button></li>
+        <li role="none"><button type="button" class="file-menu-item" data-action="settings-duplicate" role="menuitem">Duplicate Project</button></li>
+        <li role="none"><button type="button" class="file-menu-item" data-action="settings-delete" role="menuitem">Delete Project</button></li>
+        <li role="none" class="file-menu-separator" aria-hidden="true"></li>
         <li role="none" class="file-menu-has-submenu">
           <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Project Settings <span class="file-menu-chevron" aria-hidden="true">›</span></button>
-          <ul class="file-submenu" role="menu">
-            <li role="none"><button type="button" class="file-menu-item" data-action="settings-rename" role="menuitem">Rename Project</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="settings-duplicate" role="menuitem">Duplicate Project</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="settings-clear" role="menuitem">Clear Table</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="settings-delete" role="menuitem">Delete Project</button></li>
+          <ul class="file-submenu" id="projectSettingsSubmenu" role="menu">
+            <li role="none"><span class="file-menu-empty">No additional settings.</span></li>
           </ul>
         </li>
       </ul>
@@ -2056,6 +2156,7 @@ body{display:flex;flex-direction:column;}
       <button class="btn" id="clearAllArcs">Clear All Arcs</button>
       <span id="arcStatus" class="muted">Click Draw Arc, drag from one word to another, and release. Or use Set Arc Start/End.</span>
     </div><div id="arcManager" class="arc-manager"></div></div>
+    <div id="contourWorkspaceShell">
     <div id="legendTab" class="hidden">
     <div class="card" id="legendPanel" style="margin:0 0 12px 0;background:#fafafa">
       <strong>Export Legend / Key</strong>
@@ -2134,6 +2235,7 @@ body{display:flex;flex-direction:column;}
       </div>
       </div>
     </div>
+    </div>
     <div id="tableTab" class="hidden">
       <div class="row" style="margin-bottom:10px">
         <button class="btn good" id="docxExport">Export Table to Word</button>
@@ -2196,6 +2298,18 @@ body{display:flex;flex-direction:column;}
       <button type="button" class="btn" id="exportScopeRight">Right passage only</button>
       <button type="button" class="btn primary" id="exportScopeBoth">Both passages</button>
       <button type="button" class="btn" id="exportScopeCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="newProjectModal" aria-hidden="true" role="dialog" aria-labelledby="newProjectModalTitle">
+  <div class="panel help-panel">
+    <h3 id="newProjectModalTitle">Create a new project?</h3>
+    <p class="muted">This will clear the current contour/table, comments, annotations, and project data.</p>
+    <div class="row">
+      <button type="button" class="btn primary" id="newProjectSave">Save Current Project</button>
+      <button type="button" class="btn" id="newProjectDontSave">Don't Save</button>
+      <button type="button" class="btn" id="newProjectCancel">Cancel</button>
     </div>
   </div>
 </div>
@@ -2497,7 +2611,36 @@ function clearUndoStack(){undoStack=[];}
 function markUndo(){if(undoRestoring)return;undoStack.push(captureUndoSnapshot());if(undoStack.length>UNDO_MAX)undoStack.shift();}
 function undoLastChange(){if(!undoStack.length){updateSaveStatus('Nothing to undo.');return;}undoRestoring=true;const snap=undoStack.pop();restoreUndoSnapshot(snap);undoRestoring=false;if(autosaveReady)autoSaveProject();updateSaveStatus('Undid last change.');}
 
-function render(){applyLanguageLayout();syncStateBundle();if(isParallelActive()){renderParallelEditors();renderDualTables();}else{renderEditor();renderTable();}renderLegendEditor();renderInclusioManager();renderCommentsPanel();setTimeout(updateCommentPopover,0);if(isParallelActive())renderArcManagerParallel();else if(typeof renderArcManager==='function')renderArcManager();if(stateBundle.parallelEnabled)updateParallelAlignStatus();if(autosaveReady)autoSaveProject();}
+
+/* editor-overflow-fix-v1-js */
+let _editorLayoutFixQueued=false;
+function scheduleEditorLayoutFix(){
+  if(_editorLayoutFixQueued)return;
+  _editorLayoutFixQueued=true;
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      _editorLayoutFixQueued=false;
+      applyEditorLayoutFix();
+    });
+  });
+}
+function applyEditorLayoutFix(){
+  document.querySelectorAll('.card.main-workspace,#contourWorkspaceShell,#annotationTabsShell,#contourTab,#singleEditorSection,#parallelCompareWrap,.contour-with-comments,#editorWrap,#editor,.parallel-scroll-area').forEach(el=>{void el.offsetWidth;});
+  if(typeof renderArcOverlay==='function')renderArcOverlay();
+}
+(function(){
+  if(window._editorLayoutObserver)return;
+  function bind(){
+    const el=document.querySelector('.card.main-workspace');
+    if(!el||typeof ResizeObserver==='undefined')return;
+    window._editorLayoutObserver=new ResizeObserver(()=>scheduleEditorLayoutFix());
+    window._editorLayoutObserver.observe(el);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);
+  else bind();
+})();
+
+function render(){applyLanguageLayout();syncStateBundle();if(isParallelActive()){renderParallelEditors();renderDualTables();}else{renderEditor();renderTable();}renderLegendEditor();renderInclusioManager();if(!isWorkspaceTableView())renderCommentsPanel();setTimeout(updateCommentPopover,0);if(isParallelActive())renderArcManagerParallel();else if(typeof renderArcManager==='function')renderArcManager();if(stateBundle.parallelEnabled)updateParallelAlignStatus();if(autosaveReady)autoSaveProject();scheduleEditorLayoutFix();}
 function wordFormatClasses(w,l){let f=w.format||{};let suppressCommentStart=l&&isCommentBoundary(l,'start')&&!w.bracketSource;let suppressCommentEnd=l&&isCommentBoundary(l,'end')&&!w.bracketSource;return `${f.bold?'fmt-bold':''} ${f.italic?'fmt-italic':''} ${f.underline?'fmt-underline':''} ${f.doubleUnderline?'fmt-double-underline':''} ${f.highlight?'fmt-highlight':''} ${(w.bracketStart&&!suppressCommentStart)?'bracket-start':''} ${(w.bracketEnd&&!suppressCommentEnd)?'bracket-end':''}`;}
 function wordInlineStyle(w){let styles=[];if(w.color)styles.push('color:'+esc(w.color));if(w.format&&w.format.highlight)styles.push('background-color:'+esc(w.format.highlight));let bc=w.bracketColor||w.inclusioColor;if(bc)styles.push('--bracket-color:'+esc(bc));return styles.join(';');}
 function renderEditor(){const ed=document.getElementById('editor');const layout=getLanguageLayout();const scriptStyle=`direction:${layout.dir};text-align:${layout.textAlign};font-family:${layout.fontFamily}`;ensureComments();if(!state.verses.length){ed.innerHTML='<div class="editor-empty-state" dir="ltr"><p class="editor-empty-title">No text loaded yet</p><p class="muted">Use <strong>Generate text</strong> or <strong>Paste text</strong> in the menu bar above.</p></div>';hideCommentPopover();return;}let html='';let activeKey=selectedWordKey();state.verses.forEach((v,vi)=>{html+=`<div class="muted" dir="ltr">${esc(v.ref)}</div>`;v.clauses.forEach((c,ci)=>{let sel=state.selected&&state.selected.v==vi&&state.selected.c==ci;let marginStyle=layout.indentSide==='left'?`margin-left:${c.indent*36}px`:`margin-right:${c.indent*36}px`;html+=`<div class="clause ${sel?'selected':''}" data-v="${vi}" data-c="${ci}" dir="${layout.dir}" style="${marginStyle};${scriptStyle}">`;c.words.forEach((w,wi)=>{let l={v:vi,c:ci,w:wi};let ids=commentIdsForLoc(l);let commentClass=ids.length?'comment-anchored':'';let activeCommentClass=(state.activeCommentId&&ids.includes(state.activeCommentId))?'comment-active':'';let wsel=state.selected&&state.selected.v==vi&&state.selected.c==ci&&state.selected.w==wi;let same=activeKey && normalizeHebrewWord(w.text)===activeKey && !wsel;html+=`<span class="word ${wsel?'selected':''} ${same?'sameword':''} ${commentClass} ${activeCommentClass} ${w.deleted?'deleted':''} ${w.specials.includes('predicate')?'pred':''} ${w.specials.includes('subject')?'subj':''} ${wordFormatClasses(w,l)}" data-v="${vi}" data-c="${ci}" data-w="${wi}" style="${wordInlineStyle(w)}">${esc(w.text)}</span>${commentMarkersForLoc(l)} `});html+='</div>';});});ed.innerHTML=html;document.querySelectorAll('.word').forEach(el=>el.onclick=(ev)=>{let clicked={v:+el.dataset.v,c:+el.dataset.c,w:+el.dataset.w};if(ev.shiftKey&&locOK(state.selected)){applyBracketRange(state.selected,clicked);return;}state.selected=clicked;let ids=commentIdsForLoc(clicked);if(ids.length)state.activeCommentId=ids[0];render();});document.querySelectorAll('.comment-marker').forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();activateComment(el.dataset.commentId);});}
@@ -2830,16 +2973,35 @@ function detectUsedLegendEntries(){ensureLegend();let add=[];let sawBracket=fals
 function legendEntriesForExport(){ensureLegend();return state.legend.filter(e=>(e.label||'').trim());}
 function legendHtmlForExport(){let entries=legendEntriesForExport();if(!entries.length)return '';let rows=entries.map(e=>`<tr><td>${legendSampleHtml(e)}</td><td>${esc(e.label)}</td></tr>`).join('');return `<h3 style="font-family:Arial,Helvetica,sans-serif;margin-top:14px">Legend / Key</h3><table class="export-legend"><thead><tr><th>Marking</th><th>Label</th></tr></thead><tbody>${rows}</tbody></table>`;}
 
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  document.getElementById('contourTab').classList.toggle('hidden',b.dataset.tab!=='contour');
-  document.getElementById('tableTab').classList.toggle('hidden',b.dataset.tab!=='table');
-  document.getElementById('legendTab').classList.toggle('hidden',b.dataset.tab!=='legend');
-  if(b.dataset.tab==='table') renderTable();
-  if(b.dataset.tab==='legend'){ renderLegendEditor(); }
-  if(b.dataset.tab==='contour'){ renderInclusioManager(); }
-});
+function isWorkspaceTableView(){
+  const tableTab=document.getElementById('tableTab');
+  return !!(tableTab && !tableTab.classList.contains('hidden'));
+}
+function setWorkspaceTab(tab){
+  const onContour=tab==='contour';
+  const onTable=tab==='table';
+  document.querySelectorAll('.tabs button').forEach(x=>{
+    x.classList.toggle('active',x.dataset.tab===tab);
+  });
+  const contourShell=document.getElementById('contourWorkspaceShell');
+  if(contourShell) contourShell.classList.toggle('hidden',!onContour);
+  document.getElementById('contourTab')?.classList.toggle('hidden',!onContour);
+  document.getElementById('tableTab')?.classList.toggle('hidden',!onTable);
+  document.getElementById('legendTab')?.classList.toggle('hidden',tab!=='legend');
+  const annShell=document.getElementById('annotationTabsShell');
+  if(annShell) annShell.classList.toggle('hidden',!onContour);
+  const legendBelow=document.getElementById('legendBelowEditor');
+  if(legendBelow) legendBelow.style.display=onContour?'block':'none';
+  document.body.classList.toggle('workspace-table-view',onTable);
+  document.body.classList.toggle('workspace-contour-view',onContour);
+  const persistComments=document.getElementById('persistentShowComments');
+  if(persistComments) persistComments.classList.toggle('hidden',!onContour);
+  if(!onContour) hideCommentPopover();
+  if(onTable) renderTable();
+  if(tab==='legend') renderLegendEditor();
+  if(onContour){renderInclusioManager();scheduleEditorLayoutFix();}
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setWorkspaceTab(b.dataset.tab));
 document.getElementById('addColumn').onclick=()=>promptModal('Add Column','Column name:', '', v=>{if(v.trim() && v.trim().toLowerCase()!=='parsing')state.columns.push(v.trim());renderTable();});
 document.getElementById('resetColumns').onclick=()=>{state.columns=[];renderTable();};
 function freshProjectState(){return freshPaneState();}
@@ -2873,21 +3035,22 @@ function loadProjectIntoPane(paneIndex,projectId){const pi=paneIndex===1?1:0;con
 function openProjectInActivePane(id){if(!id)return;if(stateBundle.parallelEnabled){loadProjectIntoPane(stateBundle.activePane,id);closeProjectFileMenu();return;}openProjectById(id);}
 function openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}
 function initProjectManager(){const stored=readProjectStoreRaw();if(stored&&stored.projects){projectStore={currentProjectId:stored.currentProjectId,projects:stored.projects||{}};}else{migrateLegacyProjects();}if(!projectStore.currentProjectId||!projectStore.projects[projectStore.currentProjectId]){const ids=Object.keys(projectStore.projects).sort((a,b)=>(projectStore.projects[b].updatedAt||'').localeCompare(projectStore.projects[a].updatedAt||''));if(ids.length){projectStore.currentProjectId=ids[0];}else{const id=newProjectId();const now=new Date().toISOString();syncStateBundle();projectStore.currentProjectId=id;projectStore.projects[id]={id,name:'Untitled Project',createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:projectPayloadParallel()};writeProjectStore();}}const rec=getCurrentProjectRecord();if(rec&&rec.payload&&payloadHasContent(rec.payload)){try{restoreProjectPayload(rec.payload);updateSaveStatus('Restored: '+rec.name+' · last edited '+new Date(rec.updatedAt||rec.createdAt).toLocaleString());}catch(e){updateSaveStatus('Could not restore '+rec.name+'. Starting blank.');}}updateCurrentProjectLabel();renderProjectFileSubmenus();initProjectFileMenu();}
-function createNewProject(name){persistCurrentProject(true);const id=newProjectId();const now=new Date().toISOString();const n=uniqueProjectName((name||'').trim()||'Untitled Project');stateBundle=freshProjectBundle();state=stateBundle.panes[0];generatedRefs=stateBundle.generatedRefsByPane[0]=[];const pasteBox=document.getElementById('pasteBox');const refBox=document.getElementById('refBox');if(pasteBox){pasteBox.value='';pasteBox.dir='rtl';}if(refBox)refBox.value='';syncStateBundle();projectStore.projects[id]={id,name:n,createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:projectPayloadParallel()};projectStore.currentProjectId=id;writeProjectStore();const wasReady=autosaveReady;autosaveReady=false;render();autosaveReady=wasReady;updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('New project: '+n);}
-function clearTableProject(silent){if(!silent&&!confirm('Clear all text, annotations, and table content in this project?'))return;state=freshProjectState();generatedRefs=[];stateBundle.panes[stateBundle.activePane]=state;stateBundle.generatedRefsByPane[stateBundle.activePane]=generatedRefs;const pasteBox=document.getElementById('pasteBox');const refBox=document.getElementById('refBox');if(pasteBox)pasteBox.value='';if(refBox)refBox.value='';persistCurrentProject(true);const wasReady=autosaveReady;autosaveReady=false;render();autosaveReady=wasReady;updateSaveStatus('Table cleared.');}
+function resetManualInspectorState(){try{localStorage.setItem('contour4_manual_inspector_entries','{}');}catch(e){}window.CONTOUR_MANUAL_INSPECTOR={};}function createNewProject(opts){const saveCurrent=!(opts&&opts.saveCurrent===false);if(saveCurrent)persistCurrentProject(true);const id=newProjectId();const now=new Date().toISOString();const n=uniqueProjectName('Untitled Project');stateBundle=freshProjectBundle();state=stateBundle.panes[0];generatedRefs=stateBundle.generatedRefsByPane[0]=[];versePairPick=null;commentAnchorStart=null;clearUndoStack();resetManualInspectorState();bindActivePane(0);syncGeneratorFieldsFromActivePane();const pasteBox=document.getElementById('pasteBox');const refBox=document.getElementById('refBox');if(pasteBox){pasteBox.value='';pasteBox.dir='rtl';}if(refBox)refBox.value='';const parallelToggle=document.getElementById('parallelModeToggle');if(parallelToggle)parallelToggle.checked=false;syncStateBundle();projectStore.projects[id]={id,name:n,createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:projectPayloadParallel()};projectStore.currentProjectId=id;writeProjectStore();const wasReady=autosaveReady;autosaveReady=false;render();autosaveReady=wasReady;updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('New project: '+n);}
+function clearTableProject(silent,target){ensureStateBundle();const parallel=!!stateBundle.parallelEnabled;let which=target;if(which===undefined||which===null)which=parallel?stateBundle.activePane:'single';const msg=which==='all'?'Clear all text, annotations, and table content in BOTH panes?':which===0?'Clear all text, annotations, and table content in the LEFT pane?':which===1?'Clear all text, annotations, and table content in the RIGHT pane?':'Clear all text, annotations, and table content in this project?';if(!silent&&!confirm(msg))return;const wipePane=function(pi){stateBundle.panes[pi]=freshPaneState();stateBundle.generatedRefsByPane[pi]=[];pruneCrossArcsForPane(pi);};if(which==='all'){wipePane(0);wipePane(1);stateBundle.crossArcs=[];stateBundle.verseAlignPairs=null;versePairPick=null;}else if(parallel&&(which===0||which===1)){wipePane(which);stateBundle.verseAlignPairs=null;versePairPick=null;}else{state=freshProjectState();generatedRefs=[];stateBundle.panes[stateBundle.activePane]=state;stateBundle.generatedRefsByPane[stateBundle.activePane]=generatedRefs;}bindActivePane(stateBundle.activePane);syncGeneratorFieldsFromActivePane();const pasteBox=document.getElementById('pasteBox');const refBox=document.getElementById('refBox');if(pasteBox&&!state.verses.length)pasteBox.value='';if(refBox&&!state.ref)refBox.value='';clearUndoStack();persistCurrentProject(true);const wasReady=autosaveReady;autosaveReady=false;render();autosaveReady=wasReady;const status=which==='all'?'Both panes cleared.':which===0?'Left pane cleared.':which===1?'Right pane cleared.':'Table cleared.';updateSaveStatus(status);}
 function updateSaveStatus(msg){let el=document.getElementById('saveStatus');if(el)el.textContent=msg;}
 function saveProjectLocal(){try{persistCurrentProject(false);}catch(e){alert('Could not save in this browser. Try Export JSON instead.');}}
 function saveProjectAs(){const cur=getCurrentProjectRecord();if(!cur)return;promptModal('Save As','Save project as:',cur.name,name=>{const n=(name||'').trim();if(!n)return;persistCurrentProject(true);const id=newProjectId();const now=new Date().toISOString();projectStore.projects[id]={id,name:uniqueProjectName(n),createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:JSON.parse(JSON.stringify(projectPayload()))};projectStore.currentProjectId=id;writeProjectStore();updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('Saved as: '+projectStore.projects[id].name);});}
-function newProjectPrompt(){promptModal('New project','Name this passage worksheet:','Untitled Project',name=>{if((name||'').trim()){createNewProject(name);closeProjectFileMenu();}});}
+function newProjectPrompt(){const modal=document.getElementById('newProjectModal');if(!modal){createNewProject({saveCurrent:false});return;}const shut=()=>{modal.classList.remove('show');modal.setAttribute('aria-hidden','true');};document.getElementById('newProjectSave').onclick=()=>{shut();try{persistCurrentProject(false);}catch(e){alert('Could not save in this browser. Try Export JSON instead.');return;}createNewProject({saveCurrent:false});};document.getElementById('newProjectDontSave').onclick=()=>{shut();createNewProject({saveCurrent:false});};document.getElementById('newProjectCancel').onclick=shut;modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
 function renameCurrentProject(){const cur=getCurrentProjectRecord();if(!cur)return;promptModal('Rename project','Project name:',cur.name,name=>{const n=(name||'').trim();if(!n)return;cur.name=n;writeProjectStore();updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('Renamed to: '+n);});}
 function duplicateCurrentProject(){const cur=getCurrentProjectRecord();if(!cur)return;persistCurrentProject(true);promptModal('Duplicate project','Name for the copy:',cur.name+' copy',name=>{const n=(name||'').trim();if(!n)return;const id=newProjectId();const now=new Date().toISOString();projectStore.projects[id]={id,name:uniqueProjectName(n),createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:JSON.parse(JSON.stringify(projectPayload()))};switchToProject(id);closeProjectFileMenu();});}
-function deleteCurrentProject(){const cur=getCurrentProjectRecord();if(!cur)return;if(!confirm('Delete project "'+cur.name+'"? Export it first if you may need it later.'))return;delete projectStore.projects[cur.id];const ids=Object.keys(projectStore.projects).sort((a,b)=>(projectStore.projects[b].updatedAt||'').localeCompare(projectStore.projects[a].updatedAt||''));if(ids.length){projectStore.currentProjectId=ids[0];writeProjectStore();switchToProject(ids[0]);}else{createNewProject('Untitled Project');updateSaveStatus('Project deleted. Started a new blank project.');}closeProjectFileMenu();}
+function deleteCurrentProject(){const cur=getCurrentProjectRecord();if(!cur)return;if(!confirm('Delete project "'+cur.name+'"? Export it first if you may need it later.'))return;delete projectStore.projects[cur.id];const ids=Object.keys(projectStore.projects).sort((a,b)=>(projectStore.projects[b].updatedAt||'').localeCompare(projectStore.projects[a].updatedAt||''));if(ids.length){projectStore.currentProjectId=ids[0];writeProjectStore();switchToProject(ids[0]);}else{createNewProject({saveCurrent:false});updateSaveStatus('Project deleted. Started a new blank project.');}closeProjectFileMenu();}
 function downloadProjectFile(){persistCurrentProject(true);const rec=getCurrentProjectRecord();let payload=JSON.stringify(projectPayload(),null,2);let ref=(rec?rec.name:state.ref||'hebrew-contour-project').replace(/[^A-Za-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'')||'hebrew-contour-project';let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([payload],{type:'application/json'}));a.download=ref+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);updateSaveStatus('Exported: '+ref+'.json');}
 function importProjectFile(file){if(!file)return;let reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result);if(!payloadHasContent(data)&&!(data&&data.state))throw new Error('Missing project state');persistCurrentProject(true);const id=newProjectId();const now=new Date().toISOString();const st=(data&&data.state)?data.state:data;const baseName=(data.projectName||(st.ref)||(st.panes&&st.panes[0]&&st.panes[0].ref)||file.name.replace(/\.json$/i,'')||'Imported Project').trim();const name=uniqueProjectName(baseName);projectStore.projects[id]={id,name,createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:(data&&data.state)?data:{state:st,generatedRefs:data.generatedRefs||[]}};projectStore.currentProjectId=id;writeProjectStore();restoreProjectPayload(projectStore.projects[id].payload);updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('Imported: '+name);closeProjectFileMenu();}catch(e){alert('Could not import that project JSON file.');}};reader.readAsText(file);}
 function closeProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const dd=document.getElementById('projectFileMenuDropdown');const trigger=document.getElementById('projectMenuTrigger');if(card)card.classList.remove('menu-open');if(dd){dd.setAttribute('aria-hidden','true');}if(trigger)trigger.setAttribute('aria-expanded','false');document.querySelectorAll('.file-menu-has-submenu.submenu-open').forEach(el=>el.classList.remove('submenu-open'));}
 function openProjectFileMenu(){if(typeof closeTopMenus==='function')closeTopMenus();const card=document.getElementById('projectFileMenuCard');const dd=document.getElementById('projectFileMenuDropdown');const trigger=document.getElementById('projectMenuTrigger');if(!card||!dd)return;renderProjectFileSubmenus();card.classList.add('menu-open');dd.setAttribute('aria-hidden','false');if(trigger)trigger.setAttribute('aria-expanded','true');}
 function toggleProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');if(card&&card.classList.contains('menu-open'))closeProjectFileMenu();else openProjectFileMenu();}
-function handleProjectFileAction(action){closeProjectFileMenu();switch(action){case 'new-project':newProjectPrompt();break;case 'save-project':saveProjectLocal();break;case 'save-as':saveProjectAs();break;case 'export-contour-pdf':exportContourPdf();break;case 'export-contour-word':exportContourDocx();break;case 'export-contour-html':exportContourHtml();break;case 'export-table-pdf':if(isParallelActive())exportTablePdfParallel();else exportTablePdf();break;case 'export-table-word':document.getElementById('docxExport').click();break;case 'export-project-json':downloadProjectFile();break;case 'import-text':if(typeof openTopMenu==='function')openTopMenu('paste');break;case 'import-project':document.getElementById('projectFileInput').click();break;case 'settings-rename':renameCurrentProject();break;case 'settings-duplicate':duplicateCurrentProject();break;case 'settings-clear':clearTableProject(false);break;case 'settings-delete':deleteCurrentProject();break;default:break;}}
+function handleProjectFileAction(action){closeProjectFileMenu();switch(action){case 'new-project':newProjectPrompt();break;case 'save-project':saveProjectLocal();break;case 'save-as':saveProjectAs();break;case 'export-contour-pdf':exportContourPdf();break;case 'export-contour-word':exportContourDocx();break;case 'export-contour-html':exportContourHtml();break;case 'export-table-pdf':if(isParallelActive())exportTablePdfParallel();else exportTablePdf();break;case 'export-table-word':document.getElementById('docxExport').click();break;case 'export-project-json':downloadProjectFile();break;case 'import-text':if(typeof openTopMenu==='function')openTopMenu('paste');break;case 'import-project':document.getElementById('projectFileInput').click();break;case 'settings-rename':renameCurrentProject();break;case 'settings-duplicate':duplicateCurrentProject();break;case 'settings-delete':deleteCurrentProject();break;default:break;}}
+/* file-menu-new-project-v1 */
 function initProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const trigger=document.getElementById('projectMenuTrigger');const dd=document.getElementById('projectFileMenuDropdown');if(!card||!trigger||!dd)return;window.closeProjectFileMenu=closeProjectFileMenu;window.openProjectFileMenu=openProjectFileMenu;trigger.setAttribute('role','button');trigger.setAttribute('tabindex','0');trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(e){e.stopPropagation();toggleProjectFileMenu();});trigger.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleProjectFileMenu();}});dd.querySelectorAll('[data-action]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();handleProjectFileAction(btn.getAttribute('data-action'));});});card.querySelectorAll('.file-menu-has-submenu > .file-menu-item').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const li=btn.parentElement;if(!li)return;if(window.matchMedia('(hover: none)').matches||e.detail>0){li.classList.toggle('submenu-open');}});});document.getElementById('projectFileInput').onchange=function(e){importProjectFile(e.target.files[0]);e.target.value='';};document.addEventListener('click',function(e){if(!card.classList.contains('menu-open'))return;if(card.contains(e.target))return;closeProjectFileMenu();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&card.classList.contains('menu-open'))closeProjectFileMenu();});}
 
 document.querySelectorAll('[data-text-color]').forEach(btn=>btn.onclick=()=>setSelectedColor(btn.dataset.textColor));
@@ -3302,7 +3465,9 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
       <div id="ann-export" class="annotation-tab-panel"></div>
     `;
 
-    anchor.parentNode.insertBefore(shell, anchor);
+    const contourShell=document.getElementById('contourWorkspaceShell');
+    if(contourShell) contourShell.insertBefore(shell, contourShell.firstChild);
+    else anchor.parentNode.insertBefore(shell, anchor);
 
     if(color) document.getElementById('ann-color').appendChild(color);
     if(format) document.getElementById('ann-format').appendChild(format);
@@ -3319,8 +3484,10 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
         btn.classList.add('active');
         document.getElementById(btn.dataset.panel)?.classList.add('active');
         if(typeof renderArcOverlay === 'function') setTimeout(renderArcOverlay,80);
+        scheduleEditorLayoutFix();
       };
     });
+    scheduleEditorLayoutFix();
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildAnnotationTabs);
@@ -3389,12 +3556,12 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
    wrap.appendChild(legendPanel);
    contourTab.appendChild(wrap);
 
-   if(tableBtn){
-      tableBtn.addEventListener('click',()=>{wrap.style.display='none';});
+   function syncLegendVisibility(){
+      const onContour=document.querySelector('[data-tab="contour"]')?.classList.contains('active');
+      wrap.style.display=onContour?'block':'none';
    }
-   if(contourBtn){
-      contourBtn.addEventListener('click',()=>{wrap.style.display='block';});
-   }
+   if(tableBtn) tableBtn.addEventListener('click',syncLegendVisibility);
+   if(contourBtn) contourBtn.addEventListener('click',syncLegendVisibility);
  }
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(moveLegend,500));
  else setTimeout(moveLegend,500);

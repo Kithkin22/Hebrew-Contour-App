@@ -51,7 +51,11 @@ PATCH_SCRIPTS = [
     "apply_parallel_align_copy.py",
     "apply_parallel_cross_sameword.py",
     "apply_parallel_pair_feedback.py",
+    "apply_parallel_clear_table.py",
+    "apply_file_menu_new_project.py",
     "apply_workspace_maximize.py",
+    "apply_tab_switch_fix.py",
+    "apply_editor_overflow_fix.py",
 ]
 
 # Full WLC bundle is ~16.5MB; truncated restores are usually <15MB.
@@ -70,6 +74,15 @@ LAYOUT_MARKERS = [
     "file-menu-card",
     "buildAnnotationTabs",
     "/* workspace-maximize-v1 */",
+    "/* tab-switch-fix-v1 */",
+    "/* tab-switch-fix-v2 */",
+    "/* tab-switch-fix-v3 */",
+    "isWorkspaceTableView",
+    "contourWorkspaceShell",
+    "/* editor-overflow-fix-v1 */",
+    "/* editor-overflow-fix-v2 */",
+    "scheduleEditorLayoutFix",
+    "setWorkspaceTab",
 ]
 
 

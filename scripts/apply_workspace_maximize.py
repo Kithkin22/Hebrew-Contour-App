@@ -15,6 +15,10 @@ body{display:flex;flex-direction:column;}
   flex:1;display:flex;flex-direction:column;
   min-height:100vh;min-height:100dvh;
 }
+#appRoot:not(.hidden){
+  display:flex!important;
+  flex-direction:column!important;
+}
 #appRoot>header{
   flex-shrink:0;
   padding:6px 12px!important;
@@ -37,7 +41,7 @@ body{display:flex;flex-direction:column;}
   .top-menu-hint{display:none!important;}
 }
 .card.main-workspace{
-  flex:1;display:flex;flex-direction:column;min-height:0;
+  flex:1;display:flex;flex-direction:column;min-height:min(320px,55vh);
   padding:8px 10px!important;margin-bottom:0!important;
 }
 .main-workspace>.tabs.row{
@@ -67,7 +71,13 @@ body{display:flex;flex-direction:column;}
 }
 .annotation-tab-panel{padding:8px!important;}
 .annotation-tab-panel .btn{padding:6px 9px!important;font-size:12px!important;}
-#contourTab{
+#annotationTabsShell.hidden{display:none!important;}
+#contourTab.hidden{display:none!important;}
+#contourTab:not(.hidden){
+  flex:1;display:flex;flex-direction:column;min-height:0;
+}
+#tableTab.hidden{display:none!important;}
+#tableTab:not(.hidden){
   flex:1;display:flex;flex-direction:column;min-height:0;
 }
 #contourTab>.parallel-mode-bar{

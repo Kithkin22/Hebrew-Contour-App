@@ -26,7 +26,8 @@
     }
     if (app) {
       app.classList.remove('hidden');
-      app.style.display = 'block';
+      app.style.display = 'flex';
+      app.style.flexDirection = 'column';
       app.setAttribute('aria-hidden', 'false');
     }
 
