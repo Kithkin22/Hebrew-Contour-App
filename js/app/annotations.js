@@ -18,14 +18,17 @@
     const shell = document.createElement('div');
     shell.id = 'annotationTabsShell';
     shell.innerHTML = `
-      <div id="annotationTabsRow">
-        <button type="button" class="annotation-tab-btn active" data-panel="ann-color">Color</button>
-        <button type="button" class="annotation-tab-btn" data-panel="ann-format">Format</button>
-        <button type="button" class="annotation-tab-btn" data-panel="ann-highlight">Highlight</button>
-        <button type="button" class="annotation-tab-btn" data-panel="ann-brackets">Brackets</button>
-        <button type="button" class="annotation-tab-btn" data-panel="ann-arcs">Arcs</button>
-        <button type="button" class="annotation-tab-btn" data-panel="ann-inclusio">Inclusio</button>
-        <button type="button" class="annotation-tab-btn" data-panel="ann-export">Export</button>
+      <div id="annotationToolbarHead">
+        <div id="annotationTabsRow">
+          <button type="button" class="annotation-tab-btn active" data-panel="ann-color">Color</button>
+          <button type="button" class="annotation-tab-btn" data-panel="ann-format">Format</button>
+          <button type="button" class="annotation-tab-btn" data-panel="ann-highlight">Highlight</button>
+          <button type="button" class="annotation-tab-btn" data-panel="ann-brackets">Brackets</button>
+          <button type="button" class="annotation-tab-btn" data-panel="ann-arcs">Arcs</button>
+          <button type="button" class="annotation-tab-btn" data-panel="ann-inclusio">Inclusio</button>
+          <button type="button" class="annotation-tab-btn" data-panel="ann-export">Export</button>
+        </div>
+        <div id="parallelModeDock" aria-label="Parallel passages controls"></div>
       </div>
       <div id="annotationShortcutsBar" aria-label="Keyboard shortcuts for selected word">
         <span class="shortcut-bar-label">Keys</span>
@@ -59,6 +62,8 @@
     if(inclusio) document.getElementById('ann-inclusio').appendChild(inclusio);
     if(exportRow) document.getElementById('ann-export').appendChild(exportRow);
 
+    dockParallelControls();
+
     document.querySelectorAll('.annotation-tab-btn').forEach(btn=>{
       btn.onclick = ()=>{
         document.querySelectorAll('.annotation-tab-btn').forEach(b=>b.classList.remove('active'));
@@ -70,6 +75,15 @@
       };
     });
     scheduleEditorLayoutFix();
+  }
+
+  function dockParallelControls(){
+    const parallelBar=document.getElementById('parallelModeBar');
+    const dock=document.getElementById('parallelModeDock');
+    if(!parallelBar||!dock||parallelBar.dataset.docked) return;
+    parallelBar.classList.add('parallel-mode-docked');
+    dock.appendChild(parallelBar);
+    parallelBar.dataset.docked='1';
   }
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildAnnotationTabs);

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Hebrew/Greek Contour Table App</title>
-<link rel="stylesheet" href="css/app.css?v=26">
+<link rel="stylesheet" href="css/app.css?v=27">
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
@@ -132,15 +132,16 @@
 </div>
 
   <div class="card main-workspace">
-    <div class="tabs row">
-      <button class="btn active" data-tab="contour">Contour Editor</button>
-      <button class="btn" data-tab="table">Table View</button>
-      <!-- Legend tab removed -->
-    </div>
-    <div class="workspace-help-row">
-      <button type="button" class="btn" id="feedbackBtn" aria-haspopup="dialog" aria-controls="feedbackModal" title="Send feedback or report a problem">Feedback</button>
-      <button type="button" class="btn" id="helpBtn" aria-haspopup="dialog" aria-controls="helpModal" title="Keyboard shortcuts and tips">? Help</button>
-      <a href="/admin.html" id="adminLink" class="admin-link" title="Feedback admin inbox (password required)">Admin<span id="adminInboxBadge" class="admin-inbox-badge hidden" aria-hidden="true"></span></a>
+    <div class="workspace-view-header">
+      <div class="tabs row">
+        <button class="btn active" data-tab="contour">Contour Editor</button>
+        <button class="btn" data-tab="table">Table View</button>
+      </div>
+      <div class="workspace-help-row">
+        <button type="button" class="btn" id="feedbackBtn" aria-haspopup="dialog" aria-controls="feedbackModal" title="Send feedback or report a problem">Feedback</button>
+        <button type="button" class="btn" id="helpBtn" aria-haspopup="dialog" aria-controls="helpModal" title="Keyboard shortcuts and tips">? Help</button>
+        <a href="/admin.html" id="adminLink" class="admin-link" title="Feedback admin inbox (password required)">Admin<span id="adminInboxBadge" class="admin-inbox-badge hidden" aria-hidden="true"></span></a>
+      </div>
     </div>
     <div class="toolbar-section"><div class="row" id="colorToolbar">
       <strong class="small toolbar-label">Text color:</strong>
@@ -259,12 +260,12 @@
         </div>
       </div>
       <div id="singleEditorSection">
-      <div class="row" style="margin-bottom:10px">
+      <div class="row contour-export-source hidden" aria-hidden="true">
         <button class="btn good" id="contourDocxExport">Export Contour to Word</button>
         <button class="btn good" id="contourPdfExport">Export Contour to PDF</button>
         <button class="btn" id="showCommentsPanel">💬 Show Comments</button>
       </div>
-      <div class="contour-with-comments">
+      <div class="contour-with-comments comments-collapsed">
         <div id="editorWrap" class="editor-arc-wrap"><svg id="arcSvg" aria-hidden="true"></svg><div id="editor"></div></div>
         <aside id="commentsPanel" class="comments-panel"></aside>
       </div>

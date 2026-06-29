@@ -156,7 +156,7 @@ function locOK(l,pane){if(pane!=null||(l&&l.pane!=null))return locOKInPane(l,pan
 function normalizeHebrewWord(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05C7]/g,'').replace(/[־־]/g,'').replace(/[.,;:!?()\[\]{}"'׳״·;⸀⸂⸃]/g,'').toLowerCase().trim();}
 function selectedWordKey(){return locOK(state.selected)?normalizeHebrewWord(state.verses[state.selected.v].clauses[state.selected.c].words[state.selected.w].text):'';}function forEachMatchingWord(key,cb){if(!key)return;state.verses.forEach((v,vi)=>v.clauses.forEach((c,ci)=>c.words.forEach((w,wi)=>{if(normalizeHebrewWord(w.text)===key)cb(w);})));}
 let commentAnchorStart=null;
-let commentsPanelCollapsed=false;
+let commentsPanelCollapsed=true;
 function ensureComments(){if(!Array.isArray(state.comments))state.comments=[];}
 function cloneLoc(l){return l?{v:+l.v,c:+l.c,w:+l.w}:null;}
 function locEqual(a,b){return !!(a&&b&&a.v===b.v&&a.c===b.c&&a.w===b.w);}
