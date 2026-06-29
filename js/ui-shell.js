@@ -68,10 +68,9 @@
     setupCommentsDock(rightPanel);
     setupVerseNavigation(sidebar);
     setupParallelInSecondary(secondary);
-    relocateMorphButtons(secondary);
     syncProjectName();
     syncPanelVisibility();
-    setupHcNavMenusIntegration();
+    relocateLegacyMenus(wrap, secondary);
     bootstrapHcComments();
     setupCommentsCollapse(appBody, rightPanel);
     hookRenderForVerseNav();
@@ -98,11 +97,7 @@
 
     var right = el('div', 'hc-top-nav-right');
 
-    /* Top nav menus — wired to existing top-stack panels via hc-nav-menus.js */
-    left.appendChild(makeNavMenuBtn('File', 'file'));
-    left.appendChild(makeNavMenuBtn('Generate', 'generate'));
-    left.appendChild(makeNavMenuBtn('Paste Text', 'paste'));
-    left.appendChild(makeNavMenuBtn('Export', 'export'));
+    /* File / Generate / Paste / Export use the legacy top-stack menu strip (reliable handlers). */
 
     /* Move existing injected buttons to right nav */
     ['themeToggleBtn', 'inspectorToggleBtn', 'manualInspectorBtn'].forEach(function (id) {
@@ -146,12 +141,12 @@
     return btn;
   }
 
-  function setupHcNavMenusIntegration() {
-    if (typeof window.setupHcNavMenus !== 'function') {
-      setTimeout(setupHcNavMenusIntegration, 200);
-      return;
+  function relocateLegacyMenus(wrap, secondary) {
+    var topStack = $('.top-stack', wrap);
+    var legacySlot = $('#hcLegacyMenuSlot', secondary);
+    if (topStack && legacySlot && topStack.parentNode !== legacySlot) {
+      legacySlot.appendChild(topStack);
     }
-    window.setupHcNavMenus();
   }
 
   /* ── Secondary Toolbar ── */
@@ -163,19 +158,10 @@
     var left = el('div', 'hc-secondary-toolbar-group');
     var right = el('div', 'hc-secondary-toolbar-group hc-secondary-right');
 
-    /* Compact quick actions — not duplicated in sidebar */
-    var quickSlot = el('div', 'hc-secondary-quick-actions');
-    quickSlot.id = 'hcQuickActionsSlot';
-    quickSlot.appendChild(makeToolbarBtn('File', function () {
-      if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu();
-    }));
-    quickSlot.appendChild(makeToolbarBtn('Generate Text', function () {
-      if (typeof window.openTopMenu === 'function') window.openTopMenu('generate');
-    }));
-    quickSlot.appendChild(makeToolbarBtn('Paste Text', function () {
-      if (typeof window.openTopMenu === 'function') window.openTopMenu('paste');
-    }));
-    left.appendChild(quickSlot);
+    /* Legacy File / Generate / Paste menus mount here (moved from top-stack on init). */
+    var legacySlot = el('div', 'hc-legacy-menu-slot');
+    legacySlot.id = 'hcLegacyMenuSlot';
+    left.appendChild(legacySlot);
 
     left.appendChild(el('span', 'hc-secondary-divider'));
 
@@ -591,14 +577,41 @@
     applyCollapsedState();
   }
 
+  function getAppState() {
+    if (typeof window.getContourState === 'function') return window.getContourState();
+    return window.state || null;
+  }
+
   function setupSidebarCollapse(sidebar, appBody) {
     var btn = sidebar._collapseBtn;
     if (!btn) return;
+    var userCollapsed = false;
+
     btn.addEventListener('click', function () {
+      var willCollapse = !appBody.classList.contains('hc-sidebar-collapsed');
       appBody.classList.toggle('hc-sidebar-collapsed');
       btn.textContent = appBody.classList.contains('hc-sidebar-collapsed') ? '›' : '‹';
+      userCollapsed = willCollapse;
       if (typeof scheduleEditorLayoutFix === 'function') scheduleEditorLayoutFix();
     });
+
+    function syncSidebarForPassage() {
+      var st = getAppState();
+      var hasVerses = !!(st && Array.isArray(st.verses) && st.verses.length);
+      appBody.classList.toggle('hc-sidebar-empty', !hasVerses);
+      sidebar.classList.toggle('hc-sidebar-empty', !hasVerses);
+      if (!hasVerses) {
+        appBody.classList.add('hc-sidebar-collapsed');
+        btn.textContent = '›';
+      } else if (!userCollapsed) {
+        appBody.classList.remove('hc-sidebar-collapsed');
+        btn.textContent = '‹';
+      }
+      if (typeof scheduleEditorLayoutFix === 'function') scheduleEditorLayoutFix();
+    }
+
+    window._hcSyncSidebarEmpty = syncSidebarForPassage;
+    syncSidebarForPassage();
   }
 
   function syncPanelVisibility() {
@@ -643,14 +656,12 @@
     function rebuild() {
       nav.innerHTML = '';
       var verses = [];
-      try {
-        if (window.state && Array.isArray(window.state.verses)) {
-          verses = window.state.verses;
-        }
-      } catch (e) { /* ignore */ }
+      var st = getAppState();
+      if (st && Array.isArray(st.verses)) verses = st.verses;
 
       if (!verses.length) {
         nav.innerHTML = '<div class="hc-empty-state" style="padding:12px"><span style="font-size:12px;color:var(--hc-text-muted)">No verses loaded</span></div>';
+        if (typeof window._hcSyncSidebarEmpty === 'function') window._hcSyncSidebarEmpty();
         return;
       }
 
@@ -666,6 +677,7 @@
         });
         nav.appendChild(btn);
       });
+      if (typeof window._hcSyncSidebarEmpty === 'function') window._hcSyncSidebarEmpty();
     }
 
     rebuild();
@@ -705,10 +717,11 @@
     var refEl = $('#hcRefDisplay');
     if (!refEl) return;
     try {
-      if (window.state && window.state.ref) {
-        refEl.textContent = 'Ref: ' + window.state.ref;
-      } else if (window.state && window.state.verses && window.state.verses[0]) {
-        refEl.textContent = 'Ref: ' + window.state.verses[0].ref;
+      var st = getAppState();
+      if (st && st.ref) {
+        refEl.textContent = 'Ref: ' + st.ref;
+      } else if (st && st.verses && st.verses[0]) {
+        refEl.textContent = 'Ref: ' + st.verses[0].ref;
       }
     } catch (e) { /* ignore */ }
   }
@@ -777,9 +790,10 @@
 
     function updateCounts() {
       try {
-        if (!window.state || !window.state.verses) return;
+        var st = getAppState();
+        if (!st || !st.verses) return;
         var words = 0, chars = 0, rows = 0;
-        window.state.verses.forEach(function (v) {
+        st.verses.forEach(function (v) {
           v.clauses.forEach(function (c) {
             rows++;
             c.words.forEach(function (w) {
@@ -794,7 +808,7 @@
         charCount.textContent = 'Chars: ' + chars;
         rowCount.textContent = rows ? 'Rows: ' + rows : '';
         if (fontDisplay) {
-          fontDisplay.textContent = (window.state.language === 'greek') ? 'SBL Greek' : 'SBL BibLit';
+          fontDisplay.textContent = (st.language === 'greek') ? 'SBL Greek' : 'SBL BibLit';
         }
       } catch (e) { /* ignore */ }
     }

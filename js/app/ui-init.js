@@ -26,6 +26,9 @@
     if(t)t.setAttribute('aria-expanded','true');
     if(backdrop){backdrop.classList.add('show');backdrop.setAttribute('aria-hidden','false');}
     openCard=card;
+    requestAnimationFrame(function(){
+      if(typeof positionHcMenuCard==='function')positionHcMenuCard(card);
+    });
   };
   window.closeTopMenus=closeTopMenus;
 
@@ -54,6 +57,11 @@
     });
     document.addEventListener('keydown',function(e){
       if(e.key==='Escape')closeTopMenus();
+    });
+    window.addEventListener('resize',function(){
+      if(openCard&&typeof positionHcMenuCard==='function')positionHcMenuCard(openCard);
+      var fileCard=document.getElementById('projectFileMenuCard');
+      if(fileCard&&fileCard.classList.contains('menu-open')&&typeof positionHcMenuCard==='function')positionHcMenuCard(fileCard);
     });
   }
 

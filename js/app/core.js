@@ -1,5 +1,6 @@
 let generatedRefs=[];
 let state={ref:'',verses:[],selected:null,columns:[],language:'hebrew-bhsa',legend:[],inclusios:[],comments:[],activeCommentId:null,arcs:[],activeArcId:null};
+window.getContourState=function(){return state;};
 /* Parallel passages (desktop): dual panes, verse alignment, cross-pane arcs */
 const PARALLEL_MIN_WIDTH=1024;
 let stateBundle={parallelEnabled:false,activePane:0,crossArcs:[],verseAlignPairs:null,generatedRefsByPane:[[],[]],panes:[null,null]};let versePairPick=null;

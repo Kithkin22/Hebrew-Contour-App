@@ -177,37 +177,69 @@ body.hc-shell-ready #appRoot > header {
   outline: none;
 }
 
-/* Hide original top-stack chrome; keep open menus accessible in HCDS shell */
-.hc-shell-ready .top-stack,
-body.hc-shell-ready .top-stack,
-#appRoot.hc-shell-ready .top-stack {
-  display: block !important;
-  visibility: hidden !important;
-  position: fixed !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
+.hc-legacy-menu-slot {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hc-legacy-menu-slot .top-stack {
+  margin: 0 !important;
+}
+
+.hc-legacy-menu-slot .card.compact-card > strong:first-child,
+.hc-legacy-menu-slot .card.compact-card > .save-tools-title {
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Legacy File / Generate / Paste menus — visible, directly clickable in HCDS shell */
+.hc-shell-ready .hc-legacy-menu-slot .top-stack,
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  visibility: visible !important;
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
   margin: 0 !important;
   padding: 0 !important;
   overflow: visible !important;
-  pointer-events: none !important;
-  z-index: 4500 !important;
-  opacity: 0 !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  z-index: auto !important;
 }
 
-body.hc-shell-ready.top-menu-open .top-stack {
+.hc-shell-ready .hc-legacy-menu-slot .top-stack > .top-menu-hint {
+  display: none !important;
+}
+
+.hc-shell-ready .hc-legacy-menu-slot .top-stack > .card.compact-card {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  margin: 0 !important;
+  flex: 0 0 auto !important;
+}
+
+/* Fallback: hide any top-stack not relocated into the legacy slot */
+.hc-shell-ready .wrap > .top-stack {
+  display: none !important;
+}
+
+body.hc-shell-ready.top-menu-open .hc-legacy-menu-slot .top-stack {
   visibility: visible !important;
   pointer-events: auto !important;
   opacity: 1 !important;
 }
 
-.hc-shell-ready .top-stack > .top-menu-hint,
-.hc-shell-ready .top-stack > .card.compact-card:not(.menu-open) {
-  display: none !important;
-}
-
-body.hc-shell-ready .top-stack .file-menu-card.menu-open {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .file-menu-card.menu-open {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -228,7 +260,7 @@ body.hc-shell-ready .top-stack .file-menu-card.menu-open {
   overflow: visible !important;
 }
 
-body.hc-shell-ready .top-stack .card.compact-card.menu-open:not(.file-menu-card) {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .card.compact-card.menu-open:not(.file-menu-card) {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -245,19 +277,19 @@ body.hc-shell-ready .top-stack .card.compact-card.menu-open:not(.file-menu-card)
   max-height: calc(100vh - var(--hc-topnav-height) - 24px) !important;
 }
 
-body.hc-shell-ready .top-stack .card.compact-card[data-menu="generate"].menu-open {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .card.compact-card[data-menu="generate"].menu-open {
   width: min(720px, calc(100vw - 16px)) !important;
 }
 
-body.hc-shell-ready .top-stack .card.compact-card[data-menu="paste"].menu-open {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .card.compact-card[data-menu="paste"].menu-open {
   width: min(560px, calc(100vw - 16px)) !important;
 }
 
-body.hc-shell-ready .top-stack .file-menu-card.menu-open > .save-tools-title {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .file-menu-card.menu-open > .save-tools-title {
   display: none !important;
 }
 
-body.hc-shell-ready .top-stack .file-menu-card.menu-open > .file-menu-dropdown {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .file-menu-card.menu-open > .file-menu-dropdown {
   display: block !important;
   position: static !important;
   width: 100% !important;
@@ -268,7 +300,7 @@ body.hc-shell-ready .top-stack .file-menu-card.menu-open > .file-menu-dropdown {
   border-radius: inherit !important;
 }
 
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-submenu {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .file-menu-card.menu-open .file-submenu {
   position: absolute !important;
   left: calc(100% - 2px) !important;
   top: 0 !important;
@@ -285,22 +317,22 @@ body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-submenu {
   z-index: 12 !important;
 }
 
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .file-menu-card.menu-open .file-menu-has-submenu {
   position: relative !important;
 }
 
-body.hc-shell-ready .top-stack .card.compact-card.menu-open:not(.file-menu-card) > .menu-trigger {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .card.compact-card.menu-open:not(.file-menu-card) > .menu-trigger {
   display: none !important;
 }
 
-body.hc-shell-ready .top-stack .card.compact-card.menu-open:not(.file-menu-card) > .top-menu-panel {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .card.compact-card.menu-open:not(.file-menu-card) > .top-menu-panel {
   display: block !important;
   margin-top: 0 !important;
 }
 
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu:hover > .file-submenu,
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu.submenu-open > .file-submenu,
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu:focus-within > .file-submenu {
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .file-menu-card.menu-open .file-menu-has-submenu:hover > .file-submenu,
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .file-menu-card.menu-open .file-menu-has-submenu.submenu-open > .file-submenu,
+body.hc-shell-ready .hc-legacy-menu-slot .top-stack .file-menu-card.menu-open .file-menu-has-submenu:focus-within > .file-submenu {
   display: block !important;
 }
 
@@ -451,31 +483,16 @@ body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu:
   margin-bottom: var(--hc-space-2);
 }
 
-.hc-sidebar-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.hc-morph-slot {
+  display: none !important;
 }
 
-.hc-sidebar-action {
-  display: flex;
-  align-items: center;
-  gap: var(--hc-space-2);
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: left;
-  border: none;
-  border-radius: var(--hc-radius-sm);
-  background: transparent;
-  color: var(--hc-text);
-  cursor: pointer;
-  transition: background var(--hc-duration-fast);
+.hc-sidebar.hc-sidebar-empty .hc-sidebar-scroll {
+  display: none;
 }
 
-.hc-sidebar-action:hover {
-  background: var(--hc-surface);
+.hc-app-body.hc-sidebar-empty.hc-sidebar-collapsed .hc-sidebar-header .hc-sidebar-title {
+  display: none;
 }
 
 .hc-verse-nav {
@@ -1040,8 +1057,7 @@ body.dark-mode .hc-panel-tab.active {
 
   .hc-sidebar-scroll .hc-sidebar-section-title,
   .hc-sidebar-scroll .hc-verse-nav-item,
-  .hc-sidebar-scroll .hc-sidebar-project-name,
-  .hc-sidebar-scroll .hc-sidebar-action span {
+  .hc-sidebar-scroll .hc-sidebar-project-name {
     display: none;
   }
 }
