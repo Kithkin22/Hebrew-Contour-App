@@ -116,6 +116,16 @@ body.hc-project-menu-open .file-menu-dropdown-portal {
   display: block !important;
 }
 
+/* Legend / Key panel: stay visible below editor in single and parallel contour view. */
+#legendBelowEditor {
+  flex-shrink: 0 !important;
+  margin-top: 12px !important;
+}
+
+#contourTab:not(.hidden) > #legendBelowEditor {
+  display: block;
+}
+
 /* Expanded submenus: list inline so Open Recent is never clipped off-screen. */
 .file-menu-has-submenu.submenu-open > .file-submenu {
   display: block;

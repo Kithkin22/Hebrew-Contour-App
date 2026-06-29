@@ -56,6 +56,20 @@ async function main() {
   await page.evaluate(() => loadSampleText());
   await page.waitForSelector('#editor .word', { timeout: 15000 });
 
+  const legendSingle = await page.evaluate(() => {
+    if (typeof syncLegendBelowEditor === 'function') syncLegendBelowEditor();
+    const wrap = document.getElementById('legendBelowEditor');
+    const anchor = document.getElementById('singleEditorSection');
+    return {
+      hasWrap: !!wrap,
+      displayed: !!(wrap && getComputedStyle(wrap).display !== 'none'),
+      afterEditor: !!(wrap && anchor && wrap.previousElementSibling === anchor),
+      hasPanel: !!document.getElementById('legendPanel'),
+    };
+  });
+  record('legend-single-visible', legendSingle.hasWrap && legendSingle.displayed && legendSingle.hasPanel,
+    `afterEditor=${legendSingle.afterEditor}`);
+
   await page.evaluate(() => {
     window.handleProjectFileAction('save-as');
   });
@@ -119,6 +133,53 @@ async function main() {
   });
   record('parallel-isolation', parallelOk.active && parallelOk.refsDistinct && !parallelOk.cross,
     parallelOk.active ? `L=${parallelOk.left} R=${parallelOk.right}` : 'parallel inactive');
+
+  const legendParallel = await page.evaluate(() => {
+    if (typeof syncLegendBelowEditor === 'function') syncLegendBelowEditor();
+    const wrap = document.getElementById('legendBelowEditor');
+    const anchor = document.getElementById('parallelCompareWrap');
+    return {
+      displayed: !!(wrap && getComputedStyle(wrap).display !== 'none'),
+      afterParallel: !!(wrap && anchor && !anchor.classList.contains('hidden') && wrap.previousElementSibling === anchor),
+      header: document.getElementById('legendBelowHeader')?.textContent || '',
+    };
+  });
+  record('legend-parallel-visible', legendParallel.displayed && legendParallel.afterParallel,
+    `header=${legendParallel.header.slice(0, 40)}`);
+
+  // Parallel same-pane arc draw (regression: addArcFromLocsParallel must not recurse)
+  await page.click('.annotation-tab-btn[data-panel="ann-arcs"]');
+  await page.waitForTimeout(200);
+  const parallelArcOk = await page.evaluate(() => {
+    if (!isParallelActive()) return { active: false };
+    const words = [...document.querySelectorAll('#parallelVerseRows .word[data-pane="0"]')];
+    if (words.length < 4) return { active: true, words: words.length, reason: 'not enough words' };
+    const loc1 = locFromWordElWithPane(words[0]);
+    const loc2 = locFromWordElWithPane(words[3]);
+    const before = stateBundle.panes[0].arcs.length;
+    let err = null;
+    let arc = null;
+    try {
+      arc = addArcFromLocsParallel(loc1, loc2);
+    } catch (e) {
+      err = e.message;
+    }
+    return {
+      active: true,
+      err,
+      arcId: arc && arc.id,
+      before,
+      after: stateBundle.panes[0].arcs.length,
+      samePane: loc1.pane === loc2.pane,
+    };
+  });
+  record(
+    'parallel-arc-draw-same-pane',
+    parallelArcOk.active && !parallelArcOk.err && parallelArcOk.after > parallelArcOk.before,
+    parallelArcOk.err
+      ? `error=${parallelArcOk.err}`
+      : `arcs ${parallelArcOk.before}->${parallelArcOk.after} id=${parallelArcOk.arcId || 'none'}`
+  );
 
   // Parallel contour export modal — each choice must trigger download
   await page.evaluate(() => { window.__exportTest.downloads = 0; });
