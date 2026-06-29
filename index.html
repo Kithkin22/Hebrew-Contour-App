@@ -1886,6 +1886,66 @@ body{display:flex;flex-direction:column;}
   word-wrap:break-word;
 }
 
+/* editor-text-zoom-v1 */
+:root{
+  --contour-text-base:19px;
+  --contour-line-base:1.6;
+  --contour-text-scale:1;
+}
+#editor,
+.parallel-verse-body{
+  font-size:calc(var(--contour-text-base) * var(--contour-text-scale))!important;
+  line-height:var(--contour-line-base)!important;
+}
+#editor{
+  padding:8px 10px!important;
+}
+#editor .clause,
+.parallel-verse-body .clause{
+  margin:1px 0!important;
+  padding:1px 6px!important;
+}
+#editor>.muted,
+.parallel-verse-ref{
+  margin-bottom:2px!important;
+}
+.editor-zoom-bar{
+  flex-shrink:0;
+  margin:0 0 2px!important;
+  padding:2px 4px!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.editor-zoom-bar .row{
+  margin:0!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+  align-items:center!important;
+}
+.editor-zoom-bar .toolbar-label{
+  min-width:auto!important;
+}
+.editor-zoom-btn{
+  min-width:2em!important;
+  padding:4px 10px!important;
+  font-size:15px!important;
+  line-height:1.2!important;
+  font-weight:700!important;
+}
+.editor-zoom-slider{
+  width:min(140px,28vw);
+  margin:0 2px;
+  vertical-align:middle;
+}
+.editor-zoom-pct{
+  min-width:3.2em;
+  text-align:center;
+}
+@media(max-width:900px){
+  .editor-zoom-slider{width:min(120px,36vw);}
+}
+
 
 #contourWorkspaceShell.hidden{display:none!important;}
 #contourWorkspaceShell:not(.hidden){
@@ -2194,6 +2254,17 @@ body.workspace-table-view #commentPopover{
         </div>
       </div>
 
+      <div class="toolbar-section editor-zoom-bar" id="editorZoomBar">
+        <div class="row">
+          <strong class="small toolbar-label">Text size:</strong>
+          <button type="button" class="btn editor-zoom-btn" id="editorZoomOut" aria-label="Decrease text size" title="Smaller text">−</button>
+          <input type="range" class="editor-zoom-slider" id="editorZoomSlider" min="55" max="130" step="5" value="100" aria-label="Contour text size">
+          <button type="button" class="btn editor-zoom-btn" id="editorZoomIn" aria-label="Increase text size" title="Larger text">+</button>
+          <button type="button" class="btn" id="editorZoomFit" title="Scale text to fit the visible area">Fit</button>
+          <button type="button" class="btn" id="editorZoomReset" title="Reset to default size">Reset</button>
+          <span class="muted small editor-zoom-pct" id="editorZoomPct">100%</span>
+        </div>
+      </div>
       <div class="parallel-mode-bar desktop-only" id="parallelModeBar">
         <label><input type="checkbox" id="parallelModeToggle"> Parallel passages</label>
         <span id="activePaneIndicator" class="muted"></span>
@@ -2612,6 +2683,91 @@ function markUndo(){if(undoRestoring)return;undoStack.push(captureUndoSnapshot()
 function undoLastChange(){if(!undoStack.length){updateSaveStatus('Nothing to undo.');return;}undoRestoring=true;const snap=undoStack.pop();restoreUndoSnapshot(snap);undoRestoring=false;if(autosaveReady)autoSaveProject();updateSaveStatus('Undid last change.');}
 
 
+
+/* editor-text-zoom-v1-js */
+const EDITOR_ZOOM_KEY='contourEditorTextScale';
+const EDITOR_ZOOM_MIN=0.55;
+const EDITOR_ZOOM_MAX=1.3;
+const EDITOR_ZOOM_STEP=0.05;
+let _editorZoomUiBound=false;
+function clampEditorZoom(v){
+  return Math.max(EDITOR_ZOOM_MIN,Math.min(EDITOR_ZOOM_MAX,Math.round(v*100)/100));
+}
+function getEditorTextScale(){
+  try{
+    const raw=localStorage.getItem(EDITOR_ZOOM_KEY);
+    if(raw!=null&&raw!==''){
+      const n=parseFloat(raw);
+      if(!isNaN(n))return clampEditorZoom(n);
+    }
+  }catch(e){}
+  return 1;
+}
+function setEditorTextScale(scale,persist){
+  const v=clampEditorZoom(scale);
+  document.documentElement.style.setProperty('--contour-text-scale',String(v));
+  if(persist!==false){
+    try{localStorage.setItem(EDITOR_ZOOM_KEY,String(v));}catch(e){}
+  }
+  updateEditorZoomUI(v);
+  if(typeof scheduleEditorLayoutFix==='function')scheduleEditorLayoutFix();
+  else if(typeof renderArcOverlay==='function')renderArcOverlay();
+}
+function updateEditorZoomUI(scale){
+  const v=(typeof scale==='number')?scale:getEditorTextScale();
+  const slider=document.getElementById('editorZoomSlider');
+  const pct=document.getElementById('editorZoomPct');
+  if(slider)slider.value=String(Math.round(v*100));
+  if(pct)pct.textContent=Math.round(v*100)+'%';
+}
+function nudgeEditorZoom(delta){
+  setEditorTextScale(getEditorTextScale()+delta);
+}
+function resetEditorTextScale(){
+  try{localStorage.removeItem(EDITOR_ZOOM_KEY);}catch(e){}
+  setEditorTextScale(1);
+}
+function fitEditorTextToView(){
+  const parallel=typeof isParallelActive==='function'&&isParallelActive();
+  const container=parallel
+    ?document.querySelector('.parallel-scroll-area')
+    :document.getElementById('editorWrap');
+  const content=parallel
+    ?document.getElementById('parallelVerseRows')
+    :document.getElementById('editor');
+  if(!container||!content||!String(content.textContent||'').trim())return;
+  const avail=container.clientHeight-8;
+  if(avail<=40)return;
+  const saved=getEditorTextScale();
+  document.documentElement.style.setProperty('--contour-text-scale','1');
+  const natural=content.scrollHeight;
+  document.documentElement.style.setProperty('--contour-text-scale',String(saved));
+  if(natural<=0)return;
+  setEditorTextScale((avail/natural)*0.94);
+}
+function initEditorTextZoom(){
+  setEditorTextScale(getEditorTextScale(),false);
+  if(_editorZoomUiBound)return;
+  _editorZoomUiBound=true;
+  const out=document.getElementById('editorZoomOut');
+  const inn=document.getElementById('editorZoomIn');
+  const slider=document.getElementById('editorZoomSlider');
+  const fit=document.getElementById('editorZoomFit');
+  const reset=document.getElementById('editorZoomReset');
+  if(out)out.onclick=()=>nudgeEditorZoom(-EDITOR_ZOOM_STEP);
+  if(inn)inn.onclick=()=>nudgeEditorZoom(EDITOR_ZOOM_STEP);
+  if(slider)slider.oninput=()=>setEditorTextScale(parseInt(slider.value,10)/100);
+  if(fit)fit.onclick=()=>fitEditorTextToView();
+  if(reset)reset.onclick=()=>resetEditorTextScale();
+}
+(function(){
+  function boot(){
+    initEditorTextZoom();
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+  else boot();
+})();
+
 /* editor-overflow-fix-v1-js */
 let _editorLayoutFixQueued=false;
 function scheduleEditorLayoutFix(){
@@ -2640,7 +2796,7 @@ function applyEditorLayoutFix(){
   else bind();
 })();
 
-function render(){applyLanguageLayout();syncStateBundle();if(isParallelActive()){renderParallelEditors();renderDualTables();}else{renderEditor();renderTable();}renderLegendEditor();renderInclusioManager();if(!isWorkspaceTableView())renderCommentsPanel();setTimeout(updateCommentPopover,0);if(isParallelActive())renderArcManagerParallel();else if(typeof renderArcManager==='function')renderArcManager();if(stateBundle.parallelEnabled)updateParallelAlignStatus();if(autosaveReady)autoSaveProject();scheduleEditorLayoutFix();}
+function render(){applyLanguageLayout();syncStateBundle();if(isParallelActive()){renderParallelEditors();renderDualTables();}else{renderEditor();renderTable();}renderLegendEditor();renderInclusioManager();if(!isWorkspaceTableView())renderCommentsPanel();setTimeout(updateCommentPopover,0);if(isParallelActive())renderArcManagerParallel();else if(typeof renderArcManager==='function')renderArcManager();if(stateBundle.parallelEnabled)updateParallelAlignStatus();if(autosaveReady)autoSaveProject();if(typeof initEditorTextZoom==='function')initEditorTextZoom();scheduleEditorLayoutFix();}
 function wordFormatClasses(w,l){let f=w.format||{};let suppressCommentStart=l&&isCommentBoundary(l,'start')&&!w.bracketSource;let suppressCommentEnd=l&&isCommentBoundary(l,'end')&&!w.bracketSource;return `${f.bold?'fmt-bold':''} ${f.italic?'fmt-italic':''} ${f.underline?'fmt-underline':''} ${f.doubleUnderline?'fmt-double-underline':''} ${f.highlight?'fmt-highlight':''} ${(w.bracketStart&&!suppressCommentStart)?'bracket-start':''} ${(w.bracketEnd&&!suppressCommentEnd)?'bracket-end':''}`;}
 function wordInlineStyle(w){let styles=[];if(w.color)styles.push('color:'+esc(w.color));if(w.format&&w.format.highlight)styles.push('background-color:'+esc(w.format.highlight));let bc=w.bracketColor||w.inclusioColor;if(bc)styles.push('--bracket-color:'+esc(bc));return styles.join(';');}
 function renderEditor(){const ed=document.getElementById('editor');const layout=getLanguageLayout();const scriptStyle=`direction:${layout.dir};text-align:${layout.textAlign};font-family:${layout.fontFamily}`;ensureComments();if(!state.verses.length){ed.innerHTML='<div class="editor-empty-state" dir="ltr"><p class="editor-empty-title">No text loaded yet</p><p class="muted">Use <strong>Generate text</strong> or <strong>Paste text</strong> in the menu bar above.</p></div>';hideCommentPopover();return;}let html='';let activeKey=selectedWordKey();state.verses.forEach((v,vi)=>{html+=`<div class="muted" dir="ltr">${esc(v.ref)}</div>`;v.clauses.forEach((c,ci)=>{let sel=state.selected&&state.selected.v==vi&&state.selected.c==ci;let marginStyle=layout.indentSide==='left'?`margin-left:${c.indent*36}px`:`margin-right:${c.indent*36}px`;html+=`<div class="clause ${sel?'selected':''}" data-v="${vi}" data-c="${ci}" dir="${layout.dir}" style="${marginStyle};${scriptStyle}">`;c.words.forEach((w,wi)=>{let l={v:vi,c:ci,w:wi};let ids=commentIdsForLoc(l);let commentClass=ids.length?'comment-anchored':'';let activeCommentClass=(state.activeCommentId&&ids.includes(state.activeCommentId))?'comment-active':'';let wsel=state.selected&&state.selected.v==vi&&state.selected.c==ci&&state.selected.w==wi;let same=activeKey && normalizeHebrewWord(w.text)===activeKey && !wsel;html+=`<span class="word ${wsel?'selected':''} ${same?'sameword':''} ${commentClass} ${activeCommentClass} ${w.deleted?'deleted':''} ${w.specials.includes('predicate')?'pred':''} ${w.specials.includes('subject')?'subj':''} ${wordFormatClasses(w,l)}" data-v="${vi}" data-c="${ci}" data-w="${wi}" style="${wordInlineStyle(w)}">${esc(w.text)}</span>${commentMarkersForLoc(l)} `});html+='</div>';});});ed.innerHTML=html;document.querySelectorAll('.word').forEach(el=>el.onclick=(ev)=>{let clicked={v:+el.dataset.v,c:+el.dataset.c,w:+el.dataset.w};if(ev.shiftKey&&locOK(state.selected)){applyBracketRange(state.selected,clicked);return;}state.selected=clicked;let ids=commentIdsForLoc(clicked);if(ids.length)state.activeCommentId=ids[0];render();});document.querySelectorAll('.comment-marker').forEach(el=>el.onclick=(ev)=>{ev.stopPropagation();activateComment(el.dataset.commentId);});}
@@ -3258,7 +3414,9 @@ function exportTablePdf(){
   const textDir=isGreek?'ltr':'rtl';
   const textAlign=isGreek?'left':'right';
   const textFont=isGreek?"'SBL Greek','Gentium Plus','Times New Roman',serif":"'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif";
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${xmlEscape(printMeta.title)}</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}table{border-collapse:collapse;width:100%;background:white;direction:ltr;text-align:left}th,td{border:1px solid #999;padding:7px;vertical-align:top}th{background:#eee}.ann-ltr{direction:ltr;text-align:left}.heb{direction:${textDir};text-align:${textAlign};font-size:20px;font-family:${textFont}}.greek{direction:ltr;text-align:left;font-size:20px;font-family:${textFont}}@page{margin:0.6in}@media print{button{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button><div class="export-title">${xmlEscape(state.ref||'Contour Table')}</div>${tableHtml}<script>document.title=${JSON.stringify(printMeta.title)};setTimeout(()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.title)};}catch(e){} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.oldTitle)};}catch(e){}}<\/script></body></html>`);
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${xmlEscape(printMeta.title)}</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}table{border-collapse:collapse;width:100%;background:white;direction:ltr;text-align:left}th,td{border:1px solid #999;padding:7px;vertical-align:top}th{background:#eee}.ann-ltr{direction:ltr;text-align:left}.heb{direction:${textDir};text-align:${textAlign};font-size:20px;font-family:${textFont}}.greek{direction:ltr;text-align:left;font-size:20px;font-family:${textFont}}@page{margin:0.6in}@media print{button{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>  <link rel="stylesheet" href="styles/design-system.css">
+  <link rel="stylesheet" href="styles/layout-modern.css">
+</head><body><button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button><div class="export-title">${xmlEscape(state.ref||'Contour Table')}</div>${tableHtml}<script>document.title=${JSON.stringify(printMeta.title)};setTimeout(()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.title)};}catch(e){} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.oldTitle)};}catch(e){}}<\/script></body></html>`);
   win.document.close();
 }
 
@@ -4542,5 +4700,6 @@ if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGra
 </script>
 <script src="sefaria-bdb.js"></script>
 <script src="greek-lexicon.js"></script>
+  <script src="js/ui-shell.js" defer></script>
 </body>
 </html>
