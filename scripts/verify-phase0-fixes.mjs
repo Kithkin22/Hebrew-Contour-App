@@ -134,6 +134,124 @@ async function main() {
   record('parallel-isolation', parallelOk.active && parallelOk.refsDistinct && !parallelOk.cross,
     parallelOk.active ? `L=${parallelOk.left} R=${parallelOk.right}` : 'parallel inactive');
 
+  const columnLayout = await page.evaluate(() => {
+    if (!isParallelActive()) return { active: false };
+    const rows = [...document.querySelectorAll('#parallelVerseRows .parallel-verse-row')];
+    const rowChecks = rows.map((row) => {
+      const cells = [...row.querySelectorAll(':scope > .parallel-verse-cell')];
+      const panes = cells.map((c) => c.getAttribute('data-pane'));
+      const refs = cells
+        .filter((c) => !c.classList.contains('parallel-verse-cell-empty'))
+        .map((c) => c.querySelector('.parallel-verse-ref')?.textContent?.trim() || '');
+      const cols = cells.map((c) => getComputedStyle(c).gridColumnStart);
+      return { panes, refs, cols, count: cells.length };
+    });
+    const allTwoSlots = rowChecks.every((r) => r.count === 2 && r.panes[0] === '0' && r.panes[1] === '1');
+    const colsPinned = rowChecks.every((r) => r.cols[0] === '1' && r.cols[1] === '2');
+    return { active: true, rows: rowChecks.length, allTwoSlots, colsPinned, rowChecks };
+  });
+  record('parallel-column-slots', columnLayout.active && columnLayout.allTwoSlots && columnLayout.colsPinned,
+    columnLayout.active ? `${columnLayout.rows} rows, 2 slots each` : 'parallel inactive');
+
+  await page.evaluate(async () => {
+    await applyPaneReferenceFromInput(0, 'Ruth 3:4');
+    await applyPaneReferenceFromInput(1, 'Ruth 3:5');
+  });
+  await page.waitForTimeout(800);
+
+  const ruthAlign = await page.evaluate(() => {
+    if (!isParallelActive()) return { active: false };
+    const row = document.querySelector('#parallelVerseRows .parallel-verse-row[data-row="0"]');
+    if (!row) return { active: true, hasRow: false };
+    const leftCell = row.querySelector('.parallel-verse-cell[data-pane="0"]:not(.parallel-verse-cell-empty)');
+    const rightCell = row.querySelector('.parallel-verse-cell[data-pane="1"]:not(.parallel-verse-cell-empty)');
+    const leftRef = leftCell?.querySelector('.parallel-verse-ref')?.textContent?.trim() || '';
+    const rightRef = rightCell?.querySelector('.parallel-verse-ref')?.textContent?.trim() || '';
+    const leftCol = leftCell ? getComputedStyle(leftCell).gridColumnStart : '';
+    const rightCol = rightCell ? getComputedStyle(rightCell).gridColumnStart : '';
+    const sameRow = !!(leftCell && rightCell && leftCell.parentElement === rightCell.parentElement);
+    const rowTop = row.getBoundingClientRect().top;
+    const topsMatch = leftCell && rightCell
+      && Math.abs(leftCell.getBoundingClientRect().top - rowTop) < 4
+      && Math.abs(rightCell.getBoundingClientRect().top - rowTop) < 4;
+    return {
+      active: true,
+      leftRef,
+      rightRef,
+      leftCol,
+      rightCol,
+      sameRow,
+      topsMatch,
+      stateLeft: stateBundle.panes[0].verses[0]?.ref || '',
+      stateRight: stateBundle.panes[1].verses[0]?.ref || '',
+    };
+  });
+  record('parallel-ruth-3-4-3-5-align',
+    ruthAlign.active && ruthAlign.sameRow && ruthAlign.topsMatch
+      && ruthAlign.leftRef.includes('3:4') && ruthAlign.rightRef.includes('3:5')
+      && ruthAlign.leftCol === '1' && ruthAlign.rightCol === '2',
+    ruthAlign.active
+      ? `L=${ruthAlign.leftRef} col=${ruthAlign.leftCol} R=${ruthAlign.rightRef} col=${ruthAlign.rightCol}`
+      : 'parallel inactive');
+
+  const toggleStable = await page.evaluate(() => {
+    const t = document.getElementById('parallelModeToggle');
+    if (!t) return { ok: false, reason: 'no toggle' };
+    t.checked = false;
+    t.onchange({ target: t });
+    const singleVisible = !document.getElementById('singleEditorSection')?.classList.contains('hidden');
+    t.checked = true;
+    t.onchange({ target: t });
+    const parallelVisible = !document.getElementById('parallelCompareWrap')?.classList.contains('hidden');
+    const row = document.querySelector('#parallelVerseRows .parallel-verse-row[data-row="0"]');
+    const cells = row ? [...row.querySelectorAll(':scope > .parallel-verse-cell')] : [];
+    const stillAligned = cells.length === 2
+      && cells[0].getAttribute('data-pane') === '0'
+      && cells[1].getAttribute('data-pane') === '1'
+      && cells[0].querySelector('.parallel-verse-ref')?.textContent?.includes('3:4')
+      && cells[1].querySelector('.parallel-verse-ref')?.textContent?.includes('3:5');
+    return { ok: singleVisible && parallelVisible && stillAligned, singleVisible, parallelVisible, stillAligned };
+  });
+  await page.waitForTimeout(400);
+  record('parallel-toggle-stable', toggleStable.ok,
+    toggleStable.ok ? 'off/on keeps columns' : `single=${toggleStable.singleVisible} parallel=${toggleStable.parallelVisible} aligned=${toggleStable.stillAligned}`);
+
+  const tabSwitchStable = await page.evaluate(() => {
+    if (typeof setWorkspaceTab === 'function') setWorkspaceTab('table');
+    const tableBlocks = document.querySelectorAll('.parallel-table-block').length;
+    if (typeof setWorkspaceTab === 'function') setWorkspaceTab('contour');
+    const row = document.querySelector('#parallelVerseRows .parallel-verse-row[data-row="0"]');
+    const cells = row ? [...row.querySelectorAll(':scope > .parallel-verse-cell')] : [];
+    const contourOk = cells.length === 2
+      && cells[0].querySelector('.parallel-verse-ref')?.textContent?.includes('3:4')
+      && cells[1].querySelector('.parallel-verse-ref')?.textContent?.includes('3:5');
+    return { tableBlocks, contourOk };
+  });
+  await page.waitForTimeout(400);
+  record('parallel-contour-table-contour', tabSwitchStable.contourOk,
+    `tableBlocks=${tabSwitchStable.tableBlocks} contourAligned=${tabSwitchStable.contourOk}`);
+
+  const shiftColumns = await page.evaluate(() => {
+    if (typeof shiftRightColumnDown === 'function') shiftRightColumnDown();
+    if (typeof render === 'function') render();
+    const row0 = document.querySelector('#parallelVerseRows .parallel-verse-row[data-row="0"]');
+    const row1 = document.querySelector('#parallelVerseRows .parallel-verse-row[data-row="1"]');
+    if (!row0 || !row1) return { ok: false, reason: 'missing rows' };
+    const r0cells = [...row0.querySelectorAll(':scope > .parallel-verse-cell')];
+    const r1cells = [...row1.querySelectorAll(':scope > .parallel-verse-cell')];
+    const r0rightOnly = r0cells[0]?.querySelector('.parallel-verse-ref')?.textContent?.includes('3:4')
+      && r0cells[1]?.classList.contains('parallel-verse-cell-empty');
+    const r1leftOnly = r1cells[0]?.classList.contains('parallel-verse-cell-empty')
+      && r1cells[1]?.querySelector('.parallel-verse-ref')?.textContent?.includes('3:5');
+    const rightCol = r1cells[1] ? getComputedStyle(r1cells[1]).gridColumnStart : '';
+    if (typeof shiftRightColumnUp === 'function') shiftRightColumnUp();
+    if (typeof render === 'function') render();
+    return { ok: r0rightOnly && r1leftOnly && rightCol === '2', rightCol, r0rightOnly, r1leftOnly };
+  });
+  await page.waitForTimeout(300);
+  record('parallel-shift-column-align', shiftColumns.ok,
+    shiftColumns.ok ? 'shifted right verse stays in column 2' : `rightCol=${shiftColumns.rightCol || shiftColumns.reason || 'fail'}`);
+
   const legendParallel = await page.evaluate(() => {
     if (typeof syncLegendBelowEditor === 'function') syncLegendBelowEditor();
     const wrap = document.getElementById('legendBelowEditor');

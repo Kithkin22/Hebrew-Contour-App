@@ -126,6 +126,23 @@ body.hc-project-menu-open .file-menu-dropdown-portal {
   display: block;
 }
 
+/* Parallel passage columns: always pin left/right pane to grid column 1/2. */
+.parallel-verse-row > .parallel-verse-cell[data-pane="0"] {
+  grid-column: 1;
+}
+
+.parallel-verse-row > .parallel-verse-cell[data-pane="1"] {
+  grid-column: 2;
+}
+
+.parallel-verse-cell-empty {
+  min-height: 48px;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
 /* Expanded submenus: list inline so Open Recent is never clipped off-screen. */
 .file-menu-has-submenu.submenu-open > .file-submenu {
   display: block;
