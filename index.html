@@ -4,7 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Hebrew/Greek Contour Table App</title>
-<link rel="stylesheet" href="css/app.css?v=27">
+<link rel="stylesheet" href="styles/design-system.css?v=28">
+<link rel="stylesheet" href="styles/layout-modern.css?v=28">
+<link rel="stylesheet" href="styles/text-first.css?v=28">
+<link rel="stylesheet" href="css/app.css?v=28">
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
@@ -137,7 +140,7 @@
         <button class="btn active" data-tab="contour">Contour Editor</button>
         <button class="btn" data-tab="table">Table View</button>
       </div>
-      <div class="workspace-help-row">
+      <div class="workspace-help-row hidden" aria-hidden="true">
         <button type="button" class="btn" id="feedbackBtn" aria-haspopup="dialog" aria-controls="feedbackModal" title="Send feedback or report a problem">Feedback</button>
         <button type="button" class="btn" id="helpBtn" aria-haspopup="dialog" aria-controls="helpModal" title="Keyboard shortcuts and tips">? Help</button>
         <a href="/admin.html" id="adminLink" class="admin-link" title="Feedback admin inbox (password required)">Admin<span id="adminInboxBadge" class="admin-inbox-badge hidden" aria-hidden="true"></span></a>
@@ -401,6 +404,7 @@
 <script src="js/app/inspector.js"></script>
 <script src="js/app/inspector-morph.js"></script>
 <script src="js/app/ui-init.js"></script>
+<script src="js/ui-shell.js" defer></script>
 <script src="sefaria-bdb.js"></script>
 <script src="greek-lexicon.js"></script>
 </body>

@@ -131,6 +131,13 @@
       right.appendChild(helpBtn);
     }
 
+    var feedbackBtn = $('#feedbackBtn');
+    if (feedbackBtn) {
+      feedbackBtn.classList.add('hc-nav-btn', 'hc-nav-btn-subtle');
+      feedbackBtn.title = 'Send feedback';
+      right.appendChild(feedbackBtn);
+    }
+
     var adminLink = $('#adminLink');
     if (adminLink) right.appendChild(adminLink);
 
@@ -375,14 +382,9 @@
     workspace.setAttribute('aria-label', 'Editor workspace');
 
     var header = el('div', 'hc-workspace-header');
-    header.appendChild(buildSegmentedControl('hcMainSegmented'));
-
-    var helpRow = $('.workspace-help-row');
-    if (helpRow) {
-      helpRow.classList.add('hc-moved');
-      header.appendChild(helpRow);
-    }
-
+    var segCenter = el('div', 'hc-workspace-seg-center');
+    segCenter.appendChild(buildSegmentedControl('hcMainSegmented'));
+    header.appendChild(segCenter);
     workspace.appendChild(header);
 
     var content = el('div', 'hc-workspace-content');
@@ -426,6 +428,8 @@
         btn.setAttribute('aria-selected', match ? 'true' : 'false');
       });
       document.body.classList.toggle('workspace-table-view', !isContour);
+      var viewEl = document.getElementById('hcStatusView');
+      if (viewEl) viewEl.textContent = isContour ? 'Contour View' : 'Table View';
     }
 
     function switchTo(view) {
@@ -510,7 +514,7 @@
 
     var placeholder = el('div', 'hc-inspector-placeholder');
     placeholder.id = 'hcInspectorPlaceholder';
-    placeholder.textContent = 'Hover over a word in the contour editor to see word information.';
+    placeholder.textContent = 'Select a word to inspect.';
     dock.appendChild(placeholder);
 
     var inspectorWrap = el('div', 'hc-inspector-dock');
@@ -698,6 +702,12 @@
       var saveOrig = $('#saveStatus');
       var saveSide = $('#hcSidebarSaveStatus');
       if (saveOrig && saveSide) saveSide.textContent = saveOrig.textContent || 'All changes saved';
+
+      var autoStatus = $('#hcStatusAutosave');
+      if (saveOrig && autoStatus) {
+        var txt = saveOrig.textContent || '';
+        autoStatus.textContent = txt || 'Autosaved';
+      }
     }
     sync();
     setInterval(sync, 2000);
@@ -722,6 +732,14 @@
 
     var spacer = el('span', 'hc-status-spacer');
 
+    var fontDisplay = el('span', 'hc-status-item hc-status-font');
+    fontDisplay.id = 'hcStatusFont';
+    fontDisplay.textContent = 'SBL BibLit';
+
+    var viewDisplay = el('span', 'hc-status-item hc-status-view');
+    viewDisplay.id = 'hcStatusView';
+    viewDisplay.textContent = 'Contour View';
+
     var autosave = el('span', 'hc-status-item');
     autosave.id = 'hcStatusAutosave';
     autosave.textContent = 'Autosaved';
@@ -730,6 +748,8 @@
     bar.appendChild(charCount);
     bar.appendChild(rowCount);
     bar.appendChild(spacer);
+    bar.appendChild(fontDisplay);
+    bar.appendChild(viewDisplay);
     bar.appendChild(autosave);
 
     function updateCounts() {
@@ -750,8 +770,24 @@
         wordCount.textContent = 'Words: ' + words;
         charCount.textContent = 'Chars: ' + chars;
         rowCount.textContent = rows ? 'Rows: ' + rows : '';
+        if (fontDisplay) {
+          fontDisplay.textContent = (window.state.language === 'greek') ? 'SBL Greek' : 'SBL BibLit';
+        }
       } catch (e) { /* ignore */ }
     }
+
+    function updateViewLabel() {
+      var viewEl = document.getElementById('hcStatusView');
+      if (!viewEl) return;
+      var isTable = document.body.classList.contains('workspace-table-view');
+      viewEl.textContent = isTable ? 'Table View' : 'Contour View';
+    }
+
+    var origContour = document.querySelector('[data-tab="contour"]');
+    var origTable = document.querySelector('[data-tab="table"]');
+    if (origContour) origContour.addEventListener('click', updateViewLabel);
+    if (origTable) origTable.addEventListener('click', updateViewLabel);
+    updateViewLabel();
 
     setInterval(updateCounts, 3000);
     setTimeout(updateCounts, 1500);
