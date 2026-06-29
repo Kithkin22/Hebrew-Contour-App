@@ -58,7 +58,6 @@ body.hc-shell-ready #appRoot > header {
   font-weight: 800;
   letter-spacing: 0.04em;
   line-height: 1.1;
-  color: #c9a227;
 }
 
 .hc-top-nav-tagline {
@@ -124,184 +123,17 @@ body.hc-shell-ready #appRoot > header {
   background: rgba(255, 255, 255, 0.2);
 }
 
-.hc-top-nav .hc-nav-btn-subtle {
-  opacity: 0.7;
-  font-size: 10px !important;
-  padding: 2px 6px !important;
-  font-weight: 500 !important;
-}
-
-.hc-top-nav .hc-nav-btn.active,
-.hc-top-nav .hc-nav-menu-btn.active {
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
-}
-
-/* ── Export flyout + nav menus ── */
-.hc-flyout-menu {
-  position: fixed;
-  z-index: 5001;
-  min-width: 180px;
-  background: var(--hc-surface);
-  border: 1px solid var(--hc-border);
-  border-radius: var(--hc-radius-md);
-  box-shadow: var(--hc-shadow-lg);
-  padding: 4px 0;
-}
-
-.hc-flyout-menu.hidden {
-  display: none;
-}
-
-.hc-flyout-menu-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.hc-flyout-menu-item {
-  display: block;
-  width: 100%;
-  padding: 8px 14px;
-  font-size: 13px;
-  text-align: left;
-  border: none;
-  background: transparent;
-  color: var(--hc-text);
-  cursor: pointer;
-}
-
-.hc-flyout-menu-item:hover,
-.hc-flyout-menu-item:focus {
-  background: var(--hc-surface-2);
-  outline: none;
-}
-
-/* Hide original top-stack chrome; keep open menus accessible in HCDS shell */
+/* Hide original top-stack when shell is ready */
 .hc-shell-ready .top-stack,
 body.hc-shell-ready .top-stack,
 #appRoot.hc-shell-ready .top-stack {
-  display: block !important;
+  display: none !important;
   visibility: hidden !important;
-  position: fixed !important;
-  left: 0 !important;
-  top: 0 !important;
-  width: 0 !important;
   height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: visible !important;
+  overflow: hidden !important;
   pointer-events: none !important;
-  z-index: 4500 !important;
-  opacity: 0 !important;
-}
-
-body.hc-shell-ready.top-menu-open .top-stack {
-  visibility: visible !important;
-  pointer-events: auto !important;
-  opacity: 1 !important;
-}
-
-.hc-shell-ready .top-stack > .top-menu-hint,
-.hc-shell-ready .top-stack > .card.compact-card:not(.menu-open) {
-  display: none !important;
-}
-
-body.hc-shell-ready .top-stack .file-menu-card.menu-open {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  position: fixed !important;
-  left: auto !important;
-  top: auto !important;
-  transform: none !important;
-  width: 260px !important;
-  min-width: 240px !important;
-  max-width: min(280px, calc(100vw - 16px)) !important;
-  z-index: 5001 !important;
-  background: var(--hc-surface, #fff) !important;
-  border: 1px solid var(--hc-border, #e2e8f0) !important;
-  border-radius: var(--hc-radius-md, 10px) !important;
-  box-shadow: var(--hc-shadow-lg) !important;
-  padding: 0 !important;
-  overflow: visible !important;
-}
-
-body.hc-shell-ready .top-stack .card.compact-card.menu-open:not(.file-menu-card) {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  position: fixed !important;
-  transform: none !important;
-  z-index: 5001 !important;
-  background: var(--hc-surface, #fff) !important;
-  border: 1px solid var(--hc-border, #e2e8f0) !important;
-  border-radius: var(--hc-radius-md, 10px) !important;
-  box-shadow: var(--hc-shadow-lg) !important;
-  padding: 12px 14px !important;
-  overflow: auto !important;
-  max-height: calc(100vh - var(--hc-topnav-height) - 24px) !important;
-}
-
-body.hc-shell-ready .top-stack .card.compact-card[data-menu="generate"].menu-open {
-  width: min(720px, calc(100vw - 16px)) !important;
-}
-
-body.hc-shell-ready .top-stack .card.compact-card[data-menu="paste"].menu-open {
-  width: min(560px, calc(100vw - 16px)) !important;
-}
-
-body.hc-shell-ready .top-stack .file-menu-card.menu-open > .save-tools-title {
-  display: none !important;
-}
-
-body.hc-shell-ready .top-stack .file-menu-card.menu-open > .file-menu-dropdown {
-  display: block !important;
-  position: static !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: inherit !important;
-}
-
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-submenu {
   position: absolute !important;
-  left: calc(100% - 2px) !important;
-  top: 0 !important;
-  display: none !important;
-  width: auto !important;
-  min-width: 210px !important;
-  max-width: 280px !important;
-  box-shadow: var(--hc-shadow-lg) !important;
-  border: 1px solid var(--hc-border, #e2e8f0) !important;
-  border-radius: var(--hc-radius-md, 10px) !important;
-  background: var(--hc-surface, #fff) !important;
-  margin: 0 !important;
-  padding: 4px 0 !important;
-  z-index: 12 !important;
-}
-
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu {
-  position: relative !important;
-}
-
-body.hc-shell-ready .top-stack .card.compact-card.menu-open:not(.file-menu-card) > .menu-trigger {
-  display: none !important;
-}
-
-body.hc-shell-ready .top-stack .card.compact-card.menu-open:not(.file-menu-card) > .top-menu-panel {
-  display: block !important;
-  margin-top: 0 !important;
-}
-
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu:hover > .file-submenu,
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu.submenu-open > .file-submenu,
-body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu:focus-within > .file-submenu {
-  display: block !important;
+  left: -9999px !important;
 }
 
 /* ── Secondary Toolbar ── */
@@ -339,18 +171,6 @@ body.hc-shell-ready .top-stack .file-menu-card.menu-open .file-menu-has-submenu:
   height: 24px;
   background: var(--hc-border);
   margin: 0 var(--hc-space-2);
-  flex-shrink: 0;
-}
-
-.hc-secondary-quick-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--hc-space-1);
-  flex-shrink: 0;
-}
-
-.hc-secondary-toolbar .hc-toolbar-btn {
-  white-space: nowrap;
 }
 
 /* ── App Body (3-column) ── */
@@ -561,52 +381,10 @@ body.dark-mode .hc-verse-nav-item.active {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 2px 10px;
   flex-shrink: 0;
-}
-
-.hc-workspace-header.hc-workspace-header-hidden {
-  display: none;
-}
-
-.hc-workspace-seg-center {
-  flex: 0 1 auto;
-  display: flex;
-  justify-content: center;
-}
-
-.hc-workspace-header .hc-segmented {
-  padding: 3px;
-}
-
-.hc-workspace-header .hc-segmented-btn {
-  min-width: 120px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.hc-workspace-header .hc-segmented-btn.active {
-  background: var(--hc-navy-soft);
-  color: #fff;
-  box-shadow: var(--hc-shadow-sm);
-}
-
-body.dark-mode .hc-workspace-header .hc-segmented-btn.active {
-  background: var(--hc-navy-soft);
-  color: #fff;
-}
-
-.hc-sidebar-footer .hc-segmented-btn.active {
-  background: var(--hc-navy-soft);
-  color: #fff;
-}
-
-body.dark-mode .hc-sidebar-footer .hc-segmented-btn.active {
-  background: var(--hc-navy-soft);
-  color: #fff;
 }
 
 .hc-workspace-header .workspace-help-row {
@@ -636,26 +414,6 @@ body.dark-mode .hc-sidebar-footer .hc-segmented-btn.active {
 }
 
 /* Hide original view tabs */
-.hc-shell-ready .workspace-view-header,
-.hc-shell-ready .main-workspace > .workspace-view-header {
-  display: none !important;
-  height: 0 !important;
-  overflow: hidden !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  pointer-events: none !important;
-}
-
-.hc-shell-ready .main-workspace > .toolbar-section,
-.hc-shell-ready .main-workspace > #bracketToolbar,
-.hc-shell-ready .main-workspace > .arc-toolbar {
-  display: none !important;
-  height: 0 !important;
-  overflow: hidden !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
 .hc-shell-ready .main-workspace > .tabs.row,
 body.hc-shell-ready .main-workspace > .tabs.row,
 #appRoot.hc-shell-ready .main-workspace > .tabs.row {
@@ -767,8 +525,7 @@ body.hc-shell-ready .main-workspace > .tabs.row,
 
 /* Parallel mode bar in secondary toolbar area */
 .hc-shell-ready #parallelModeBar,
-body.hc-shell-ready #parallelModeBar,
-.hc-shell-ready #parallelModeDock {
+body.hc-shell-ready #parallelModeBar {
   display: none !important;
 }
 
@@ -870,147 +627,16 @@ body.dark-mode .hc-panel-tab.active {
 
 .hc-comments-dock {
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
 }
 
-.hc-comments-dock .comments-panel.hc-docked-comments {
-  display: flex !important;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  height: auto !important;
-  max-height: none !important;
-  position: static !important;
+.hc-comments-dock .comments-panel {
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  padding: 0 !important;
-  overflow: hidden;
-}
-
-.hc-comments-dock .comments-panel.hc-docked-comments.collapsed {
-  display: flex !important;
-}
-
-.hc-comments-dock .comments-panel-body {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-}
-
-.hc-comments-dock .comments-panel-header {
-  flex-shrink: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--hc-border);
-  margin-bottom: 8px;
-}
-
-.hc-comments-dock .comments-panel-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  width: 100%;
-}
-
-.hc-comments-dock .comments-panel-toolbar .btn {
-  font-size: 11px;
-  padding: 3px 8px;
-  min-height: 24px;
-}
-
-.hc-comments-dock .comment-start-status {
-  width: 100%;
-  margin: 0;
-  font-size: 10px;
-  line-height: 1.35;
-}
-
-.hc-shell-ready #commentPopover {
-  z-index: 6000 !important;
-}
-
-/* Comments panel collapse — workspace reclaims space */
-.hc-app-body.hc-comments-collapsed {
-  grid-template-columns: var(--hc-sidebar-width) minmax(0, 1fr) !important;
-}
-
-.hc-app-body.hc-sidebar-collapsed.hc-comments-collapsed {
-  grid-template-columns: var(--hc-sidebar-collapsed) minmax(0, 1fr) !important;
-}
-
-.hc-right-panel.hc-comments-collapsed {
-  display: none !important;
-  width: 0 !important;
-  min-width: 0 !important;
-  opacity: 0;
-  pointer-events: none;
-  border: none;
-  transition: opacity var(--hc-duration-slow) var(--hc-ease),
-    width var(--hc-duration-slow) var(--hc-ease);
-}
-
-.hc-panel-tab {
-  position: relative;
-}
-
-.hc-panel-collapse-btn {
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--hc-border);
-  border-radius: var(--hc-radius-sm);
-  background: var(--hc-surface);
-  color: var(--hc-text-muted);
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.hc-panel-collapse-btn:hover {
-  background: var(--hc-surface-2);
-  color: var(--hc-text);
-}
-
-.hc-comments-restore-btn {
-  position: fixed;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 120;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  padding: 10px 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border: 1px solid var(--hc-border);
-  border-right: none;
-  border-radius: var(--hc-radius-md) 0 0 var(--hc-radius-md);
-  background: var(--hc-surface);
-  color: var(--hc-text-muted);
-  cursor: pointer;
-  box-shadow: var(--hc-shadow-sm);
-  transition: background var(--hc-duration), color var(--hc-duration);
-}
-
-.hc-comments-restore-btn:hover {
-  background: var(--hc-surface-2);
-  color: var(--hc-text);
-}
-
-.hc-comments-restore-btn.hidden {
-  display: none;
+  max-height: none !important;
+  position: static !important;
+  height: 100%;
+  padding: var(--hc-space-3) !important;
 }
 
 /* ── Status Bar ── */
@@ -1092,10 +718,9 @@ body.dark-mode .hc-panel-tab.active {
 
 /* ── Save status in sidebar ── */
 .hc-save-status {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--hc-text-muted);
-  padding: 2px 12px 0;
-  line-height: 1.4;
+  padding: 4px 12px;
 }
 
 .hc-save-status.saved {

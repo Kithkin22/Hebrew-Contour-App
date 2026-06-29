@@ -1,65 +1,33 @@
-/* 1.3.8d3 full tabbed annotation pane — HCDS v1 collapsed by default */
+/* 1.3.8d3 full tabbed annotation pane */
 (function(){
-  function setToolbarPanel(panelId){
-    const shell=document.getElementById('annotationTabsShell');
-    if(!shell) return;
-    const panel=document.getElementById(panelId);
-    const btn=document.querySelector('.annotation-tab-btn[data-panel="'+panelId+'"]');
-    const shortcuts=document.getElementById('annotationShortcutsBar');
-    const wasOpen=!shell.classList.contains('toolbar-collapsed')&&panel&&panel.classList.contains('active');
-
-    document.querySelectorAll('.annotation-tab-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.annotation-tab-panel').forEach(p=>p.classList.remove('active'));
-    shell.classList.add('toolbar-collapsed');
-    if(shortcuts) shortcuts.classList.add('hidden');
-
-    if(wasOpen){
-      if(typeof scheduleEditorLayoutFix==='function') scheduleEditorLayoutFix();
-      return;
-    }
-
-    if(panel&&btn){
-      shell.classList.remove('toolbar-collapsed');
-      btn.classList.add('active');
-      panel.classList.add('active');
-      if(shortcuts) shortcuts.classList.remove('hidden');
-    }
-    if(typeof scheduleEditorLayoutFix==='function') scheduleEditorLayoutFix();
-    if(typeof renderArcOverlay==='function') setTimeout(renderArcOverlay,80);
-  }
-
   function buildAnnotationTabs(){
     if(document.getElementById('annotationTabsShell')) return;
 
-    const color=document.getElementById('colorToolbar')?.closest('.toolbar-section');
-    const format=document.getElementById('formatToolbar')?.closest('.toolbar-section');
-    const highlight=document.getElementById('highlightToolbar')?.closest('.toolbar-section');
-    const brackets=document.getElementById('bracketToolbar');
-    const arcs=document.getElementById('arcToolbar');
-    const inclusio=document.getElementById('inclusioPanel');
-    const contourExportBtn=document.getElementById('contourDocxExport');
-    const exportRow=contourExportBtn?contourExportBtn.closest('.row'):null;
+    const color = document.getElementById('colorToolbar')?.closest('.toolbar-section');
+    const format = document.getElementById('formatToolbar')?.closest('.toolbar-section');
+    const highlight = document.getElementById('highlightToolbar')?.closest('.toolbar-section');
+    const brackets = document.getElementById('bracketToolbar');
+    const arcs = document.getElementById('arcToolbar');
+    const inclusio = document.getElementById('inclusioPanel');
+    const contourExportBtn = document.getElementById('contourDocxExport');
+    const exportRow = contourExportBtn ? contourExportBtn.closest('.row') : null;
 
-    const anchor=color||format||highlight||brackets||arcs||inclusio||exportRow;
+    const anchor = color || format || highlight || brackets || arcs || inclusio || exportRow;
     if(!anchor) return;
 
-    const shell=document.createElement('div');
-    shell.id='annotationTabsShell';
-    shell.className='toolbar-collapsed';
-    shell.innerHTML=`
-      <div id="annotationToolbarHead">
-        <div id="annotationTabsRow">
-          <button type="button" class="annotation-tab-btn" data-panel="ann-color">Color</button>
-          <button type="button" class="annotation-tab-btn" data-panel="ann-format">Format</button>
-          <button type="button" class="annotation-tab-btn" data-panel="ann-highlight">Highlight</button>
-          <button type="button" class="annotation-tab-btn" data-panel="ann-brackets">Brackets</button>
-          <button type="button" class="annotation-tab-btn" data-panel="ann-arcs">Arcs</button>
-          <button type="button" class="annotation-tab-btn" data-panel="ann-inclusio">Inclusio</button>
-          <button type="button" class="annotation-tab-btn" data-panel="ann-export">Export</button>
-        </div>
-        <div id="parallelModeDock" aria-label="Parallel passages controls"></div>
+    const shell = document.createElement('div');
+    shell.id = 'annotationTabsShell';
+    shell.innerHTML = `
+      <div id="annotationTabsRow">
+        <button type="button" class="annotation-tab-btn active" data-panel="ann-color">Color</button>
+        <button type="button" class="annotation-tab-btn" data-panel="ann-format">Format</button>
+        <button type="button" class="annotation-tab-btn" data-panel="ann-highlight">Highlight</button>
+        <button type="button" class="annotation-tab-btn" data-panel="ann-brackets">Brackets</button>
+        <button type="button" class="annotation-tab-btn" data-panel="ann-arcs">Arcs</button>
+        <button type="button" class="annotation-tab-btn" data-panel="ann-inclusio">Inclusio</button>
+        <button type="button" class="annotation-tab-btn" data-panel="ann-export">Export</button>
       </div>
-      <div id="annotationShortcutsBar" class="hidden" aria-label="Keyboard shortcuts for selected word">
+      <div id="annotationShortcutsBar" aria-label="Keyboard shortcuts for selected word">
         <span class="shortcut-bar-label">Keys</span>
         <span class="shortcut-inline-text">
           <abbr title="Bold"><kbd class="keycap keycap-sm">b</kbd> bold</abbr><span class="dot" aria-hidden="true">·</span>
@@ -70,7 +38,7 @@
           <abbr title="Highlight picker"><kbd class="keycap keycap-sm">h</kbd> highlight</abbr>
         </span>
       </div>
-      <div id="ann-color" class="annotation-tab-panel"></div>
+      <div id="ann-color" class="annotation-tab-panel active"></div>
       <div id="ann-format" class="annotation-tab-panel"></div>
       <div id="ann-highlight" class="annotation-tab-panel"></div>
       <div id="ann-brackets" class="annotation-tab-panel"></div>
@@ -91,24 +59,20 @@
     if(inclusio) document.getElementById('ann-inclusio').appendChild(inclusio);
     if(exportRow) document.getElementById('ann-export').appendChild(exportRow);
 
-    dockParallelControls();
-
     document.querySelectorAll('.annotation-tab-btn').forEach(btn=>{
-      btn.onclick=()=>setToolbarPanel(btn.dataset.panel);
+      btn.onclick = ()=>{
+        document.querySelectorAll('.annotation-tab-btn').forEach(b=>b.classList.remove('active'));
+        document.querySelectorAll('.annotation-tab-panel').forEach(p=>p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.panel)?.classList.add('active');
+        if(typeof renderArcOverlay === 'function') setTimeout(renderArcOverlay,80);
+        scheduleEditorLayoutFix();
+      };
     });
-    if(typeof scheduleEditorLayoutFix==='function') scheduleEditorLayoutFix();
+    scheduleEditorLayoutFix();
   }
 
-  function dockParallelControls(){
-    const parallelBar=document.getElementById('parallelModeBar');
-    const dock=document.getElementById('parallelModeDock');
-    if(!parallelBar||!dock||parallelBar.dataset.docked) return;
-    parallelBar.classList.add('parallel-mode-docked');
-    dock.appendChild(parallelBar);
-    parallelBar.dataset.docked='1';
-  }
-
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', buildAnnotationTabs);
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildAnnotationTabs);
   else buildAnnotationTabs();
 })();
 
@@ -124,16 +88,12 @@
    function sync(){
      let collapsed=false;
      try{ collapsed=!!commentsPanelCollapsed; }catch(e){}
-     const shellReady=document.body.classList.contains('hc-shell-ready');
-     btn.classList.toggle('show', collapsed&&!shellReady);
+     btn.classList.toggle('show', collapsed);
    }
 
    btn.onclick=function(){
      try{ commentsPanelCollapsed=false; }catch(e){}
-     if(typeof window.expandHcCommentsPanel==='function') window.expandHcCommentsPanel();
-     else if(typeof renderCommentsPanel==='function') renderCommentsPanel();
-     const tab=document.querySelector('.hc-panel-tab[data-panel="comments"]');
-     if(tab) tab.click();
+     if(typeof renderCommentsPanel==='function') renderCommentsPanel();
      sync();
    };
 

@@ -69,17 +69,13 @@
 }
 
 /* ── Workspace header: one row, not a stack ── */
-.hc-shell-ready .hc-workspace-header.hc-workspace-header-hidden {
-  display: none !important;
-}
-
-.hc-shell-ready .hc-workspace-header:not(.hc-workspace-header-hidden) {
+.hc-shell-ready .hc-workspace-header {
   flex-direction: row !important;
   flex-wrap: wrap !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: space-between !important;
   gap: 6px !important;
-  padding: 4px 10px !important;
+  padding: 2px 10px !important;
 }
 
 .hc-shell-ready .hc-workspace-header .hc-segmented {
@@ -108,38 +104,26 @@
 }
 
 /* ── Canvas: editor owns vertical space ── */
-.hc-shell-ready .card.main-workspace {
-  flex: 1 !important;
-  min-height: 0 !important;
-}
-
 .hc-shell-ready #contourWorkspaceShell,
 .hc-shell-ready #contourTab,
 .hc-shell-ready #singleEditorSection {
   flex: 1 !important;
   min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
 }
 
 .hc-shell-ready .contour-with-comments {
   flex: 1 !important;
   min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
 }
 
 .hc-shell-ready .contour-with-comments > #editorWrap {
   flex: 1 !important;
   min-height: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  margin: 4px 8px 6px !important;
+  margin: 2px 6px !important;
   border: 1px solid var(--hc-border) !important;
-  border-radius: var(--hc-radius-lg) !important;
+  border-radius: var(--hc-radius-sm) !important;
   background: #fff !important;
-  box-shadow: var(--hc-shadow-sm) !important;
-  overflow: hidden !important;
+  box-shadow: none !important;
 }
 
 .hc-shell-ready #editorWrap {
@@ -151,16 +135,10 @@
 .hc-shell-ready .parallel-verse-body {
   flex: 1 !important;
   min-height: 0 !important;
-  overflow-y: auto !important;
 }
 
 .hc-shell-ready #editor {
-  padding: 18px 24px !important;
-  font-size: 26px !important;
-  line-height: 1.85 !important;
-  border: none !important;
-  box-shadow: none !important;
-  background: transparent !important;
+  padding: 10px 12px !important;
 }
 
 .hc-shell-ready #singleEditorSection > .row:first-child {
@@ -176,29 +154,23 @@
 /* ── Annotation toolbar: compact editor strip ── */
 .hc-shell-ready #annotationTabsShell {
   flex-shrink: 0 !important;
-  margin: 0 !important;
+  margin: 0 0 4px !important;
   border: none !important;
   border-bottom: 1px solid var(--hc-border) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  background: var(--hc-surface) !important;
-}
-
-.hc-shell-ready #annotationTabsShell.toolbar-collapsed {
-  margin-bottom: 0 !important;
+  background: var(--hc-surface-2) !important;
 }
 
 .hc-shell-ready #annotationTabsRow {
-  padding: 0 10px !important;
-  gap: 12px !important;
-  min-height: 28px !important;
-  align-items: center !important;
+  padding: 0 8px !important;
+  gap: 8px !important;
 }
 
 .hc-shell-ready .annotation-tab-btn {
-  padding: 6px 2px 4px !important;
+  padding: 5px 2px 3px !important;
   font-size: 12px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   border-bottom-width: 2px !important;
 }
 
@@ -278,19 +250,6 @@
   display: none !important;
 }
 
-.hc-shell-ready #parallelCompareWrap:not(.hidden) {
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  min-height: 0 !important;
-}
-
-.hc-shell-ready .parallel-scroll-area {
-  flex: 1 !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-}
-
 /* ── Status bar ── */
 .hc-shell-ready .hc-status-bar {
   height: var(--hc-status-height) !important;
@@ -311,23 +270,7 @@
 }
 
 .hc-shell-ready #persistentShowComments {
-  display: none !important;
-}
-
-#legendBelowEditor {
-  flex-shrink: 0;
-  margin: 4px 8px 6px !important;
-}
-
-#legendBelowEditor.collapsed #legendPanel {
-  display: none;
-}
-
-#legendBelowHeader {
-  font-size: 11px !important;
-  padding: 4px 8px !important;
-  color: var(--hc-text-muted);
-  cursor: pointer;
+  top: calc(var(--hc-topnav-height) + var(--hc-secondary-height) + 6px) !important;
 }
 
 /* ── Fallback when shell JS has not run (legacy DOM) ── */

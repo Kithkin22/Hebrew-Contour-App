@@ -54,19 +54,15 @@
     window.CONTOUR_INSPECTOR_ENABLED=!!enabled;
     const btn=document.getElementById('inspectorToggleBtn');
     if(btn){
-      btn.textContent=enabled ? 'Inspector' : 'Inspector';
+      btn.textContent=enabled ? 'Inspector: On' : 'Inspector: Off';
       btn.classList.toggle('off', !enabled);
-      btn.classList.toggle('active', !!enabled);
       btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-      btn.title=enabled ? 'Hide inspector panel' : 'Show inspector panel';
     }
     if(!enabled){
       const box=document.getElementById('wordInspector');
       if(box){box.style.display='none';box.setAttribute('aria-hidden','true');}
       clearTimeout(window.__inspectorHoverTimer);
     }
-    window.dispatchEvent(new CustomEvent('hc-inspector-panel',{detail:{visible:!!enabled}}));
-    if(typeof scheduleEditorLayoutFix==='function') scheduleEditorLayoutFix();
   }
   function installInspectorToggle(){
     if(document.getElementById('inspectorToggleBtn')) return;

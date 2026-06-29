@@ -1767,7 +1767,7 @@ body{display:flex;flex-direction:column;}
   .top-menu-hint{display:none!important;}
 }
 .card.main-workspace{
-  flex:1 1 0!important;display:flex!important;flex-direction:column!important;min-height:0!important;
+  flex:1;display:flex;flex-direction:column;min-height:0;
   padding:8px 10px!important;margin-bottom:0!important;
 }
 .main-workspace>.tabs.row{
@@ -1836,11 +1836,13 @@ body{display:flex;flex-direction:column;}
 #editorWrap{
   min-width:0;
   min-height:0;
+  height:auto!important;
   overflow-x:hidden;
   overflow-y:auto;
   -webkit-overflow-scrolling:touch;
 }
 #editor{
+  flex:none!important;
   min-width:0;
   max-width:100%;
   box-sizing:border-box;
@@ -1879,7 +1881,7 @@ body{display:flex;flex-direction:column;}
 
 #contourWorkspaceShell.hidden{display:none!important;}
 #contourWorkspaceShell:not(.hidden){
-  flex:1 1 0!important;display:flex!important;flex-direction:column!important;min-height:0!important;
+  flex:1;display:flex;flex-direction:column;min-height:0;
 }
 #annotationTabsShell.hidden{display:none!important;}
 #contourTab.hidden{display:none!important;}
@@ -1936,15 +1938,11 @@ body.workspace-table-view #commentPopover{
   grid-template-columns:minmax(0,1fr)!important;
 }
 #editorWrap{
-  flex:1 1 0!important;
-  min-height:0!important;
-  height:100%!important;
-  display:flex!important;
-  flex-direction:column!important;
+  flex:1;min-height:240px;height:100%;
+  display:flex;flex-direction:column;
 }
 #editor{
-  flex:1 1 auto!important;
-  min-height:0!important;
+  flex:1;min-height:200px;
   padding:12px 14px!important;
 }
 .toolbar-section{padding:5px 8px!important;margin:4px 0!important;}
@@ -1962,201 +1960,4 @@ body.workspace-table-view #commentPopover{
   .top-menu-hint{display:block!important;}
   .parallel-scroll-area{min-height:200px;}
   #editorWrap{min-height:200px;}
-}
-
-/* text-first-chrome-v3 */
-.workspace-view-header{
-  display:flex!important;
-  align-items:center!important;
-  justify-content:space-between!important;
-  flex-wrap:wrap!important;
-  gap:6px!important;
-  margin-bottom:4px!important;
-}
-.workspace-view-header .tabs.row{
-  margin-bottom:0!important;
-  flex:1 1 auto!important;
-}
-.workspace-view-header .workspace-help-row{
-  margin:0!important;
-  flex:0 0 auto!important;
-}
-
-.card.main-workspace > .toolbar-section,
-.card.main-workspace > #bracketToolbar,
-.card.main-workspace > .arc-toolbar{
-  display:none!important;
-}
-
-#annotationToolbarHead{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  flex-wrap:wrap;
-  border-bottom:1px solid #d8dee6;
-  background:#fff;
-}
-#annotationTabsRow{
-  flex:1 1 auto;
-  min-width:0;
-  border-bottom:none!important;
-  padding:0 8px!important;
-  gap:8px!important;
-}
-#parallelModeDock{
-  display:none;
-  align-items:center;
-  gap:6px;
-  flex-wrap:wrap;
-  flex:0 1 auto;
-  max-width:min(52%,520px);
-  padding:2px 8px 2px 0;
-}
-@media(min-width:1024px){
-  #parallelModeDock{display:flex;}
-}
-#parallelModeDock .parallel-mode-bar,
-.parallel-mode-bar.parallel-mode-docked{
-  display:flex!important;
-  align-items:center;
-  gap:6px;
-  flex-wrap:wrap;
-  margin:0!important;
-  padding:0!important;
-  background:transparent!important;
-  border:none!important;
-  border-radius:0!important;
-}
-#parallelModeDock .parallel-align-heading{
-  font-size:11px!important;
-  white-space:nowrap;
-}
-#parallelModeDock .parallel-step-btn{
-  padding:2px 7px!important;
-  font-size:11px!important;
-  min-width:1.6em!important;
-}
-#parallelModeDock label{
-  font-size:11px!important;
-  font-weight:600!important;
-  gap:4px!important;
-}
-#parallelModeDock #activePaneIndicator{
-  font-size:11px!important;
-  max-width:10em;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-#parallelModeDock #parallelAlignHint{
-  display:none!important;
-}
-#parallelModeDock .parallel-align-status{
-  margin:0!important;
-  padding:2px 6px!important;
-  font-size:10px!important;
-  line-height:1.3!important;
-  flex:1 1 120px;
-  min-width:0;
-  max-width:200px;
-  border-radius:4px!important;
-}
-
-#annotationTabsShell{
-  margin:2px 0 4px!important;
-  border-radius:6px!important;
-}
-.annotation-tab-btn{
-  padding:5px 2px 3px!important;
-  font-size:12px!important;
-  font-weight:700!important;
-  border-bottom-width:2px!important;
-}
-#annotationShortcutsBar{
-  padding:2px 8px!important;
-  gap:6px!important;
-  font-size:10px!important;
-}
-.shortcut-bar-label{font-size:9px!important;}
-.shortcut-inline-text{font-size:10px!important;gap:4px!important;}
-.annotation-tab-panel{
-  padding:4px 8px!important;
-}
-.annotation-tab-panel .btn{
-  padding:3px 7px!important;
-  font-size:11px!important;
-}
-.annotation-tab-panel input[type="color"]{
-  width:34px!important;
-  height:24px!important;
-  padding:1px!important;
-}
-.annotation-tab-panel .toolbar-label{
-  min-width:72px!important;
-  font-size:11px!important;
-}
-.annotation-tab-panel #inclusioPanel > p.muted{display:none!important;}
-.annotation-tab-panel #inclusioPanel{
-  margin:0!important;
-  padding:2px 0!important;
-  border:none!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-
-#singleEditorSection > .contour-export-source,
-#singleEditorSection > .row.contour-export-source{
-  display:none!important;
-}
-#contourTab > .parallel-mode-bar:not(.parallel-mode-docked){
-  display:none!important;
-}
-
-.contour-with-comments{
-  grid-template-columns:minmax(0,1fr)!important;
-}
-.contour-with-comments:not(.comments-collapsed){
-  grid-template-columns:minmax(0,1fr) minmax(260px,28vw)!important;
-}
-.comments-panel.collapsed{display:none!important;}
-
-#persistentShowComments{
-  position:fixed;
-  right:12px;
-  bottom:12px;
-  z-index:3500;
-  display:none;
-  padding:6px 10px!important;
-  font-size:12px!important;
-  border-radius:999px;
-  box-shadow:0 2px 10px rgba(0,0,0,.15);
-}
-#persistentShowComments.show{display:inline-flex!important;}
-
-body.workspace-table-view #annotationTabsShell,
-body.workspace-table-view #parallelModeDock{
-  display:none!important;
-}
-
-#legendBelowEditor{
-  margin-top:4px!important;
-  flex-shrink:0;
-}
-#legendBelowHeader{
-  padding:4px 8px!important;
-  font-size:12px!important;
-}
-
-#contourTab{
-  flex:1 1 0!important;
-  min-height:0!important;
-  display:flex!important;
-  flex-direction:column!important;
-}
-#singleEditorSection{
-  flex:1 1 0!important;
-  min-height:0!important;
-  display:flex!important;
-  flex-direction:column!important;
 }
