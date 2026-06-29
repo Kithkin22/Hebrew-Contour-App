@@ -747,6 +747,25 @@ async function main() {
     crossVerse.split.v0 === 'A B' && crossVerse.split.v1First === 'C' && crossVerse.split.v1Second === 'D E',
     `v0=${crossVerse.split.v0} v1a=${crossVerse.split.v1First} v1b=${crossVerse.split.v1Second}`);
 
+  const commentsRestore = await page.evaluate(() => {
+    const showBtn = document.getElementById('showCommentsPanel');
+    const exportPanel = document.getElementById('ann-export');
+    const exportParent = showBtn && exportPanel ? exportPanel.contains(showBtn) : null;
+    commentsPanelCollapsed = true;
+    if (typeof renderCommentsPanel === 'function') renderCommentsPanel();
+    const inlineVisible = !!(showBtn && !showBtn.classList.contains('hidden')
+      && getComputedStyle(showBtn).display !== 'none');
+    const persist = document.getElementById('persistentShowComments');
+    const persistVisible = !!(persist && persist.classList.contains('show')
+      && getComputedStyle(persist).display !== 'none');
+    commentsPanelCollapsed = false;
+    if (typeof renderCommentsPanel === 'function') renderCommentsPanel();
+    return { exportParent, inlineVisible, persistVisible };
+  });
+  record('comments-show-after-hide',
+    commentsRestore.inlineVisible || commentsRestore.persistVisible,
+    `inExportTab=${commentsRestore.exportParent} inline=${commentsRestore.inlineVisible} persist=${commentsRestore.persistVisible}`);
+
   await browser.close();
 
   const passed = results.filter((r) => r.pass).length;

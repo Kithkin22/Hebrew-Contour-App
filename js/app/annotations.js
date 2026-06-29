@@ -57,7 +57,16 @@
     if(brackets) document.getElementById('ann-brackets').appendChild(brackets);
     if(arcs) document.getElementById('ann-arcs').appendChild(arcs);
     if(inclusio) document.getElementById('ann-inclusio').appendChild(inclusio);
-    if(exportRow) document.getElementById('ann-export').appendChild(exportRow);
+    if(exportRow){
+      const showCommentsBtn=document.getElementById('showCommentsPanel');
+      const singleSection=document.getElementById('singleEditorSection');
+      const commentsWrap=singleSection&&singleSection.querySelector('.contour-with-comments');
+      if(showCommentsBtn&&commentsWrap){
+        showCommentsBtn.classList.add('hidden');
+        singleSection.insertBefore(showCommentsBtn,commentsWrap);
+      }
+      document.getElementById('ann-export').appendChild(exportRow);
+    }
 
     document.querySelectorAll('.annotation-tab-btn').forEach(btn=>{
       btn.onclick = ()=>{

@@ -152,6 +152,11 @@ body.dark-mode .parallel-pane-load{background:#17212b;border-color:#314253;color
 .contour-with-comments.comments-collapsed{grid-template-columns:minmax(0,1fr)}
 #showCommentsPanel.hidden{display:none!important}
 #showCommentsPanel{margin-left:auto}
+#singleEditorSection > #showCommentsPanel:not(.hidden){
+  display:inline-flex!important;
+  align-self:flex-end;
+  margin:0 0 6px 0!important;
+}
 #commentToolbar{display:none!important}
 @media(max-width:950px){.contour-with-comments{grid-template-columns:1fr}.comments-panel{position:static;max-height:none}}
 
@@ -525,7 +530,7 @@ body.dark-mode .shortcut-bar-label,body.dark-mode .shortcut-inline-text{color:#a
  cursor:pointer;
  box-shadow:0 8px 22px rgba(20,37,56,.18);
 }
-#persistentShowComments.show{display:block}
+#persistentShowComments.show{display:block!important}
 
 
 /* Legend moved below editor */
@@ -1370,7 +1375,7 @@ body.dark-mode .top-stack .card.compact-card.menu-open > .save-tools-title{
   max-width:calc(100vw - 32px);
 }
 @media(min-width:901px){
-  #persistentShowComments{display:none!important;}
+  #persistentShowComments:not(.show){display:none!important;}
 }
 @media(max-width:900px){
   #showCommentsPanel{display:none!important;}
