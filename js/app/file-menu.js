@@ -1,5 +1,5 @@
 /* file-menu-new-project-v1 */
-function initProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const trigger=document.getElementById('projectMenuTrigger');const dd=document.getElementById('projectFileMenuDropdown');if(!card||!trigger||!dd)return;window.closeProjectFileMenu=closeProjectFileMenu;window.openProjectFileMenu=openProjectFileMenu;trigger.setAttribute('role','button');trigger.setAttribute('tabindex','0');trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(e){e.stopPropagation();toggleProjectFileMenu();});trigger.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleProjectFileMenu();}});dd.querySelectorAll('[data-action]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();handleProjectFileAction(btn.getAttribute('data-action'));});});card.querySelectorAll('.file-menu-has-submenu > .file-menu-item').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const li=btn.parentElement;if(!li)return;if(window.matchMedia('(hover: none)').matches||e.detail>0){li.classList.toggle('submenu-open');}});});document.getElementById('projectFileInput').onchange=function(e){importProjectFile(e.target.files[0]);e.target.value='';};document.addEventListener('click',function(e){if(!card.classList.contains('menu-open'))return;if(card.contains(e.target))return;closeProjectFileMenu();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&card.classList.contains('menu-open'))closeProjectFileMenu();});}
+function initProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const trigger=document.getElementById('projectMenuTrigger');const dd=document.getElementById('projectFileMenuDropdown');if(!card||!trigger||!dd)return;window.closeProjectFileMenu=closeProjectFileMenu;window.openProjectFileMenu=openProjectFileMenu;trigger.setAttribute('role','button');trigger.setAttribute('tabindex','0');trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(e){e.stopPropagation();toggleProjectFileMenu(trigger);});trigger.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleProjectFileMenu(trigger);}});dd.querySelectorAll('[data-action]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const action=btn.getAttribute('data-action');if(typeof window.handleProjectFileAction==='function')window.handleProjectFileAction(action);});});card.querySelectorAll('.file-menu-has-submenu > .file-menu-item').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const li=btn.parentElement;if(!li)return;if(window.matchMedia('(hover: none)').matches||e.detail>0){li.classList.toggle('submenu-open');}});});const openRecentBtn=document.getElementById('openRecentMenuBtn');if(openRecentBtn&&!openRecentBtn.dataset.bound){openRecentBtn.dataset.bound='1';openRecentBtn.addEventListener('click',function(e){e.stopPropagation();renderProjectFileSubmenus();const li=this.parentElement;if(li)li.classList.add('submenu-open');});}document.getElementById('projectFileInput').onchange=function(e){importProjectFile(e.target.files[0]);e.target.value='';};document.addEventListener('click',function(e){if(!card.classList.contains('menu-open'))return;if(card.contains(e.target)||dd.contains(e.target))return;closeProjectFileMenu();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&card.classList.contains('menu-open'))closeProjectFileMenu();});}
 
 document.querySelectorAll('[data-text-color]').forEach(btn=>btn.onclick=()=>setSelectedColor(btn.dataset.textColor));
 document.getElementById('applyCustomColor').onclick=()=>setSelectedColor(document.getElementById('customTextColor').value);
@@ -129,14 +129,25 @@ function suggestedExportBase(kind){
 }
 function askExportFilename(defaultName, ext){
   let cleanDefault=stripExportPrefix(String(defaultName||'contour-export').replace(new RegExp('\\.'+ext+'$','i'),''));
-  let entered=prompt('Save/export as:', cleanDefault);
+  let entered=typeof prompt==='function'?prompt('Save/export as:', cleanDefault):cleanDefault;
   if(entered===null)return null;
-  entered=stripExportPrefix(entered.trim()||cleanDefault);
+  entered=stripExportPrefix(String(entered||cleanDefault).trim()||cleanDefault);
   entered=entered.replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim();
   if(!entered) entered=cleanDefault || 'contour-export';
   if(!entered.toLowerCase().endsWith('.'+ext))entered+='.'+ext;
   return entered;
 }
+function triggerDownload(blob,fname){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=fname;
+  a.rel='noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+window.triggerDownload=triggerDownload;
 
 function exportTitleFromFilename(fname){
   return stripExportPrefix(String(fname||'contour-export').replace(/\.[^.]+$/,''));
@@ -151,36 +162,36 @@ function preparePrintFilename(fname){
   return {title,oldTitle};
 }
 
-function exportContourDocx(){
-  if(isParallelActive()){exportContourDocxParallel();return;}
+function exportContourDocx(opts){
+  opts=opts||{};
+  if(!opts.skipParallel&&isParallelActive()){exportContourDocxParallel();return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:contourDocxXml()}];
-  let fname=askExportFilename(suggestedExportBase('contour-editor'),'docx');if(!fname)return;let a=document.createElement('a');a.href=URL.createObjectURL(makeZip(files));a.download=fname;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  let fname=askExportFilename(suggestedExportBase('contour-editor'),'docx');if(!fname)return;triggerDownload(makeZip(files),fname);
 }
 function exportContourHtml(){
   if(isParallelActive()){alert('For parallel passages, export each pane separately or use Word export.');return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   const fname=askExportFilename(suggestedExportBase('contour-editor'),'html');if(!fname)return;
-  const editorHtml=document.getElementById('editor').innerHTML;
+  const editorHtml=typeof buildContourEditorHtmlFromState==='function'?buildContourEditorHtmlFromState():document.getElementById('editor').innerHTML;
+  if(!editorHtml){alert('Create or generate text first.');return;}
   const isGreek=state.language==='greek';
   const textDir=isGreek?'ltr':'rtl';
   const textAlign=isGreek?'left':'right';
   const textFont=isGreek?"'SBL Greek','Gentium Plus','Times New Roman',serif":"'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif";
   const html='<!doctype html><html><head><meta charset="utf-8"><title>'+xmlEscape(state.ref||'Contour Export')+'</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}#printEditor{direction:'+textDir+';text-align:'+textAlign+';font-size:26px;line-height:2.1;font-family:'+textFont+'}.clause,.word{font-family:'+textFont+'}</style></head><body><div class="export-title">'+xmlEscape(state.ref||'Contour Export')+'</div>'+legendHtmlForExport()+'<div id="printEditor" dir="'+textDir+'">'+editorHtml+'</div>'+commentsHtmlForExport()+arcsHtmlForExport()+'</body></html>';
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
-  a.download=fname;
-  a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  triggerDownload(new Blob([html],{type:'text/html;charset=utf-8'}),fname);
 }
-function exportContourPdf(){
-  if(isParallelActive()){exportContourPdfParallel();return;}
+function exportContourPdf(opts){
+  opts=opts||{};
+  if(!opts.skipParallel&&isParallelActive()){exportContourPdfParallel();return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   const fname=askExportFilename(suggestedExportBase('contour-editor'),'pdf');if(!fname)return;
   const printMeta=preparePrintFilename(fname);
   const win=window.open('', '_blank');
   if(!win){alert('Popup blocked. Allow popups for this page, then try again.');return;}
-  const editorHtml=document.getElementById('editor').innerHTML;
+  const editorHtml=typeof buildContourEditorHtmlFromState==='function'?buildContourEditorHtmlFromState():document.getElementById('editor').innerHTML;
+  if(!editorHtml){alert('Create or generate text first.');return;}
   const isGreek=state.language==='greek';
   const textDir=isGreek?'ltr':'rtl';
   const textAlign=isGreek?'left':'right';
@@ -194,23 +205,28 @@ function crc32(u8){let c=0xffffffff;for(let i=0;i<u8.length;i++)c=crcTable[(c^u8
 function u16(n){return [n&255,(n>>>8)&255]}function u32(n){return [n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255]}
 function makeZip(files){let enc=new TextEncoder(),parts=[],central=[],offset=0;files.forEach(f=>{let name=enc.encode(f.name),data=enc.encode(f.data),crc=crc32(data);let local=new Uint8Array([0x50,0x4b,3,4,20,0,0,0,0,0,0,0,0,0,...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),0,0,...name]);parts.push(local,data);central.push({name,crc,size:data.length,offset});offset+=local.length+data.length;});let cd=[];central.forEach(f=>{cd.push(new Uint8Array([0x50,0x4b,1,2,20,0,20,0,0,0,0,0,0,0,0,0,...u32(f.crc),...u32(f.size),...u32(f.size),...u16(f.name.length),0,0,0,0,0,0,0,0,0,0,...u32(f.offset),...f.name]));});let cdSize=cd.reduce((a,b)=>a+b.length,0);let end=new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(files.length),...u16(files.length),...u32(cdSize),...u32(offset),0,0]);return new Blob([...parts,...cd,end],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});}
 
-function exportTablePdf(){
-  if(!document.getElementById('annTable')){alert('Switch to Table View or create a table first.');return;}
+function openTablePdfPrintWindow(tableHtml,exportTitle){
   const fname=askExportFilename(suggestedExportBase('contour-table'),'pdf');if(!fname)return;
   const printMeta=preparePrintFilename(fname);
   const win=window.open('', '_blank');
   if(!win){alert('Popup blocked. Allow popups for this page, then try again.');return;}
-  const tableHtml=document.getElementById('annTable').outerHTML;
-  const textHeader=state.language==='greek'?'Greek Text':'Hebrew Text';
   const isGreek=state.language==='greek';
   const textDir=isGreek?'ltr':'rtl';
   const textAlign=isGreek?'left':'right';
   const textFont=isGreek?"'SBL Greek','Gentium Plus','Times New Roman',serif":"'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif";
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${xmlEscape(printMeta.title)}</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}table{border-collapse:collapse;width:100%;background:white;direction:ltr;text-align:left}th,td{border:1px solid #999;padding:7px;vertical-align:top}th{background:#eee}.ann-ltr{direction:ltr;text-align:left}.heb{direction:${textDir};text-align:${textAlign};font-size:20px;font-family:${textFont}}.greek{direction:ltr;text-align:left;font-size:20px;font-family:${textFont}}@page{margin:0.6in}@media print{button{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button><div class="export-title">${xmlEscape(state.ref||'Contour Table')}</div>${tableHtml}<script>document.title=${JSON.stringify(printMeta.title)};setTimeout(()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.title)};}catch(e){} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.oldTitle)};}catch(e){}}<\/script></body></html>`);
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${xmlEscape(printMeta.title)}</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}table{border-collapse:collapse;width:100%;background:white;direction:ltr;text-align:left}th,td{border:1px solid #999;padding:7px;vertical-align:top}th{background:#eee}.ann-ltr{direction:ltr;text-align:left}.heb{direction:${textDir};text-align:${textAlign};font-size:20px;font-family:${textFont}}.greek{direction:ltr;text-align:left;font-size:20px;font-family:${textFont}}.parallel-table-title{margin:18px 0 8px 0;font-size:18px}@page{margin:0.6in}@media print{button{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button><div class="export-title">${xmlEscape(exportTitle||state.ref||'Contour Table')}</div>${tableHtml}<script>document.title=${JSON.stringify(printMeta.title)};setTimeout(()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.title)};}catch(e){} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.oldTitle)};}catch(e){}}<\/script></body></html>`);
   win.document.close();
 }
+function exportTablePdf(opts){
+  opts=opts||{};
+  if(!opts.skipParallel&&isParallelActive()){exportTablePdfParallel();return;}
+  if(!state.verses.length){alert('Create or generate text first.');return;}
+  const tableHtml=typeof buildTableHtmlForPane==='function'?buildTableHtmlForPane(state,0):((document.getElementById('annTable')||{}).outerHTML||'');
+  if(!tableHtml){alert('Create or generate text first.');return;}
+  openTablePdfPrintWindow(tableHtml,state.ref||'Contour Table');
+}
 
-document.getElementById('docxExport').onclick=()=>{if(isParallelActive()){exportTableDocxParallel();return;}let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:docxXml()}];let fname=askExportFilename(suggestedExportBase('contour-table'),'docx');if(!fname)return;let a=document.createElement('a');a.href=URL.createObjectURL(makeZip(files));a.download=fname;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+document.getElementById('docxExport').onclick=()=>{if(isParallelActive()){exportTableDocxParallel();return;}let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:docxXml()}];let fname=askExportFilename(suggestedExportBase('contour-table'),'docx');if(!fname)return;triggerDownload(makeZip(files),fname);};
 
 document.getElementById('tablePdfExport').onclick=()=>{if(isParallelActive()){exportTablePdfParallel();return;}exportTablePdf();};
 document.getElementById('addLegendEntry').onclick=()=>addLegend('highlight','#fff36d','');

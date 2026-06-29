@@ -71,10 +71,8 @@
     relocateMorphButtons(secondary);
     syncProjectName();
     syncPanelVisibility();
-    setupHcNavMenusIntegration();
-    bootstrapHcComments();
-    setupCommentsCollapse(appBody, rightPanel);
     hookRenderForVerseNav();
+
   }
 
   /* ── Top Navigation ── */
@@ -98,11 +96,30 @@
 
     var right = el('div', 'hc-top-nav-right');
 
-    /* Top nav menus — wired to existing top-stack panels via hc-nav-menus.js */
-    left.appendChild(makeNavMenuBtn('File', 'file'));
-    left.appendChild(makeNavMenuBtn('Generate', 'generate'));
-    left.appendChild(makeNavMenuBtn('Paste Text', 'paste'));
-    left.appendChild(makeNavMenuBtn('Export', 'export'));
+    /* Nav triggers that proxy to existing top-stack menus */
+    var fileCard = $('.file-menu-card') || $('[data-menu="project"]');
+    var genCard = $('[data-menu="generate"]');
+    var pasteCard = $('[data-menu="paste"]');
+
+    if (fileCard) {
+      left.appendChild(makeNavProxy('Project', function () {
+        if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(this);
+      }));
+    }
+    if (genCard) {
+      left.appendChild(makeNavProxy('Generate', function () { openTopMenu(genCard); }));
+    }
+    if (pasteCard) {
+      left.appendChild(makeNavProxy('Paste Text', function () { openTopMenu(pasteCard); }));
+    }
+    left.appendChild(makeNavProxy('Export', function () {
+      if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(this);
+      var exportItem = document.querySelector('.file-menu-has-submenu .file-menu-item[aria-haspopup="true"]');
+      if (exportItem && exportItem.textContent.indexOf('Export') !== -1) {
+        exportItem.parentElement.classList.add('submenu-open');
+        exportItem.focus();
+      }
+    }));
 
     /* Move existing injected buttons to right nav */
     ['themeToggleBtn', 'inspectorToggleBtn', 'manualInspectorBtn'].forEach(function (id) {
@@ -119,15 +136,16 @@
       right.appendChild(helpBtn);
     }
 
-    var feedbackBtn = $('#feedbackBtn');
-    if (feedbackBtn) {
-      feedbackBtn.classList.add('hc-nav-btn', 'hc-nav-btn-subtle');
-      feedbackBtn.title = 'Send feedback';
-      right.appendChild(feedbackBtn);
-    }
-
     var adminLink = $('#adminLink');
     if (adminLink) right.appendChild(adminLink);
+
+  var settingsBtn = makeNavProxy('Settings', function () {
+      if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(this);
+      var settingsItem = $('#projectSettingsSubmenu');
+      if (settingsItem) settingsItem.closest('.file-menu-has-submenu')?.classList.add('submenu-open');
+    });
+    settingsBtn.title = 'Project settings';
+    right.appendChild(settingsBtn);
 
     nav.appendChild(brand);
     nav.appendChild(left);
@@ -136,22 +154,27 @@
     return nav;
   }
 
-  function makeNavMenuBtn(label, menuKey) {
-    var btn = el('button', 'hc-nav-btn hc-nav-menu-btn');
+  function makeNavProxy(label, onClick) {
+    var btn = el('button', 'hc-nav-btn');
     btn.type = 'button';
     btn.textContent = label;
-    btn.dataset.hcMenu = menuKey;
-    btn.setAttribute('aria-haspopup', 'true');
-    btn.setAttribute('aria-expanded', 'false');
+    btn.addEventListener('click', onClick);
     return btn;
   }
 
-  function setupHcNavMenusIntegration() {
-    if (typeof window.setupHcNavMenus !== 'function') {
-      setTimeout(setupHcNavMenusIntegration, 200);
-      return;
+  function openTopMenu(card) {
+    if (!card) return;
+    card.classList.add('menu-open');
+    var trigger = card.querySelector('.menu-trigger, .save-tools-title');
+    if (trigger) trigger.click();
+    var backdrop = $('#topMenuBackdrop');
+    if (backdrop) {
+      backdrop.classList.add('show');
+      backdrop.onclick = function () {
+        card.classList.remove('menu-open');
+        backdrop.classList.remove('show');
+      };
     }
-    window.setupHcNavMenus();
   }
 
   /* ── Secondary Toolbar ── */
@@ -163,50 +186,59 @@
     var left = el('div', 'hc-secondary-toolbar-group');
     var right = el('div', 'hc-secondary-toolbar-group hc-secondary-right');
 
-    /* Compact quick actions — not duplicated in sidebar */
-    var quickSlot = el('div', 'hc-secondary-quick-actions');
-    quickSlot.id = 'hcQuickActionsSlot';
-    quickSlot.appendChild(makeToolbarBtn('File', function () {
-      if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu();
-    }));
-    quickSlot.appendChild(makeToolbarBtn('Generate Text', function () {
-      if (typeof window.openTopMenu === 'function') window.openTopMenu('generate');
-    }));
-    quickSlot.appendChild(makeToolbarBtn('Paste Text', function () {
-      if (typeof window.openTopMenu === 'function') window.openTopMenu('paste');
-    }));
-    left.appendChild(quickSlot);
+    var fileCard = $('.file-menu-card');
+    if (fileCard) {
+      var fileTrigger = fileCard.querySelector('.save-tools-title, .menu-trigger');
+      if (fileTrigger) {
+        var fileBtn = el('button', 'btn hc-toolbar-btn');
+        fileBtn.type = 'button';
+        fileBtn.textContent = 'File';
+        fileBtn.addEventListener('click', function () {
+          if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(fileBtn);
+        });
+        left.appendChild(fileBtn);
+      }
+    }
+
+    var genCard = $('[data-menu="generate"]');
+    if (genCard) {
+      var genBtn = el('button', 'btn hc-toolbar-btn');
+      genBtn.type = 'button';
+      genBtn.textContent = 'Generate Text';
+      genBtn.addEventListener('click', function () { openTopMenu(genCard); });
+      left.appendChild(genBtn);
+    }
+
+    var pasteCard = $('[data-menu="paste"]');
+    if (pasteCard) {
+      var pasteBtn = el('button', 'btn hc-toolbar-btn');
+      pasteBtn.type = 'button';
+      pasteBtn.textContent = 'Paste Text';
+      pasteBtn.addEventListener('click', function () { openTopMenu(pasteCard); });
+      left.appendChild(pasteBtn);
+    }
 
     left.appendChild(el('span', 'hc-secondary-divider'));
 
-    /* Morph buttons relocated here when injected */
+    /* Morph buttons get relocated here when injected */
     var morphSlot = el('div', 'hc-morph-slot');
     morphSlot.id = 'hcMorphSlot';
     left.appendChild(morphSlot);
 
-    /* Parallel controls + passage reference */
+    /* Parallel controls slot */
     var parallelSlot = el('div', 'hc-parallel-controls');
     parallelSlot.id = 'hcParallelSlot';
     right.appendChild(parallelSlot);
 
+    /* Reference display from passage */
     var refDisplay = el('span', 'hc-secondary-ref muted small');
     refDisplay.id = 'hcRefDisplay';
-    refDisplay.setAttribute('aria-label', 'Current passage reference');
-    refDisplay.title = 'Current passage reference';
     refDisplay.textContent = '';
     right.appendChild(refDisplay);
 
     bar.appendChild(left);
     bar.appendChild(right);
     return bar;
-  }
-
-  function makeToolbarBtn(label, onClick) {
-    var btn = el('button', 'hc-toolbar-btn');
-    btn.type = 'button';
-    btn.textContent = label;
-    btn.addEventListener('click', onClick);
-    return btn;
   }
 
   function relocateMorphButtons(secondary) {
@@ -217,8 +249,6 @@
         var btn = document.getElementById(id);
         if (btn && btn.parentNode !== slot) {
           btn.classList.add('hc-toolbar-btn');
-          if (id === 'importMorphDataBtn') btn.textContent = 'Import Morph Data';
-          if (id === 'clearMorphDataBtn') btn.textContent = 'Clear Morph Data';
           slot.appendChild(btn);
         }
       });
@@ -249,7 +279,7 @@
       /* Keep original checkbox — move it */
       label.removeChild(label.lastChild);
       label.appendChild(toggle);
-      label.appendChild(document.createTextNode(' Parallel Passage'));
+      label.appendChild(document.createTextNode(' Parallel'));
       slot.appendChild(label);
     }
     if (shiftUp) slot.appendChild(shiftUp);
@@ -275,7 +305,7 @@
 
     var scroll = el('div', 'hc-sidebar-scroll');
 
-    /* Project name + save status only (actions live in top nav / secondary toolbar) */
+    /* Project section */
     var projectSection = el('div', 'hc-sidebar-section');
     projectSection.innerHTML = '<div class="hc-sidebar-section-title">Project</div>';
     var projName = el('div', 'hc-sidebar-project-name');
@@ -290,6 +320,37 @@
     saveStatus.textContent = origStatus ? origStatus.textContent || 'All changes saved' : 'All changes saved';
     projectSection.appendChild(saveStatus);
 
+    var actions = el('div', 'hc-sidebar-actions');
+    var actionDefs = [
+      { label: 'Save', action: 'save-project' },
+      { label: 'New Project', action: 'new-project' },
+      { label: 'Open Project', submenu: 'openRecentMenuBtn' },
+      { label: 'Import Morph Data (.json)', id: 'importMorphDataBtnSidebar' },
+      { label: 'Project Settings', action: 'settings-rename' }
+    ];
+    actionDefs.forEach(function (def) {
+      var btn = el('button', 'hc-sidebar-action');
+      btn.type = 'button';
+      btn.innerHTML = '<span>' + def.label + '</span>';
+      if (def.action) {
+        btn.addEventListener('click', function () {
+          var item = $('.file-menu-item[data-action="' + def.action + '"]');
+          if (item) item.click();
+        });
+      } else if (def.submenu) {
+        btn.addEventListener('click', function () {
+          if (typeof window.openRecentProjectsMenu === 'function') window.openRecentProjectsMenu(btn);
+        });
+      } else if (def.id === 'importMorphDataBtnSidebar') {
+        btn.addEventListener('click', function () {
+          var morphBtn = document.getElementById('importMorphDataBtn');
+          if (morphBtn) morphBtn.click();
+          else document.getElementById('morphImportInput')?.click();
+        });
+      }
+      actions.appendChild(btn);
+    });
+    projectSection.appendChild(actions);
     scroll.appendChild(projectSection);
 
     /* Passage outline */
@@ -317,10 +378,15 @@
     var workspace = el('main', 'hc-workspace');
     workspace.setAttribute('aria-label', 'Editor workspace');
 
-    var header = el('div', 'hc-workspace-header hc-workspace-header-hidden');
-    var segCenter = el('div', 'hc-workspace-seg-center');
-    segCenter.appendChild(buildSegmentedControl('hcMainSegmented'));
-    header.appendChild(segCenter);
+    var header = el('div', 'hc-workspace-header');
+    header.appendChild(buildSegmentedControl('hcMainSegmented'));
+
+    var helpRow = $('.workspace-help-row');
+    if (helpRow) {
+      helpRow.classList.add('hc-moved');
+      header.appendChild(helpRow);
+    }
+
     workspace.appendChild(header);
 
     var content = el('div', 'hc-workspace-content');
@@ -364,15 +430,12 @@
         btn.setAttribute('aria-selected', match ? 'true' : 'false');
       });
       document.body.classList.toggle('workspace-table-view', !isContour);
-      var viewEl = document.getElementById('hcStatusView');
-      if (viewEl) viewEl.textContent = isContour ? 'Contour View' : 'Table View';
     }
 
     function switchTo(view) {
       var target = view === 'contour' ? origContour : origTable;
       if (target) target.click();
       syncFromOriginal();
-      if (typeof scheduleEditorLayoutFix === 'function') scheduleEditorLayoutFix();
     }
 
     $all('.hc-segmented').forEach(function (seg) {
@@ -451,7 +514,7 @@
 
     var placeholder = el('div', 'hc-inspector-placeholder');
     placeholder.id = 'hcInspectorPlaceholder';
-    placeholder.textContent = 'Select a word to inspect.';
+    placeholder.textContent = 'Hover over a word in the contour editor to see word information.';
     dock.appendChild(placeholder);
 
     var inspectorWrap = el('div', 'hc-inspector-dock');
@@ -484,20 +547,11 @@
     obs.observe(document.body, { childList: true, subtree: true });
   }
 
-  function bootstrapHcComments() {
-    try {
-      if (typeof commentsPanelCollapsed !== 'undefined') commentsPanelCollapsed = false;
-    } catch (e) { /* ignore */ }
-    window.HC_COMMENTS_PANEL_COLLAPSED = false;
-    if (typeof renderCommentsPanel === 'function') renderCommentsPanel();
-  }
-
   function setupCommentsDock(panel) {
     var dock = $('#hcPanelComments');
     if (!dock) return;
 
     var wrap = el('div', 'hc-comments-dock');
-    wrap.id = 'hcCommentsDockWrap';
     dock.appendChild(wrap);
 
     function moveComments() {
@@ -505,7 +559,6 @@
       if (cp && cp.parentNode !== wrap) {
         wrap.appendChild(cp);
         cp.style.display = '';
-        cp.classList.remove('collapsed');
       }
     }
 
@@ -517,78 +570,10 @@
     if (showBtn) {
       showBtn.addEventListener('click', function () {
         setTimeout(moveComments, 100);
-        expandHcCommentsPanel();
         var tab = $('.hc-panel-tab[data-panel="comments"]');
         if (tab) tab.click();
       });
     }
-  }
-
-  function setupCommentsCollapse(appBody, rightPanel) {
-    if (!appBody || !rightPanel) return;
-
-    window.HC_COMMENTS_PANEL_COLLAPSED = false;
-
-    var restoreBtn = el('button', 'hc-comments-restore-btn hidden');
-    restoreBtn.type = 'button';
-    restoreBtn.id = 'hcCommentsRestoreBtn';
-    restoreBtn.setAttribute('aria-label', 'Show comments panel');
-    restoreBtn.title = 'Show Comments';
-    restoreBtn.textContent = 'Comments';
-    document.body.appendChild(restoreBtn);
-
-    function applyCollapsedState() {
-      var collapsed = !!window.HC_COMMENTS_PANEL_COLLAPSED;
-      appBody.classList.toggle('hc-comments-collapsed', collapsed);
-      rightPanel.classList.toggle('hc-comments-collapsed', collapsed);
-      restoreBtn.classList.toggle('hidden', !collapsed);
-      var collapseBtn = document.getElementById('hcCommentsCollapseBtn');
-      if (collapseBtn) {
-        collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-        collapseBtn.title = collapsed ? 'Expand comments panel' : 'Collapse comments panel';
-      }
-      if (typeof scheduleEditorLayoutFix === 'function') scheduleEditorLayoutFix();
-    }
-
-    window.collapseHcCommentsPanel = function () {
-      window.HC_COMMENTS_PANEL_COLLAPSED = true;
-      applyCollapsedState();
-    };
-
-    window.expandHcCommentsPanel = function () {
-      window.HC_COMMENTS_PANEL_COLLAPSED = false;
-      try {
-        commentsPanelCollapsed = false;
-        if (typeof renderCommentsPanel === 'function') renderCommentsPanel();
-      } catch (e) { /* ignore */ }
-      applyCollapsedState();
-      var tab = $('.hc-panel-tab[data-panel="comments"]', rightPanel);
-      if (tab) tab.click();
-    };
-
-    restoreBtn.addEventListener('click', function () {
-      window.expandHcCommentsPanel();
-    });
-
-    /* Collapse control on Comments tab */
-    var commentsTab = $('.hc-panel-tab[data-panel="comments"]', rightPanel);
-    if (commentsTab && !document.getElementById('hcCommentsCollapseBtn')) {
-      var collapseBtn = el('button', 'hc-panel-collapse-btn');
-      collapseBtn.type = 'button';
-      collapseBtn.id = 'hcCommentsCollapseBtn';
-      collapseBtn.setAttribute('aria-label', 'Collapse comments panel');
-      collapseBtn.title = 'Collapse comments panel';
-      collapseBtn.innerHTML = '›';
-      collapseBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (window.HC_COMMENTS_PANEL_COLLAPSED) window.expandHcCommentsPanel();
-        else window.collapseHcCommentsPanel();
-      });
-      commentsTab.appendChild(collapseBtn);
-    }
-
-    /* Hide button in panel header delegates to HCDS collapse (wired in renderCommentsPanel) */
-    applyCollapsedState();
   }
 
   function setupSidebarCollapse(sidebar, appBody) {
@@ -597,42 +582,34 @@
     btn.addEventListener('click', function () {
       appBody.classList.toggle('hc-sidebar-collapsed');
       btn.textContent = appBody.classList.contains('hc-sidebar-collapsed') ? '›' : '‹';
-      if (typeof scheduleEditorLayoutFix === 'function') scheduleEditorLayoutFix();
     });
   }
 
   function syncPanelVisibility() {
     var appBody = $('.hc-app-body');
+  var inspectorBtn = document.getElementById('inspectorToggleBtn');
     if (!appBody) return;
 
-    function applyPanelState() {
-      var visible = window.CONTOUR_INSPECTOR_ENABLED !== false;
-      appBody.classList.toggle('hc-panel-hidden', !visible);
-      document.body.classList.toggle('hc-panel-hidden', !visible);
-      if (visible) {
-        appBody.classList.remove('hc-comments-collapsed');
-        var rp = document.getElementById('hcRightPanel');
-        if (rp) rp.classList.remove('hc-comments-collapsed');
-        var restore = document.getElementById('hcCommentsRestoreBtn');
-        if (restore) restore.classList.add('hidden');
-        var inspTab = document.querySelector('.hc-panel-tab[data-panel="inspector"]');
-        if (inspTab && window.HC_COMMENTS_PANEL_COLLAPSED) inspTab.click();
-      }
-      if (typeof scheduleEditorLayoutFix === 'function') scheduleEditorLayoutFix();
+    function update() {
+      var hidden = document.body.classList.contains('hc-panel-hidden');
+      appBody.classList.toggle('hc-panel-hidden', hidden);
     }
 
-    applyPanelState();
-
-    window.addEventListener('hc-inspector-panel', function () {
-      applyPanelState();
-    });
-
-    var inspectorBtn = document.getElementById('inspectorToggleBtn');
     if (inspectorBtn) {
       inspectorBtn.addEventListener('click', function () {
-        setTimeout(applyPanelState, 60);
+        setTimeout(update, 50);
       });
     }
+
+    /* Add inspector panel toggle behavior — hide right panel */
+    var origInspectorClick = inspectorBtn && inspectorBtn.onclick;
+    document.addEventListener('click', function (e) {
+      if (e.target && e.target.id === 'inspectorToggleBtn') {
+        setTimeout(update, 80);
+      }
+    });
+
+    update();
   }
 
   /* ── Verse Navigation ── */
@@ -725,12 +702,6 @@
       var saveOrig = $('#saveStatus');
       var saveSide = $('#hcSidebarSaveStatus');
       if (saveOrig && saveSide) saveSide.textContent = saveOrig.textContent || 'All changes saved';
-
-      var autoStatus = $('#hcStatusAutosave');
-      if (saveOrig && autoStatus) {
-        var txt = saveOrig.textContent || '';
-        autoStatus.textContent = txt || 'Autosaved';
-      }
     }
     sync();
     setInterval(sync, 2000);
@@ -755,14 +726,6 @@
 
     var spacer = el('span', 'hc-status-spacer');
 
-    var fontDisplay = el('span', 'hc-status-item hc-status-font');
-    fontDisplay.id = 'hcStatusFont';
-    fontDisplay.textContent = 'SBL BibLit';
-
-    var viewDisplay = el('span', 'hc-status-item hc-status-view');
-    viewDisplay.id = 'hcStatusView';
-    viewDisplay.textContent = 'Contour View';
-
     var autosave = el('span', 'hc-status-item');
     autosave.id = 'hcStatusAutosave';
     autosave.textContent = 'Autosaved';
@@ -771,8 +734,6 @@
     bar.appendChild(charCount);
     bar.appendChild(rowCount);
     bar.appendChild(spacer);
-    bar.appendChild(fontDisplay);
-    bar.appendChild(viewDisplay);
     bar.appendChild(autosave);
 
     function updateCounts() {
@@ -793,24 +754,8 @@
         wordCount.textContent = 'Words: ' + words;
         charCount.textContent = 'Chars: ' + chars;
         rowCount.textContent = rows ? 'Rows: ' + rows : '';
-        if (fontDisplay) {
-          fontDisplay.textContent = (window.state.language === 'greek') ? 'SBL Greek' : 'SBL BibLit';
-        }
       } catch (e) { /* ignore */ }
     }
-
-    function updateViewLabel() {
-      var viewEl = document.getElementById('hcStatusView');
-      if (!viewEl) return;
-      var isTable = document.body.classList.contains('workspace-table-view');
-      viewEl.textContent = isTable ? 'Table View' : 'Contour View';
-    }
-
-    var origContour = document.querySelector('[data-tab="contour"]');
-    var origTable = document.querySelector('[data-tab="table"]');
-    if (origContour) origContour.addEventListener('click', updateViewLabel);
-    if (origTable) origTable.addEventListener('click', updateViewLabel);
-    updateViewLabel();
 
     setInterval(updateCounts, 3000);
     setTimeout(updateCounts, 1500);

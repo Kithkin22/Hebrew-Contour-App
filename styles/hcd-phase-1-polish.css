@@ -1,0 +1,381 @@
+/**
+ * HCDS Phase 1 — Visual polish only.
+ * Cosmetic layer on top of the Phase 0 layout. No control moves, no rewiring.
+ */
+
+/* ── Page shell ── */
+body {
+  background: var(--hc-bg) !important;
+  color: var(--hc-text) !important;
+  font-family: var(--hc-font-ui) !important;
+  letter-spacing: -0.01em;
+}
+
+#appRoot > header {
+  background: linear-gradient(180deg, var(--hc-navy-deep) 0%, var(--hc-navy) 100%) !important;
+  color: var(--hc-text-inverse) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: var(--hc-shadow-sm) !important;
+}
+
+#appRoot > header h1 {
+  font-family: var(--hc-font-ui) !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+#appRoot > header h1::before {
+  content: "◆";
+  display: inline-block;
+  margin-right: 10px;
+  color: var(--hc-gold);
+  font-size: 14px;
+  vertical-align: 1px;
+}
+
+#appRoot > .wrap {
+  padding: 12px 16px 16px !important;
+}
+
+/* ── Top menu bar (same position, HCDS skin) ── */
+.top-stack {
+  background: var(--hc-surface) !important;
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-lg) !important;
+  box-shadow: var(--hc-shadow-sm) !important;
+  padding: 8px 10px !important;
+  gap: 8px !important;
+}
+
+.top-menu-hint {
+  color: var(--hc-text-muted) !important;
+  font-size: 12px !important;
+}
+
+.top-stack .card.compact-card > strong:first-child,
+.top-stack .card.compact-card > .save-tools-title {
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-md) !important;
+  background: var(--hc-surface) !important;
+  color: var(--hc-text) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  min-height: 36px !important;
+  padding: 8px 14px !important;
+  box-shadow: var(--hc-shadow-xs) !important;
+  transition: background var(--hc-duration) var(--hc-ease),
+    border-color var(--hc-duration) var(--hc-ease),
+    box-shadow var(--hc-duration) var(--hc-ease);
+}
+
+.top-stack .card.compact-card:hover > strong:first-child,
+.top-stack .card.compact-card:focus-within > strong:first-child,
+.top-stack .card.compact-card:hover > .save-tools-title,
+.top-stack .card.compact-card:focus-within > .save-tools-title {
+  background: var(--hc-surface-2) !important;
+  border-color: var(--hc-border-strong) !important;
+  box-shadow: var(--hc-shadow-sm) !important;
+}
+
+.top-stack .card.compact-card:has(.save-tools-title) > .save-tools-title {
+  background: var(--hc-navy) !important;
+  border-color: var(--hc-navy) !important;
+  color: #fff !important;
+}
+
+.top-stack .card.compact-card:hover::after,
+.top-stack .card.compact-card:focus-within::after,
+.top-stack .card.compact-card.menu-open::after {
+  background: var(--hc-surface) !important;
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-lg) !important;
+  box-shadow: var(--hc-shadow-lg) !important;
+}
+
+/* ── Main workspace card ── */
+.card.main-workspace {
+  background: var(--hc-surface) !important;
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-lg) !important;
+  box-shadow: var(--hc-shadow-md) !important;
+  padding: 14px 16px !important;
+}
+
+/* ── Contour / Table tabs — segmented pill (same location) ── */
+.main-workspace > .tabs.row {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 3px !important;
+  padding: 3px !important;
+  margin-bottom: 10px !important;
+  background: var(--hc-surface-3) !important;
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-lg) !important;
+  box-shadow: var(--hc-shadow-xs) !important;
+  flex-wrap: nowrap !important;
+}
+
+.main-workspace > .tabs .btn {
+  border: none !important;
+  border-radius: calc(var(--hc-radius-lg) - 3px) !important;
+  background: transparent !important;
+  color: var(--hc-text-secondary) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  padding: 8px 16px !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.main-workspace > .tabs .btn:hover {
+  background: rgba(255, 255, 255, 0.65) !important;
+  color: var(--hc-text) !important;
+}
+
+.main-workspace > .tabs .btn.active {
+  background: var(--hc-navy) !important;
+  color: #fff !important;
+  box-shadow: var(--hc-shadow-sm) !important;
+}
+
+/* ── Workspace utility row ── */
+.workspace-help-row .btn,
+.workspace-help-row .admin-link {
+  border-radius: var(--hc-radius-md) !important;
+  border: 1px solid var(--hc-border) !important;
+  background: var(--hc-surface) !important;
+  color: var(--hc-text-secondary) !important;
+  font-weight: 600 !important;
+}
+
+.workspace-help-row .btn:hover,
+.workspace-help-row .admin-link:hover {
+  background: var(--hc-surface-2) !important;
+  color: var(--hc-text) !important;
+}
+
+/* ── File menu dropdown ── */
+.file-menu-dropdown {
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-lg) !important;
+  box-shadow: var(--hc-shadow-lg) !important;
+  background: var(--hc-surface) !important;
+}
+
+.file-menu-current {
+  color: var(--hc-text-muted) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.file-menu-status {
+  color: var(--hc-text-muted) !important;
+}
+
+/* ── Forms ── */
+input,
+select,
+textarea {
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-sm) !important;
+  background: var(--hc-surface) !important;
+  color: var(--hc-text) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--hc-blue) !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.muted,
+.small {
+  color: var(--hc-text-muted) !important;
+}
+
+/* ── Editor workspace ── */
+#editorWrap {
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-lg) !important;
+  box-shadow: var(--hc-shadow-sm) !important;
+  background: var(--hc-surface) !important;
+}
+
+#editor {
+  padding: 24px 28px !important;
+  line-height: 1.85 !important;
+}
+
+#editor .muted {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  color: var(--hc-text-muted) !important;
+  margin-bottom: 4px;
+}
+
+/* ── Comments (cosmetic only) ── */
+.comments-panel {
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-lg) !important;
+  box-shadow: var(--hc-shadow-xs) !important;
+  background: var(--hc-surface) !important;
+}
+
+.comment-card {
+  border: 1px solid var(--hc-border) !important;
+  border-left: 3px solid var(--hc-border-strong) !important;
+  border-radius: var(--hc-radius-md) !important;
+  background: var(--hc-surface) !important;
+}
+
+.comment-card.active {
+  border-left-color: var(--hc-navy-soft) !important;
+  background: var(--hc-surface-2) !important;
+  box-shadow: var(--hc-shadow-xs) !important;
+}
+
+/* ── Word inspector (floating panel skin) ── */
+#wordInspector {
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-lg) !important;
+  box-shadow: var(--hc-shadow-lg) !important;
+  background: var(--hc-surface) !important;
+}
+
+#wordInspector .wi-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--hc-text-muted) !important;
+}
+
+/* ── Parallel passages bar ── */
+.parallel-mode-bar {
+  background: var(--hc-surface-2) !important;
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-md) !important;
+}
+
+.parallel-verse-cell {
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-md) !important;
+  background: var(--hc-surface) !important;
+}
+
+.parallel-verse-cell.pane-active {
+  outline: 2px solid var(--hc-blue-soft) !important;
+  background: var(--hc-surface-2) !important;
+}
+
+.parallel-align-status {
+  border-radius: var(--hc-radius-md) !important;
+  border: 1px solid var(--hc-border) !important;
+  background: var(--hc-surface-2) !important;
+}
+
+/* ── Modals & password gate ── */
+.password-gate {
+  background: var(--hc-bg) !important;
+}
+
+.password-gate-card {
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-xl) !important;
+  box-shadow: var(--hc-shadow-lg) !important;
+  background: var(--hc-surface) !important;
+}
+
+.password-gate-card h2 {
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+}
+
+.modal {
+  backdrop-filter: blur(6px);
+}
+
+.modal .panel {
+  border: 1px solid var(--hc-border) !important;
+  border-radius: var(--hc-radius-xl) !important;
+  box-shadow: var(--hc-shadow-lg) !important;
+  background: var(--hc-surface) !important;
+}
+
+/* ── Table: preserve Phase 0 table (no HCDS redesign) ── */
+#tableWrap,
+#annTable,
+#annTable th,
+#annTable td {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+#annTable tbody tr:nth-child(even) td {
+  background: inherit !important;
+}
+
+#annTable tbody tr:hover td {
+  background: inherit !important;
+}
+
+#annTable td[contenteditable] {
+  background: #fffdf2 !important;
+}
+
+body.dark-mode #annTable td[contenteditable] {
+  background: #1e2836 !important;
+}
+
+/* ── Dark mode harmonization ── */
+body.dark-mode {
+  background: var(--hc-bg) !important;
+}
+
+body.dark-mode #appRoot > header {
+  background: linear-gradient(180deg, #070d18 0%, var(--hc-navy-deep) 100%) !important;
+}
+
+body.dark-mode .top-stack,
+body.dark-mode .card.main-workspace,
+body.dark-mode #editorWrap,
+body.dark-mode .comments-panel,
+body.dark-mode #wordInspector,
+body.dark-mode .file-menu-dropdown {
+  background: var(--hc-surface) !important;
+  border-color: var(--hc-border) !important;
+}
+
+body.dark-mode .main-workspace > .tabs.row {
+  background: var(--hc-surface-3) !important;
+}
+
+body.dark-mode .main-workspace > .tabs .btn.active {
+  background: var(--hc-navy-soft) !important;
+}
+
+body.dark-mode #editorWrap,
+body.dark-mode #editor {
+  background: #000 !important;
+  color: #fff !important;
+}
+
+body.dark-mode #editor .word,
+body.dark-mode #editor .clause {
+  color: #fff !important;
+}
+
+body.dark-mode #themeToggleBtn {
+  border-color: var(--hc-border) !important;
+  background: var(--hc-surface-2) !important;
+  color: var(--hc-text) !important;
+  border-radius: var(--hc-radius-md) !important;
+}

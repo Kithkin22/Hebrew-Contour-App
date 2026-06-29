@@ -1,20 +1,21 @@
 /* Hebrew Contour — Design System v5 */
 
 :root {
-  /* Color palette */
-  --hc-navy: #142538;
-  --hc-navy-deep: #0d1a28;
+  /* Color palette — HCDS mockup v1 */
+  --hc-navy: #0a192f;
+  --hc-navy-deep: #0b1221;
   --hc-navy-soft: #1e3a5f;
-  --hc-blue: #3b82f6;
+  --hc-blue: #2563eb;
   --hc-blue-soft: #60a5fa;
   --hc-blue-muted: #dbeafe;
-  --hc-danger: #dc2626;
+  --hc-gold: #c9a227;
+  --hc-danger: #d93025;
   --hc-danger-soft: #fef2f2;
-  --hc-success: #16a34a;
+  --hc-success: #10b981;
   --hc-warning: #d97706;
 
   /* Surfaces */
-  --hc-bg: #f4f6f9;
+  --hc-bg: #f8f9fa;
   --hc-surface: #ffffff;
   --hc-surface-2: #f8fafc;
   --hc-surface-3: #eef2f7;
@@ -27,7 +28,7 @@
   --hc-text-inverse: #f8fafc;
 
   /* Borders & shadows */
-  --hc-border: #e2e8f0;
+  --hc-border: #e5e7eb;
   --hc-border-strong: #cbd5e1;
   --hc-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
   --hc-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
@@ -36,8 +37,8 @@
 
   /* Radius */
   --hc-radius-sm: 6px;
-  --hc-radius-md: 10px;
-  --hc-radius-lg: 14px;
+  --hc-radius-md: 8px;
+  --hc-radius-lg: 12px;
   --hc-radius-xl: 18px;
   --hc-radius-full: 999px;
 
@@ -364,93 +365,7 @@ body.dark-mode .hc-segmented-btn.active {
 }
 
 /* ── Table ── */
-.hc-table-wrap,
-#tableWrap {
-  border: 1px solid var(--hc-border);
-  border-radius: var(--hc-radius-lg);
-  overflow: hidden;
-  box-shadow: var(--hc-shadow-xs);
-  background: var(--hc-surface);
-}
-
-#annTable,
-.hc-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  width: 100%;
-}
-
-#annTable th,
-.hc-table th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--hc-surface-2);
-  border-bottom: 1px solid var(--hc-border);
-  border-right: 1px solid var(--hc-border);
-  padding: 12px 14px;
-  font-size: 15px;
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: 0.02em;
-  color: var(--hc-text-secondary);
-  vertical-align: middle;
-}
-
-#annTable th:last-child,
-.hc-table th:last-child {
-  border-right: none;
-}
-
-#annTable td,
-.hc-table td {
-  border-bottom: 1px solid var(--hc-border);
-  border-right: 1px solid var(--hc-border);
-  padding: 12px 14px;
-  font-size: 16px;
-  line-height: 1.55;
-  vertical-align: middle;
-  min-height: 48px;
-  transition: background var(--hc-duration-fast);
-}
-
-#annTable td.heb,
-#annTable td.greek,
-#annTable th.heb,
-#annTable th.greek {
-  font-size: 24px;
-  line-height: 1.65;
-  padding: 14px 16px;
-  min-height: 52px;
-}
-
-#annTable td:last-child,
-.hc-table td:last-child {
-  border-right: none;
-}
-
-#annTable tbody tr:nth-child(even) td,
-.hc-table tbody tr:nth-child(even) td {
-  background: var(--hc-surface-2);
-}
-
-#annTable tbody tr:hover td,
-.hc-table tbody tr:hover td {
-  background: var(--hc-blue-muted);
-}
-
-body.dark-mode #annTable tbody tr:hover td {
-  background: rgba(59, 130, 246, 0.12);
-}
-
-#annTable td[contenteditable],
-.hc-table td[contenteditable] {
-  background: #fffdf5;
-}
-
-body.dark-mode #annTable td[contenteditable] {
-  background: #1e2836;
-}
+/* Table styling intentionally lives in css/app.css (Phase 0). No HCDS table overrides here. */
 
 /* ── Status Bar ── */
 .hc-status-bar {
@@ -513,39 +428,31 @@ body.dark-mode #annTable td[contenteditable] {
 
 #annotationTabsRow {
   display: flex;
-  gap: 4px;
-  padding: 3px 8px !important;
-  border-bottom: none;
-  background: transparent;
-  flex-wrap: wrap;
-  align-items: center;
+  gap: 0;
+  padding: 0 var(--hc-space-3);
+  border-bottom: 1px solid var(--hc-border);
+  background: var(--hc-surface-2);
 }
 
 .annotation-tab-btn {
-  padding: 4px 10px !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
-  color: var(--hc-text-secondary) !important;
-  border: 1px solid transparent !important;
-  border-radius: var(--hc-radius-sm) !important;
-  border-bottom: 1px solid transparent !important;
+  padding: 6px 2px 4px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  color: var(--hc-text-muted) !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
   background: transparent !important;
   cursor: pointer;
-  transition: color var(--hc-duration), background var(--hc-duration), border-color var(--hc-duration);
+  transition: color var(--hc-duration), border-color var(--hc-duration);
 }
 
 .annotation-tab-btn:hover {
   color: var(--hc-text) !important;
-  background: var(--hc-surface) !important;
-  border-color: var(--hc-border) !important;
 }
 
 .annotation-tab-btn.active {
   color: var(--hc-navy-soft) !important;
-  background: var(--hc-surface) !important;
-  border-color: var(--hc-border) !important;
-  border-bottom-color: var(--hc-navy-soft) !important;
-  box-shadow: var(--hc-shadow-xs);
+  border-bottom-color: var(--hc-blue) !important;
 }
 
 body.dark-mode .annotation-tab-btn.active {
@@ -562,29 +469,6 @@ body.dark-mode .annotation-tab-btn.active {
 
 .annotation-tab-panel {
   padding: 6px 8px !important;
-}
-
-/* ── Collapsed toolbar (HCDS v1) ── */
-#annotationTabsShell.toolbar-collapsed .annotation-tab-panel,
-#annotationTabsShell.toolbar-collapsed #annotationShortcutsBar {
-  display: none !important;
-}
-
-#annotationTabsShell:not(.toolbar-collapsed) .annotation-tab-panel:not(.active) {
-  display: none !important;
-}
-
-#annotationTabsShell.toolbar-collapsed #annotationTabsRow {
-  border-bottom: none;
-}
-
-#annotationTabsShell.toolbar-collapsed {
-  border-bottom: 1px solid var(--hc-border);
-}
-
-.annotation-tab-btn.active {
-  color: var(--hc-navy) !important;
-  border-bottom-color: var(--hc-navy-soft) !important;
 }
 
 /* ── Keycaps ── */
@@ -636,17 +520,12 @@ textarea:focus {
 }
 
 #editor {
-  position: relative !important;
   background: var(--hc-surface) !important;
   border: none !important;
   border-radius: var(--hc-radius-lg) !important;
   box-shadow: none !important;
   padding: var(--hc-space-6) var(--hc-space-8) !important;
-  min-height: 0;
-}
-
-.hc-shell-ready #editor {
-  min-height: 0 !important;
+  min-height: 280px;
 }
 
 #editorWrap {
@@ -655,18 +534,6 @@ textarea:focus {
   border-radius: var(--hc-radius-lg);
   box-shadow: var(--hc-shadow-sm);
   overflow: hidden;
-}
-
-#editor > #arcSvg,
-#editorWrap > #arcSvg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 4;
-  overflow: visible;
 }
 
 /* ── Comments panel ── */
@@ -715,103 +582,4 @@ textarea:focus {
 
 .file-menu-item:hover {
   background: var(--hc-surface-2);
-}
-
-/* ── Table view (HCDS v1) — readable typography ── */
-.hc-shell-ready #tableWrap,
-#tableWrap {
-  background: var(--hc-surface);
-  border: 1px solid var(--hc-border);
-  border-radius: var(--hc-radius-lg);
-  overflow: auto;
-  box-shadow: var(--hc-shadow-xs);
-}
-
-#annTable {
-  border-collapse: separate;
-  border-spacing: 0;
-  width: 100%;
-  background: var(--hc-surface);
-}
-
-#annTable thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--hc-surface-2);
-  border-bottom: 2px solid var(--hc-border-strong);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  color: var(--hc-text-secondary);
-  padding: 12px 14px;
-  vertical-align: middle;
-  min-height: 48px;
-}
-
-#annTable td,
-#annTable th {
-  border: 1px solid var(--hc-border);
-  padding: 12px 14px;
-  vertical-align: middle;
-  line-height: 1.5;
-  min-height: 48px;
-}
-
-#annTable td.heb,
-#annTable td.greek,
-#annTable th.heb,
-#annTable th.greek {
-  font-family: var(--hc-font-hebrew);
-  font-size: 24px;
-  line-height: 1.65;
-  padding: 14px 16px;
-  min-height: 52px;
-}
-
-.lang-greek #annTable td.greek,
-.lang-greek #annTable th.greek {
-  font-family: var(--hc-font-greek);
-}
-
-#annTable td.ann-ltr,
-#annTable td[contenteditable] {
-  font-size: 16px;
-  line-height: 1.55;
-}
-
-#annTable tbody tr {
-  min-height: 48px;
-}
-
-#annTable tbody tr:nth-child(even) td {
-  background: var(--hc-surface-2);
-}
-
-#annTable tbody tr:hover td {
-  background: var(--hc-blue-muted);
-}
-
-#annTable td[contenteditable] {
-  background: #fffdf8;
-}
-
-body.dark-mode #annTable td[contenteditable] {
-  background: var(--hc-surface-3);
-}
-
-body.dark-mode #annTable tbody tr:nth-child(even) td {
-  background: var(--hc-surface-2);
-}
-
-body.dark-mode #annTable tbody tr:hover td {
-  background: var(--hc-surface-3);
-}
-
-/* ── Status bar items ── */
-.hc-status-font,
-.hc-status-view {
-  color: var(--hc-text-muted);
-  font-size: 11px;
 }

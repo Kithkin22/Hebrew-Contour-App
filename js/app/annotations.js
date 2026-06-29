@@ -147,7 +147,7 @@
 
 (function(){
  function moveLegend(){
-   if(document.getElementById('legendBelowEditor')) return;
+   if(document.getElementById('legendBelowEditor')){if(typeof syncLegendBelowEditor==='function')syncLegendBelowEditor();return;}
 
    const legendTab=document.getElementById('legendTab');
    const legendPanel=document.getElementById('legendPanel');
@@ -161,29 +161,33 @@
 
    const wrap=document.createElement('div');
    wrap.id='legendBelowEditor';
-   wrap.className='collapsed';
 
    const head=document.createElement('div');
    head.id='legendBelowHeader';
-   head.textContent='▶ Legend / Key';
+   head.textContent='▼ Legend / Key';
 
    head.onclick=function(){
       wrap.classList.toggle('collapsed');
-      head.textContent=wrap.classList.contains('collapsed')
-        ? '▶ Legend / Key'
-        : '▼ Legend / Key';
+      if(typeof syncLegendBelowEditor==='function')syncLegendBelowEditor();
    };
 
    wrap.appendChild(head);
    wrap.appendChild(legendPanel);
-   contourTab.appendChild(wrap);
+   const anchor=document.getElementById('singleEditorSection')||document.getElementById('parallelCompareWrap');
+   if(anchor)anchor.insertAdjacentElement('afterend',wrap);
+   else contourTab.appendChild(wrap);
 
    function syncLegendVisibility(){
+      if(typeof syncLegendBelowEditor==='function'){syncLegendBelowEditor();return;}
       const onContour=document.querySelector('[data-tab="contour"]')?.classList.contains('active');
       wrap.style.display=onContour?'block':'none';
    }
    if(tableBtn) tableBtn.addEventListener('click',syncLegendVisibility);
    if(contourBtn) contourBtn.addEventListener('click',syncLegendVisibility);
+   document.querySelectorAll('.hc-segmented-btn[data-view]').forEach(btn=>{
+     btn.addEventListener('click',()=>setTimeout(syncLegendVisibility,0));
+   });
+   if(typeof syncLegendBelowEditor==='function')syncLegendBelowEditor();
  }
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(moveLegend,500));
  else setTimeout(moveLegend,500);

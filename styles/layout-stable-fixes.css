@@ -1,0 +1,164 @@
+/**
+ * Phase 0 layout stability fixes.
+ * Keeps Scripture/editor dominant when annotation toolbars expand.
+ */
+
+#annotationTabsShell {
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  max-height: min(38vh, 320px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#annotationTabsRow {
+  flex: 0 0 auto;
+}
+
+#annotationShortcutsBar {
+  flex: 0 0 auto;
+}
+
+.annotation-tab-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(28vh, 220px);
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.annotation-tab-panel .toolbar-section,
+.annotation-tab-panel .arc-toolbar,
+.annotation-tab-panel .card {
+  margin: 0 !important;
+  padding: 4px 6px !important;
+}
+
+.annotation-tab-panel .row {
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+}
+
+#arcManager {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+#contourTab:not(.hidden),
+#singleEditorSection:not(.hidden),
+.parallel-compare:not(.hidden) {
+  flex: 1 1 auto !important;
+  min-height: 280px !important;
+}
+
+.parallel-scroll-area {
+  flex: 1 1 auto !important;
+  min-height: 280px !important;
+}
+
+#editorWrap,
+#editorWrap.editor-arc-wrap {
+  flex: 1 1 auto !important;
+  min-height: 240px !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+#editor {
+  flex: 1 1 auto !important;
+  min-height: 200px !important;
+}
+
+.contour-with-comments > #editorWrap {
+  min-height: 240px !important;
+  max-height: none !important;
+}
+
+#singleEditorSection:not(.hidden) {
+  flex: 1 1 auto !important;
+  min-height: 280px !important;
+}
+
+#contourWorkspaceShell:not(.hidden) {
+  flex: 1 1 auto !important;
+  min-height: 0;
+}
+
+.contour-with-comments {
+  flex: 1 1 auto !important;
+  min-height: 280px !important;
+  align-items: stretch !important;
+}
+
+/* Parallel mode bar: compact, not dominant */
+.parallel-mode-bar {
+  flex-shrink: 0 !important;
+  max-height: none;
+}
+
+#parallelAlignStatus {
+  max-height: 96px;
+  overflow-y: auto;
+}
+
+/* Shell mode: File menu dropdown is portaled to body (top-stack is hidden). */
+.file-menu-dropdown-portal {
+  display: none;
+  position: fixed;
+  z-index: 5000;
+  min-width: 248px;
+  max-width: min(320px, 92vw);
+}
+
+body.hc-project-menu-open .file-menu-dropdown-portal {
+  display: block !important;
+}
+
+/* Legend / Key panel: stay visible below editor in single and parallel contour view. */
+#legendBelowEditor {
+  flex-shrink: 0 !important;
+  margin-top: 12px !important;
+}
+
+#contourTab:not(.hidden) > #legendBelowEditor {
+  display: block;
+}
+
+/* Parallel passage columns: always pin left/right pane to grid column 1/2. */
+.parallel-verse-row > .parallel-verse-cell[data-pane="0"] {
+  grid-column: 1;
+}
+
+.parallel-verse-row > .parallel-verse-cell[data-pane="1"] {
+  grid-column: 2;
+}
+
+.parallel-verse-cell-empty {
+  min-height: 48px;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* Expanded submenus: list inline so Open Recent is never clipped off-screen. */
+.file-menu-has-submenu.submenu-open > .file-submenu {
+  display: block;
+  position: relative;
+  left: auto;
+  top: auto;
+  margin: 0;
+  padding: 0 0 4px 12px;
+  border: 0;
+  border-left: 2px solid var(--hc-border, #d8e1ea);
+  border-radius: 0;
+  box-shadow: none;
+  min-width: 0;
+  max-width: none;
+}
+
+.file-menu-has-submenu.submenu-open > .file-submenu .file-menu-item {
+  white-space: normal;
+}
