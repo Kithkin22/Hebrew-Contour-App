@@ -56,6 +56,26 @@ async function main() {
   await page.evaluate(() => loadSampleText());
   await page.waitForSelector('#editor .word', { timeout: 15000 });
 
+  await page.evaluate(() => {
+    window.handleProjectFileAction('save-as');
+  });
+  await page.waitForSelector('#modal.show', { timeout: 5000 });
+  await page.fill('#modalInput', 'Sample Ruth Project');
+  await page.click('#modalOk');
+  await page.waitForTimeout(300);
+  await page.evaluate(() => openRecentProjectsMenu(document.querySelector('.hc-sidebar-action')));
+  await page.waitForTimeout(200);
+  const recentOk = await page.evaluate(() => {
+    const items = [...document.querySelectorAll('#recentProjectsSubmenu .file-menu-item')];
+    const portal = document.getElementById('projectFileMenuDropdown')?.dataset.shellPortal === '1';
+    const visible = document.body.classList.contains('hc-project-menu-open');
+    const names = items.map((el) => el.textContent || '');
+    return { portal, visible, count: items.length, hasSample: names.some((n) => n.includes('Sample Ruth Project')) };
+  });
+  record('open-recent-after-save', recentOk.count > 0 && recentOk.hasSample,
+    `items=${recentOk.count} sample=${recentOk.hasSample}`);
+  await page.evaluate(() => { if (typeof closeProjectFileMenu === 'function') closeProjectFileMenu(); });
+
   const exports = [
     ['export-contour-word', 'downloads'],
     ['export-contour-html', 'downloads'],

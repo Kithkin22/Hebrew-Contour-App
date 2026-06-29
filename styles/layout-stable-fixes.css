@@ -102,3 +102,36 @@
   max-height: 96px;
   overflow-y: auto;
 }
+
+/* Shell mode: File menu dropdown is portaled to body (top-stack is hidden). */
+.file-menu-dropdown-portal {
+  display: none;
+  position: fixed;
+  z-index: 5000;
+  min-width: 248px;
+  max-width: min(320px, 92vw);
+}
+
+body.hc-project-menu-open .file-menu-dropdown-portal {
+  display: block !important;
+}
+
+/* Expanded submenus: list inline so Open Recent is never clipped off-screen. */
+.file-menu-has-submenu.submenu-open > .file-submenu {
+  display: block;
+  position: relative;
+  left: auto;
+  top: auto;
+  margin: 0;
+  padding: 0 0 4px 12px;
+  border: 0;
+  border-left: 2px solid var(--hc-border, #d8e1ea);
+  border-radius: 0;
+  box-shadow: none;
+  min-width: 0;
+  max-width: none;
+}
+
+.file-menu-has-submenu.submenu-open > .file-submenu .file-menu-item {
+  white-space: normal;
+}

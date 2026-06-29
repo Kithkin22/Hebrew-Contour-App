@@ -102,7 +102,9 @@
     var pasteCard = $('[data-menu="paste"]');
 
     if (fileCard) {
-      left.appendChild(makeNavProxy('Project', function () { openTopMenu(fileCard); }));
+      left.appendChild(makeNavProxy('Project', function () {
+        if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(this);
+      }));
     }
     if (genCard) {
       left.appendChild(makeNavProxy('Generate', function () { openTopMenu(genCard); }));
@@ -111,9 +113,12 @@
       left.appendChild(makeNavProxy('Paste Text', function () { openTopMenu(pasteCard); }));
     }
     left.appendChild(makeNavProxy('Export', function () {
-      var exportBtn = $('.file-menu-item[data-action="export-contour-pdf"]');
-      if (fileCard) openTopMenu(fileCard);
-      if (exportBtn) exportBtn.focus();
+      if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(this);
+      var exportItem = document.querySelector('.file-menu-has-submenu .file-menu-item[aria-haspopup="true"]');
+      if (exportItem && exportItem.textContent.indexOf('Export') !== -1) {
+        exportItem.parentElement.classList.add('submenu-open');
+        exportItem.focus();
+      }
     }));
 
     /* Move existing injected buttons to right nav */
@@ -135,9 +140,9 @@
     if (adminLink) right.appendChild(adminLink);
 
   var settingsBtn = makeNavProxy('Settings', function () {
-      if (fileCard) openTopMenu(fileCard);
+      if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(this);
       var settingsItem = $('#projectSettingsSubmenu');
-      if (settingsItem) settingsItem.closest('.file-menu-has-submenu')?.querySelector('.file-menu-item')?.focus();
+      if (settingsItem) settingsItem.closest('.file-menu-has-submenu')?.classList.add('submenu-open');
     });
     settingsBtn.title = 'Project settings';
     right.appendChild(settingsBtn);
@@ -188,7 +193,9 @@
         var fileBtn = el('button', 'btn hc-toolbar-btn');
         fileBtn.type = 'button';
         fileBtn.textContent = 'File';
-        fileBtn.addEventListener('click', function () { openTopMenu(fileCard); });
+        fileBtn.addEventListener('click', function () {
+          if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(fileBtn);
+        });
         left.appendChild(fileBtn);
       }
     }
@@ -332,10 +339,7 @@
         });
       } else if (def.submenu) {
         btn.addEventListener('click', function () {
-          var fileCard = $('.file-menu-card');
-          openTopMenu(fileCard);
-          var sub = document.getElementById(def.submenu);
-          if (sub) sub.focus();
+          if (typeof window.openRecentProjectsMenu === 'function') window.openRecentProjectsMenu(btn);
         });
       } else if (def.id === 'importMorphDataBtnSidebar') {
         btn.addEventListener('click', function () {
