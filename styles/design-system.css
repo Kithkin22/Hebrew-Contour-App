@@ -1,14 +1,17 @@
-/* Hebrew Contour — Design System v5 */
+/* Hebrew Contour — Design System v6 */
 
 :root {
   /* Color palette — HCDS mockup v1 */
-  --hc-navy: #0a192f;
-  --hc-navy-deep: #0b1221;
-  --hc-navy-soft: #1e3a5f;
+  --hc-navy: #0a1628;
+  --hc-navy-deep: #060e1a;
+  --hc-navy-soft: #1a3352;
+  --hc-navy-mid: #12243d;
   --hc-blue: #2563eb;
   --hc-blue-soft: #60a5fa;
   --hc-blue-muted: #dbeafe;
   --hc-gold: #c9a227;
+  --hc-gold-bright: #d4af37;
+  --hc-gold-muted: rgba(201, 162, 39, 0.35);
   --hc-danger: #d93025;
   --hc-danger-soft: #fef2f2;
   --hc-success: #10b981;
@@ -28,12 +31,20 @@
   --hc-text-inverse: #f8fafc;
 
   /* Borders & shadows */
-  --hc-border: #e5e7eb;
-  --hc-border-strong: #cbd5e1;
-  --hc-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --hc-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.06);
-  --hc-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
-  --hc-shadow-lg: 0 8px 32px rgba(15, 23, 42, 0.12);
+  --hc-border: #e2e6ec;
+  --hc-border-strong: #c5cdd8;
+  --hc-shadow-xs: 0 1px 2px rgba(10, 22, 40, 0.05);
+  --hc-shadow-sm: 0 2px 6px rgba(10, 22, 40, 0.07);
+  --hc-shadow-md: 0 4px 14px rgba(10, 22, 40, 0.09);
+  --hc-shadow-lg: 0 8px 28px rgba(10, 22, 40, 0.12);
+  --hc-shadow-header: 0 2px 8px rgba(0, 0, 0, 0.18);
+
+  /* Chrome surfaces */
+  --hc-header-bg: linear-gradient(180deg, var(--hc-navy-deep) 0%, var(--hc-navy) 100%);
+  --hc-header-border: rgba(201, 162, 39, 0.22);
+  --hc-toolbar-bg: var(--hc-surface);
+  --hc-ribbon-bg: var(--hc-surface-2);
+  --hc-ribbon-tab-active: var(--hc-navy-soft);
 
   /* Radius */
   --hc-radius-sm: 6px;
@@ -85,22 +96,30 @@
 }
 
 body.dark-mode {
-  --hc-bg: #0f1419;
-  --hc-surface: #1a2332;
-  --hc-surface-2: #222d3d;
-  --hc-surface-3: #2a3648;
-  --hc-panel: #1e2836;
+  --hc-bg: #0c1018;
+  --hc-surface: #151d2b;
+  --hc-surface-2: #1c2636;
+  --hc-surface-3: #243044;
+  --hc-panel: #1a2332;
   --hc-text: #e8eef5;
   --hc-text-secondary: #a9b6c5;
   --hc-text-muted: #7d8fa3;
-  --hc-border: #314253;
-  --hc-border-strong: #3d4f63;
-  --hc-navy: #0d1a28;
+  --hc-border: #2d3a4d;
+  --hc-border-strong: #3a4a60;
+  --hc-navy: #0a1420;
+  --hc-navy-deep: #050a12;
+  --hc-navy-soft: #1e3a5f;
   --hc-blue-muted: #1e3a5f;
-  --hc-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --hc-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --hc-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
-  --hc-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --hc-gold-muted: rgba(212, 175, 55, 0.28);
+  --hc-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --hc-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.28);
+  --hc-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.32);
+  --hc-shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.38);
+  --hc-shadow-header: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --hc-header-bg: linear-gradient(180deg, #050a12 0%, var(--hc-navy) 100%);
+  --hc-header-border: rgba(212, 175, 55, 0.18);
+  --hc-toolbar-bg: var(--hc-surface);
+  --hc-ribbon-bg: var(--hc-surface-2);
 }
 
 /* ── Base ── */

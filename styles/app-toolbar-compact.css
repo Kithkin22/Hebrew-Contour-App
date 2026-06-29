@@ -12,8 +12,8 @@
   margin: 0 0 4px !important;
   padding: 3px 6px !important;
   min-height: 34px !important;
-  background: var(--hc-surface, #fff) !important;
-  border: 1px solid var(--hc-border, #e5e7eb) !important;
+  background: var(--hc-toolbar-bg, var(--hc-surface, #fff)) !important;
+  border: 1px solid var(--hc-border, #e2e6ec) !important;
   border-radius: var(--hc-radius-md, 8px) !important;
   box-shadow: var(--hc-shadow-xs, none) !important;
 }
@@ -63,7 +63,7 @@
   content: none !important;
 }
 
-/* Right-side toolbar buttons */
+/* Right-side toolbar buttons — compact ghost style */
 .app-toolbar-actions .btn,
 .app-toolbar-actions .admin-link,
 #themeToggleBtn,
@@ -75,19 +75,35 @@
   font-weight: 600 !important;
   border-radius: var(--hc-radius-sm, 6px) !important;
   white-space: nowrap;
+  border: 1px solid var(--hc-border, #e2e6ec) !important;
+  background: transparent !important;
+  color: var(--hc-text-secondary, #4b5563) !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transition: background var(--hc-duration-fast, 120ms) var(--hc-ease, ease),
+    border-color var(--hc-duration-fast, 120ms) var(--hc-ease, ease),
+    color var(--hc-duration-fast, 120ms) var(--hc-ease, ease);
+}
+
+.app-toolbar-actions .btn:hover,
+.app-toolbar-actions .admin-link:hover,
+#themeToggleBtn:hover,
+#inspectorToggleBtn:hover,
+#manualInspectorBtn:hover {
+  background: var(--hc-surface-2, #f8fafc) !important;
+  border-color: var(--hc-border-strong, #c5cdd8) !important;
+  color: var(--hc-text, #1a2332) !important;
+  filter: none !important;
 }
 
 #themeToggleBtn,
 #inspectorToggleBtn,
 #manualInspectorBtn {
-  border: 1px solid var(--hc-border, #e5e7eb);
-  background: var(--hc-surface, #fff);
-  color: var(--hc-text, #1a2332);
   cursor: pointer;
 }
 
 #inspectorToggleBtn.off {
-  opacity: 0.75;
+  opacity: 0.65;
 }
 
 /* Never show morph controls in the top bar */
@@ -220,4 +236,52 @@
     justify-content: flex-end;
     flex-wrap: wrap;
   }
+}
+
+/* ── Phase 1 visual polish (no layout changes) ── */
+
+.app-toolbar-primary .card.compact-card > strong:first-child,
+.app-toolbar-primary .card.compact-card > .save-tools-title {
+  letter-spacing: 0.01em;
+  transition: background var(--hc-duration-fast, 120ms) var(--hc-ease, ease),
+    border-color var(--hc-duration-fast, 120ms) var(--hc-ease, ease),
+    box-shadow var(--hc-duration-fast, 120ms) var(--hc-ease, ease);
+}
+
+.app-toolbar-primary .card.compact-card > strong:first-child::after,
+.app-toolbar-primary .card.compact-card > .save-tools-title::after {
+  opacity: 0.55;
+  font-size: 10px !important;
+}
+
+#annotationTabsShell {
+  border-color: var(--hc-border) !important;
+}
+
+.annotation-tab-panel {
+  background: var(--hc-surface) !important;
+}
+
+.annotation-tab-panel .btn {
+  border-color: var(--hc-border) !important;
+  background: var(--hc-surface) !important;
+  transition: background var(--hc-duration-fast, 120ms) ease,
+    border-color var(--hc-duration-fast, 120ms) ease;
+}
+
+.annotation-tab-panel .btn:hover {
+  background: var(--hc-surface-2) !important;
+  border-color: var(--hc-border-strong) !important;
+}
+
+.annotation-tab-panel .btn.primary,
+.annotation-tab-panel .btn.good {
+  filter: none !important;
+}
+
+.toolbar-section,
+.arc-toolbar {
+  background: var(--hc-surface-2) !important;
+  border-color: var(--hc-border) !important;
+  border-radius: var(--hc-radius-sm) !important;
 }

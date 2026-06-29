@@ -1,58 +1,49 @@
 /**
- * Word-like compact ribbon — cosmetic/layout only.
- * Same controls, less vertical space.
+ * Word-like compact ribbon — cosmetic only.
+ * Same controls, quieter presentation. Layout owned by app-toolbar-compact.css.
  */
-
-.top-stack {
-  padding: 6px 8px !important;
-  gap: 6px !important;
-}
-
-.top-stack .card.compact-card > strong:first-child,
-.top-stack .card.compact-card > .save-tools-title {
-  min-height: 32px !important;
-  padding: 6px 12px !important;
-  font-size: 13px !important;
-}
 
 #annotationTabsRow {
   padding: 0 6px !important;
   gap: 2px !important;
   flex-wrap: nowrap;
   overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .annotation-tab-btn {
-  padding: 6px 10px 4px !important;
-  font-size: 12px !important;
+  padding: 5px 10px 3px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   white-space: nowrap;
-}
-
-#annotationShortcutsBar {
-  padding: 2px 8px !important;
-  font-size: 10px !important;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 .annotation-tab-panel {
-  padding: 6px 8px !important;
+  padding: 4px 6px !important;
 }
 
 .annotation-tab-panel .btn {
-  min-height: 28px !important;
-  padding: 4px 8px !important;
+  min-height: 24px !important;
+  padding: 2px 7px !important;
   font-size: 11px !important;
+  border-radius: var(--hc-radius-sm, 6px) !important;
 }
 
 .toolbar-section,
 .arc-toolbar {
-  padding: 4px 6px !important;
+  padding: 3px 6px !important;
   margin: 2px 0 !important;
 }
 
 .toolbar-label,
 .toolbar-section .small {
-  font-size: 11px !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: var(--hc-text-muted) !important;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
   min-width: auto !important;
 }
 
@@ -62,24 +53,15 @@
 }
 
 .parallel-mode-bar {
-  padding: 6px 8px !important;
-  margin-bottom: 6px !important;
-  font-size: 12px !important;
+  padding: 4px 6px !important;
+  margin-bottom: 3px !important;
+  font-size: 11px !important;
+  background: var(--hc-surface-2) !important;
+  border-color: var(--hc-border) !important;
 }
 
 .parallel-align-status {
-  font-size: 11px !important;
-  line-height: 1.35 !important;
-  padding: 4px 8px !important;
-}
-
-.card.main-workspace > .tabs .btn {
-  padding: 6px 14px !important;
-  font-size: 12px !important;
-}
-
-.workspace-help-row .btn,
-.workspace-help-row .admin-link {
-  padding: 4px 10px !important;
-  font-size: 11px !important;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+  padding: 2px 6px !important;
 }
