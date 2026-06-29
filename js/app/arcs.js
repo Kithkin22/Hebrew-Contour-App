@@ -49,8 +49,8 @@ function startApp(){
   if(appStarted)return;
   appStarted=true;
   autosaveReady=false;
-  initParallelMode();
   initProjectManager();
+  initParallelMode();
   render();
   autosaveReady=true;
 }

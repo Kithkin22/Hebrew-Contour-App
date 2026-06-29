@@ -259,9 +259,32 @@ function setGeneratorFromParsedRef(parsed){
   document.getElementById('endVerse').value=parsed.ev;
   document.getElementById('pasteBox').dir=parsed.source==='greek'?'ltr':'rtl';
 }
+function splitPassageReferences(input){
+  return String(input||'').split(',').map(s=>s.trim()).filter(Boolean);
+}
 async function generateFromReference(){
   const box=document.getElementById('passageReference');
   const status=document.getElementById('wlcStatus');
+  const parts=splitPassageReferences(box.value);
+  if(parts.length>=2){
+    const leftRef=parts[0],rightRef=parts[1];
+    const parsedLeft=parseBibleReference(leftRef);
+    const parsedRight=parseBibleReference(rightRef);
+    if(!parsedLeft||!parsedRight){
+      status.textContent='Could not read both references. Try Ruth 1:5-10, Ruth 1:10-15 or Ruth 3:4-18, Ruth 3:19-18.';
+      return;
+    }
+    const toggle=document.getElementById('parallelModeToggle');
+    if(toggle&&!toggle.checked){toggle.checked=true;toggle.onchange({target:toggle});}
+    await applyPaneReferenceFromInput(0,leftRef);
+    await applyPaneReferenceFromInput(1,rightRef);
+    const compactLeft=formatPassageRangeRef(parsedLeft.bookName,parsedLeft.sc,parsedLeft.sv,parsedLeft.ec,parsedLeft.ev);
+    const compactRight=formatPassageRangeRef(parsedRight.bookName,parsedRight.sc,parsedRight.sv,parsedRight.ec,parsedRight.ev);
+    box.value=compactLeft+', '+compactRight;
+    status.textContent=`Loaded parallel passages: ${compactLeft} (left) and ${compactRight} (right).`;
+    if(typeof closeTopMenus==='function')closeTopMenus();
+    return;
+  }
   const parsed=parseBibleReference(box.value);
   if(!parsed){status.textContent='Could not read that reference. Try examples like Ruth 3:4-18, Jn 3:1-5, or 1 Cor 13:1-4.';return;}
   setGeneratorFromParsedRef(parsed);
@@ -392,8 +415,9 @@ function setWorkspaceTab(tab){
   if(onContour){renderInclusioManager();scheduleEditorLayoutFix();}
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setWorkspaceTab(b.dataset.tab));
-document.getElementById('addColumn').onclick=()=>promptModal('Add Column','Column name:', '', v=>{if(v.trim() && v.trim().toLowerCase()!=='parsing')state.columns.push(v.trim());if(isParallelActive())renderDualTables();else renderTable();});
-document.getElementById('resetColumns').onclick=()=>{state.columns=[];if(isParallelActive())renderDualTables();else renderTable();};
+const PARALLEL_TABLE_SCOPE_BTNS={text:'Choose the left table, right table, or both.',buttons:{left:'Left table only',right:'Right table only',both:'Both tables'}};
+document.getElementById('addColumn').onclick=()=>{const askName=panes=>{if(!panes||!panes.length)return;promptModal('Add Column','Column name:','',v=>{applyCustomColumnToPanes(panes,v);});};if(isParallelActive())pickParallelPaneScope({title:'Add custom column to which table?',...PARALLEL_TABLE_SCOPE_BTNS}).then(scope=>{if(scope)askName(scope.panes);});else askName([stateBundle.activePane]);};
+document.getElementById('resetColumns').onclick=()=>{const doReset=panes=>{if(!panes||!panes.length)return;resetCustomColumnsOnPanes(panes);};if(isParallelActive())pickParallelPaneScope({title:'Reset custom columns on which table?',...PARALLEL_TABLE_SCOPE_BTNS}).then(scope=>{if(scope)doReset(scope.panes);});else doReset([stateBundle.activePane]);};
 function freshProjectState(){return freshPaneState();}
 function freshProjectBundle(){return {parallelEnabled:false,activePane:0,crossArcs:[],verseAlignPairs:null,generatedRefsByPane:[[],[]],panes:[freshPaneState(),freshPaneState()]};}
 const PROJECTS_STORE_KEY='hebrewContourApp.projects.v1';

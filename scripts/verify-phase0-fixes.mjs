@@ -350,6 +350,79 @@ async function main() {
   record('parallel-table-view', parallelTables.blocks === 2 && parallelTables.tables === 2,
     `${parallelTables.blocks} blocks, titles: ${parallelTables.titles.join(' | ')}`);
 
+  // Parallel custom columns (scope picker + both panes)
+  await page.evaluate(async () => {
+    await applyPaneReferenceFromInput(0, 'Ruth 1:1-5');
+    await applyPaneReferenceFromInput(1, 'Ruth 1:6-10');
+  });
+  await page.waitForTimeout(800);
+  await page.click('#addColumn');
+  await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
+  await page.click('#exportScopeBoth');
+  await page.waitForSelector('#modal.show', { timeout: 5000 });
+  await page.fill('#modalInput', 'TestCol');
+  await page.click('#modalOk');
+  await page.waitForTimeout(300);
+  const colBoth = await page.evaluate(() => ({
+    leftCols: stateBundle.panes[0].columns,
+    rightCols: stateBundle.panes[1].columns,
+    leftTh: [...document.querySelector('.parallel-ann-table[data-pane="0"] thead tr').children].map((th) => th.textContent),
+    rightTh: [...document.querySelector('.parallel-ann-table[data-pane="1"] thead tr').children].map((th) => th.textContent),
+  }));
+  record('parallel-add-column-both',
+    colBoth.leftCols.includes('TestCol') && colBoth.rightCols.includes('TestCol')
+      && colBoth.leftTh.includes('TestCol') && colBoth.rightTh.includes('TestCol'),
+    `left=${colBoth.leftCols.join(',')} right=${colBoth.rightCols.join(',')}`);
+
+  await page.evaluate(() => {
+    const leftTd = document.querySelector('.parallel-ann-table[data-pane="0"] td[data-col="TestCol"]');
+    const rightTd = document.querySelector('.parallel-ann-table[data-pane="1"] td[data-col="TestCol"]');
+    if (leftTd) { leftTd.innerText = 'left-val'; leftTd.oninput && leftTd.oninput(); }
+    if (rightTd) { rightTd.innerText = 'right-val'; rightTd.oninput && rightTd.oninput(); }
+  });
+  await page.waitForTimeout(200);
+  const colData = await page.evaluate(() => ({
+    left: stateBundle.panes[0].verses[0]?.clauses[0]?.ann?.TestCol,
+    right: stateBundle.panes[1].verses[0]?.clauses[0]?.ann?.TestCol,
+  }));
+  record('parallel-column-data', colData.left === 'left-val' && colData.right === 'right-val',
+    `L=${colData.left} R=${colData.right}`);
+
+  const payloadBefore = await page.evaluate(() => {
+    persistCurrentProject(true);
+    return JSON.stringify(projectPayload());
+  });
+  await page.evaluate(() => {
+    stateBundle.panes[0].columns = [];
+    stateBundle.panes[1].columns = [];
+    renderDualTables();
+  });
+  await page.evaluate((p) => restoreProjectPayload(JSON.parse(p)), payloadBefore);
+  await page.click('[data-tab="table"]');
+  await page.waitForTimeout(300);
+  const colPersist = await page.evaluate(() => ({
+    leftCols: stateBundle.panes[0].columns,
+    rightCols: stateBundle.panes[1].columns,
+    leftAnn: stateBundle.panes[0].verses[0]?.clauses[0]?.ann?.TestCol,
+    rightAnn: stateBundle.panes[1].verses[0]?.clauses[0]?.ann?.TestCol,
+  }));
+  record('parallel-column-persist',
+    colPersist.leftCols.includes('TestCol') && colPersist.rightCols.includes('TestCol')
+      && colPersist.leftAnn === 'left-val' && colPersist.rightAnn === 'right-val',
+    `cols L=${colPersist.leftCols} R=${colPersist.rightCols}`);
+
+  await page.click('#resetColumns');
+  await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
+  await page.click('#exportScopeBoth');
+  await page.waitForTimeout(300);
+  const colReset = await page.evaluate(() => ({
+    left: stateBundle.panes[0].columns.length,
+    right: stateBundle.panes[1].columns.length,
+    leftAnnKept: stateBundle.panes[0].verses[0]?.clauses[0]?.ann?.TestCol,
+  }));
+  record('parallel-reset-columns-both', colReset.left === 0 && colReset.right === 0,
+    `cols L=${colReset.left} R=${colReset.right} annKept=${!!colReset.leftAnnKept}`);
+
   await page.evaluate(() => { window.__exportTest.downloads = 0; window.__exportTest.popups = 0; });
   await page.evaluate(() => exportContourPdfParallel());
   await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
@@ -465,6 +538,139 @@ async function main() {
     return { ok: document.body.classList.contains('dark-mode') && contrast >= 4.5, contrast: contrast.toFixed(1) };
   });
   record('dark-mode', darkOk.ok, darkOk.contrast ? `contrast=${darkOk.contrast}` : String(darkOk.reason));
+
+  // ── Phase 0 persistence (save/refresh/reopen, parallel, comma refs) ──
+  await page.evaluate(() => loadSampleText());
+  await page.waitForSelector('#editor .word', { timeout: 15000 });
+  const savedTitle = 'Phase0 Reopen Test';
+  await page.evaluate(() => window.handleProjectFileAction('save-as'));
+  await page.waitForSelector('#modal.show', { timeout: 5000 });
+  await page.fill('#modalInput', savedTitle);
+  await page.click('#modalOk');
+  await page.waitForTimeout(400);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await unlock(page);
+  await page.waitForTimeout(1200);
+  const refreshRestore = await page.evaluate((title) => {
+    const rec = getCurrentProjectRecord();
+    const hasWords = !!(state.verses && state.verses.length && state.verses[0].clauses[0].words.length);
+    const items = [...document.querySelectorAll('#recentProjectsSubmenu .file-menu-item')];
+    return {
+      name: rec ? rec.name : '',
+      hasWords,
+      recentHas: items.some((el) => (el.textContent || '').includes(title)),
+    };
+  }, savedTitle);
+  record('recent-restore-after-refresh',
+    refreshRestore.name === savedTitle && refreshRestore.hasWords && refreshRestore.recentHas,
+    `name=${refreshRestore.name} words=${refreshRestore.hasWords} recent=${refreshRestore.recentHas}`);
+
+  await page.evaluate(() => {
+    const t = document.getElementById('parallelModeToggle');
+    if (t && !t.checked) { t.checked = true; t.onchange({ target: t }); }
+  });
+  await page.waitForTimeout(400);
+  await page.evaluate(async () => {
+    await applyPaneReferenceFromInput(0, 'Ruth 2:1');
+    await applyPaneReferenceFromInput(1, 'Ruth 2:2');
+  });
+  await page.waitForTimeout(800);
+  await page.evaluate(() => {
+    stateBundle.panes[0].verses[0].clauses[0].words[0].format = { highlight: '#aabbcc' };
+    stateBundle.panes[1].verses[0].clauses[0].words[0].note = 'right-pane-note';
+    syncStateBundle();
+    persistCurrentProject(false);
+  });
+  const parallelTitle = 'Parallel Persist Phase0';
+  await page.evaluate(() => window.handleProjectFileAction('save-as'));
+  await page.waitForSelector('#modal.show', { timeout: 5000 });
+  await page.fill('#modalInput', parallelTitle);
+  await page.click('#modalOk');
+  await page.waitForTimeout(400);
+  const parallelProjectId = await page.evaluate(() => projectStore.currentProjectId);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await unlock(page);
+  await page.waitForTimeout(1200);
+  const parallelRestore = await page.evaluate(() => {
+    const left = stateBundle.panes[0];
+    const right = stateBundle.panes[1];
+    const leftText = left.verses.map((v) => v.clauses[0].words.map((w) => w.text).join(' ')).join('|');
+    const rightText = right.verses.map((v) => v.clauses[0].words.map((w) => w.text).join(' ')).join('|');
+    return {
+      name: getCurrentProjectRecord()?.name || '',
+      parallel: stateBundle.parallelEnabled,
+      leftRef: left.ref || '',
+      rightRef: right.ref || '',
+      hl: left.verses[0]?.clauses[0]?.words[0]?.format?.highlight || '',
+      rightNote: right.verses[0]?.clauses[0]?.words[0]?.note || '',
+      refsDistinct: left.ref && right.ref && left.ref !== right.ref,
+      cross: leftText && rightText && leftText === rightText && left.ref !== right.ref,
+    };
+  });
+  record('parallel-persist-after-refresh',
+    parallelRestore.name === parallelTitle && parallelRestore.parallel
+      && parallelRestore.leftRef.includes('2:1') && parallelRestore.rightRef.includes('2:2')
+      && parallelRestore.hl === '#aabbcc' && parallelRestore.rightNote === 'right-pane-note'
+      && parallelRestore.refsDistinct && !parallelRestore.cross,
+    `L=${parallelRestore.leftRef} R=${parallelRestore.rightRef} hl=${parallelRestore.hl}`);
+
+  await page.evaluate(() => createNewProject({ saveCurrent: true }));
+  await page.waitForTimeout(400);
+  await page.evaluate(() => openRecentProjectsMenu(document.querySelector('.hc-sidebar-action')));
+  await page.waitForTimeout(200);
+  const reopened = await page.evaluate(({ pid }) => {
+    const btn = document.querySelector(`#recentProjectsSubmenu .file-menu-item[data-project-id="${pid}"]`);
+    if (!btn) return { found: false };
+    btn.click();
+    return {
+      found: true,
+      name: getCurrentProjectRecord()?.name || '',
+      leftRef: stateBundle.panes[0]?.ref || state.ref || '',
+      parallel: stateBundle.parallelEnabled,
+    };
+  }, { pid: parallelProjectId });
+  await page.waitForTimeout(800);
+  record('open-recent-restore-project',
+    reopened.found && reopened.name === parallelTitle && reopened.leftRef.includes('2:1') && reopened.parallel,
+    reopened.found ? `name=${reopened.name} ref=${reopened.leftRef}` : 'recent item not found');
+  await page.evaluate(() => { if (typeof closeProjectFileMenu === 'function') closeProjectFileMenu(); });
+
+  await page.evaluate(() => createNewProject({ saveCurrent: false }));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => {
+    document.getElementById('passageReference').value = 'Ruth 1:5-10, Ruth 1:10-15';
+    generateFromReference();
+  });
+  await page.waitForTimeout(1500);
+  const commaRefs = await page.evaluate(() => ({
+    parallel: stateBundle.parallelEnabled,
+    left: stateBundle.panes[0].ref || '',
+    right: stateBundle.panes[1].ref || '',
+    input: document.getElementById('passageReference').value || '',
+    leftWords: stateBundle.panes[0].verses[0]?.clauses[0]?.words?.length || 0,
+    rightWords: stateBundle.panes[1].verses[0]?.clauses[0]?.words?.length || 0,
+  }));
+  record('generate-comma-parallel-refs',
+    commaRefs.parallel && commaRefs.left.includes('1:5') && commaRefs.right.includes('1:10')
+      && commaRefs.leftWords > 0 && commaRefs.rightWords > 0
+      && commaRefs.input.includes('Ruth 1:5-10') && commaRefs.input.includes('Ruth 1:10-15'),
+    `L=${commaRefs.left} R=${commaRefs.right} input=${commaRefs.input}`);
+
+  await page.evaluate(() => createNewProject({ saveCurrent: false }));
+  await page.waitForTimeout(300);
+  await page.evaluate(() => {
+    document.getElementById('passageReference').value = 'Ruth 1:5-10';
+    generateFromReference();
+  });
+  await page.waitForTimeout(1200);
+  const singleRef = await page.evaluate(() => ({
+    parallel: stateBundle.parallelEnabled,
+    verses: state.verses?.length || 0,
+    ref: state.ref || '',
+  }));
+  record('generate-single-ref-contour',
+    !singleRef.parallel && singleRef.verses > 0 && singleRef.ref.includes('1:5'),
+    `ref=${singleRef.ref} verses=${singleRef.verses}`);
 
   await browser.close();
 
