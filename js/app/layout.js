@@ -13,17 +13,19 @@ function scheduleEditorLayoutFix(){
 function applyEditorLayoutFix(){
   document.querySelectorAll('.card.main-workspace,#contourWorkspaceShell,#annotationTabsShell,#contourTab,#singleEditorSection,#parallelCompareWrap,.contour-with-comments,#editorWrap,#editor,.parallel-scroll-area').forEach(el=>{void el.offsetWidth;});
   if(typeof renderArcOverlay==='function')renderArcOverlay();
+  document.dispatchEvent(new CustomEvent('hc-layout-changed'));
 }
 (function(){
   if(window._editorLayoutObserver)return;
   function bind(){
-    const el=document.querySelector('.card.main-workspace');
-    if(!el||typeof ResizeObserver==='undefined')return;
+    const targets=document.querySelectorAll('.card.main-workspace,#editorWrap,#editor,.hc-app-body,.hc-right-panel,.hc-sidebar,.hc-workspace');
+    if(!targets.length||typeof ResizeObserver==='undefined')return;
     window._editorLayoutObserver=new ResizeObserver(()=>scheduleEditorLayoutFix());
-    window._editorLayoutObserver.observe(el);
+    targets.forEach(el=>window._editorLayoutObserver.observe(el));
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bind);
   else bind();
+  setTimeout(bind,1500);
 })();
 
 function render(){applyLanguageLayout();syncStateBundle();if(isParallelActive()){renderParallelEditors();renderDualTables();}else{renderEditor();renderTable();}renderLegendEditor();renderInclusioManager();if(!isWorkspaceTableView())renderCommentsPanel();setTimeout(updateCommentPopover,0);if(isParallelActive())renderArcManagerParallel();else if(typeof renderArcManager==='function')renderArcManager();if(stateBundle.parallelEnabled)updateParallelAlignStatus();if(autosaveReady)autoSaveProject();scheduleEditorLayoutFix();}

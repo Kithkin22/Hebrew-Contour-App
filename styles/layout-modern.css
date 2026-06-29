@@ -464,6 +464,26 @@ body.dark-mode .hc-sidebar-footer .hc-segmented-btn.active {
 }
 
 /* Hide original view tabs */
+.hc-shell-ready .workspace-view-header,
+.hc-shell-ready .main-workspace > .workspace-view-header {
+  display: none !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+}
+
+.hc-shell-ready .main-workspace > .toolbar-section,
+.hc-shell-ready .main-workspace > #bracketToolbar,
+.hc-shell-ready .main-workspace > .arc-toolbar {
+  display: none !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .hc-shell-ready .main-workspace > .tabs.row,
 body.hc-shell-ready .main-workspace > .tabs.row,
 #appRoot.hc-shell-ready .main-workspace > .tabs.row {
@@ -575,7 +595,8 @@ body.hc-shell-ready .main-workspace > .tabs.row,
 
 /* Parallel mode bar in secondary toolbar area */
 .hc-shell-ready #parallelModeBar,
-body.hc-shell-ready #parallelModeBar {
+body.hc-shell-ready #parallelModeBar,
+.hc-shell-ready #parallelModeDock {
   display: none !important;
 }
 

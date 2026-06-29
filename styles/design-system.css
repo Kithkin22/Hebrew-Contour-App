@@ -499,31 +499,39 @@ body.dark-mode #annTable td[contenteditable] {
 
 #annotationTabsRow {
   display: flex;
-  gap: 0;
-  padding: 0 var(--hc-space-3);
-  border-bottom: 1px solid var(--hc-border);
-  background: var(--hc-surface-2);
+  gap: 4px;
+  padding: 3px 8px !important;
+  border-bottom: none;
+  background: transparent;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .annotation-tab-btn {
-  padding: 6px 2px 4px !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  color: var(--hc-text-muted) !important;
-  border: none !important;
-  border-bottom: 2px solid transparent !important;
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: var(--hc-text-secondary) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--hc-radius-sm) !important;
+  border-bottom: 1px solid transparent !important;
   background: transparent !important;
   cursor: pointer;
-  transition: color var(--hc-duration), border-color var(--hc-duration);
+  transition: color var(--hc-duration), background var(--hc-duration), border-color var(--hc-duration);
 }
 
 .annotation-tab-btn:hover {
   color: var(--hc-text) !important;
+  background: var(--hc-surface) !important;
+  border-color: var(--hc-border) !important;
 }
 
 .annotation-tab-btn.active {
   color: var(--hc-navy-soft) !important;
-  border-bottom-color: var(--hc-blue) !important;
+  background: var(--hc-surface) !important;
+  border-color: var(--hc-border) !important;
+  border-bottom-color: var(--hc-navy-soft) !important;
+  box-shadow: var(--hc-shadow-xs);
 }
 
 body.dark-mode .annotation-tab-btn.active {
@@ -614,6 +622,7 @@ textarea:focus {
 }
 
 #editor {
+  position: relative !important;
   background: var(--hc-surface) !important;
   border: none !important;
   border-radius: var(--hc-radius-lg) !important;
@@ -632,6 +641,18 @@ textarea:focus {
   border-radius: var(--hc-radius-lg);
   box-shadow: var(--hc-shadow-sm);
   overflow: hidden;
+}
+
+#editor > #arcSvg,
+#editorWrap > #arcSvg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+  overflow: visible;
 }
 
 /* ── Comments panel ── */

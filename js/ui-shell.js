@@ -188,49 +188,16 @@
     var left = el('div', 'hc-secondary-toolbar-group');
     var right = el('div', 'hc-secondary-toolbar-group hc-secondary-right');
 
-    var fileCard = $('.file-menu-card');
-    if (fileCard) {
-      var fileTrigger = fileCard.querySelector('.save-tools-title, .menu-trigger');
-      if (fileTrigger) {
-        var fileBtn = el('button', 'btn hc-toolbar-btn');
-        fileBtn.type = 'button';
-        fileBtn.textContent = 'File';
-        fileBtn.addEventListener('click', function () { openTopMenu(fileCard); });
-        left.appendChild(fileBtn);
-      }
-    }
-
-    var genCard = $('[data-menu="generate"]');
-    if (genCard) {
-      var genBtn = el('button', 'btn hc-toolbar-btn');
-      genBtn.type = 'button';
-      genBtn.textContent = 'Generate Text';
-      genBtn.addEventListener('click', function () { openTopMenu(genCard); });
-      left.appendChild(genBtn);
-    }
-
-    var pasteCard = $('[data-menu="paste"]');
-    if (pasteCard) {
-      var pasteBtn = el('button', 'btn hc-toolbar-btn');
-      pasteBtn.type = 'button';
-      pasteBtn.textContent = 'Paste Text';
-      pasteBtn.addEventListener('click', function () { openTopMenu(pasteCard); });
-      left.appendChild(pasteBtn);
-    }
-
-    left.appendChild(el('span', 'hc-secondary-divider'));
-
-    /* Morph buttons get relocated here when injected */
+    /* Morph buttons relocated here when injected (no duplicate File/Generate/Paste) */
     var morphSlot = el('div', 'hc-morph-slot');
     morphSlot.id = 'hcMorphSlot';
     left.appendChild(morphSlot);
 
-    /* Parallel controls slot */
+    /* Parallel controls + passage reference */
     var parallelSlot = el('div', 'hc-parallel-controls');
     parallelSlot.id = 'hcParallelSlot';
     right.appendChild(parallelSlot);
 
-    /* Reference display from passage */
     var refDisplay = el('span', 'hc-secondary-ref muted small');
     refDisplay.id = 'hcRefDisplay';
     refDisplay.textContent = '';
@@ -436,6 +403,7 @@
       var target = view === 'contour' ? origContour : origTable;
       if (target) target.click();
       syncFromOriginal();
+      if (typeof scheduleEditorLayoutFix === 'function') scheduleEditorLayoutFix();
     }
 
     $all('.hc-segmented').forEach(function (seg) {
@@ -582,34 +550,33 @@
     btn.addEventListener('click', function () {
       appBody.classList.toggle('hc-sidebar-collapsed');
       btn.textContent = appBody.classList.contains('hc-sidebar-collapsed') ? '›' : '‹';
+      if (typeof scheduleEditorLayoutFix === 'function') scheduleEditorLayoutFix();
     });
   }
 
   function syncPanelVisibility() {
     var appBody = $('.hc-app-body');
-  var inspectorBtn = document.getElementById('inspectorToggleBtn');
     if (!appBody) return;
 
-    function update() {
-      var hidden = document.body.classList.contains('hc-panel-hidden');
-      appBody.classList.toggle('hc-panel-hidden', hidden);
+    function applyPanelState() {
+      var visible = window.CONTOUR_INSPECTOR_ENABLED !== false;
+      appBody.classList.toggle('hc-panel-hidden', !visible);
+      document.body.classList.toggle('hc-panel-hidden', !visible);
+      if (typeof scheduleEditorLayoutFix === 'function') scheduleEditorLayoutFix();
     }
 
-    if (inspectorBtn) {
-      inspectorBtn.addEventListener('click', function () {
-        setTimeout(update, 50);
-      });
-    }
+    applyPanelState();
 
-    /* Add inspector panel toggle behavior — hide right panel */
-    var origInspectorClick = inspectorBtn && inspectorBtn.onclick;
-    document.addEventListener('click', function (e) {
-      if (e.target && e.target.id === 'inspectorToggleBtn') {
-        setTimeout(update, 80);
-      }
+    window.addEventListener('hc-inspector-panel', function () {
+      applyPanelState();
     });
 
-    update();
+    var inspectorBtn = document.getElementById('inspectorToggleBtn');
+    if (inspectorBtn) {
+      inspectorBtn.addEventListener('click', function () {
+        setTimeout(applyPanelState, 60);
+      });
+    }
   }
 
   /* ── Verse Navigation ── */
