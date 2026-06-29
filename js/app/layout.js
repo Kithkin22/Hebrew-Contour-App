@@ -296,10 +296,10 @@ async function generateWlc(){
   generatedRefs=verses.map(v=>`${bname} ${v.chapter}:${v.verse}`);
   document.getElementById('pasteBox').value=verses.map(v=>v.text).join('\n');
   document.getElementById('pasteBox').dir=source==='greek'?'ltr':'rtl';
-  document.getElementById('refBox').value=`${bname} ${sc}:${sv}${(sc!==ec||sv!==ev)?'-'+ec+':'+ev:''}`;
+  document.getElementById('refBox').value=formatPassageRangeRef(bname,sc,sv,ec,ev);
   const sourceLabel=source==='greek'?'SBLGNT':source==='hebrew-bhsa'?'BHSA':'WLC';
   status.textContent=`Loaded ${verses.length} verse(s) from ${document.getElementById('refBox').value} (${sourceLabel}).`;
-  parseText(document.getElementById('pasteBox').value,document.getElementById('refBox').value,true);
+  parseText(document.getElementById('pasteBox').value,formatPassageRangeRef(bname,sc,sv,ec,ev),true);
   if(stateBundle.parallelEnabled)syncStateBundle();
   if(typeof closeTopMenus==='function')closeTopMenus();
 }
@@ -384,13 +384,13 @@ function setWorkspaceTab(tab){
   const persistComments=document.getElementById('persistentShowComments');
   if(persistComments) persistComments.classList.toggle('hidden',!onContour);
   if(!onContour) hideCommentPopover();
-  if(onTable) renderTable();
+  if(onTable){if(isParallelActive())renderDualTables();else renderTable();}
   if(tab==='legend') renderLegendEditor();
   if(onContour){renderInclusioManager();scheduleEditorLayoutFix();}
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setWorkspaceTab(b.dataset.tab));
-document.getElementById('addColumn').onclick=()=>promptModal('Add Column','Column name:', '', v=>{if(v.trim() && v.trim().toLowerCase()!=='parsing')state.columns.push(v.trim());renderTable();});
-document.getElementById('resetColumns').onclick=()=>{state.columns=[];renderTable();};
+document.getElementById('addColumn').onclick=()=>promptModal('Add Column','Column name:', '', v=>{if(v.trim() && v.trim().toLowerCase()!=='parsing')state.columns.push(v.trim());if(isParallelActive())renderDualTables();else renderTable();});
+document.getElementById('resetColumns').onclick=()=>{state.columns=[];if(isParallelActive())renderDualTables();else renderTable();};
 function freshProjectState(){return freshPaneState();}
 function freshProjectBundle(){return {parallelEnabled:false,activePane:0,crossArcs:[],verseAlignPairs:null,generatedRefsByPane:[[],[]],panes:[freshPaneState(),freshPaneState()]};}
 const PROJECTS_STORE_KEY='hebrewContourApp.projects.v1';
@@ -436,5 +436,5 @@ function importProjectFile(file){if(!file)return;let reader=new FileReader();rea
 function closeProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const dd=document.getElementById('projectFileMenuDropdown');const trigger=document.getElementById('projectMenuTrigger');if(card)card.classList.remove('menu-open');if(dd){dd.setAttribute('aria-hidden','true');}if(trigger)trigger.setAttribute('aria-expanded','false');document.querySelectorAll('.file-menu-has-submenu.submenu-open').forEach(el=>el.classList.remove('submenu-open'));}
 function openProjectFileMenu(){if(typeof closeTopMenus==='function')closeTopMenus();const card=document.getElementById('projectFileMenuCard');const dd=document.getElementById('projectFileMenuDropdown');const trigger=document.getElementById('projectMenuTrigger');if(!card||!dd)return;renderProjectFileSubmenus();card.classList.add('menu-open');dd.setAttribute('aria-hidden','false');if(trigger)trigger.setAttribute('aria-expanded','true');}
 function toggleProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');if(card&&card.classList.contains('menu-open'))closeProjectFileMenu();else openProjectFileMenu();}
-function handleProjectFileAction(action){switch(action){case 'new-project':newProjectPrompt();break;case 'save-project':saveProjectLocal();break;case 'save-as':saveProjectAs();break;case 'export-contour-pdf':exportContourPdf();break;case 'export-contour-word':exportContourDocx();break;case 'export-contour-html':exportContourHtml();break;case 'export-table-pdf':if(typeof renderTable==='function')renderTable();if(isParallelActive())exportTablePdfParallel();else exportTablePdf();break;case 'export-table-word':if(typeof renderTable==='function')renderTable();document.getElementById('docxExport').click();break;case 'export-project-json':downloadProjectFile();break;case 'import-text':if(typeof openTopMenu==='function')openTopMenu('paste');break;case 'import-project':document.getElementById('projectFileInput').click();break;case 'settings-rename':renameCurrentProject();break;case 'settings-duplicate':duplicateCurrentProject();break;case 'settings-delete':deleteCurrentProject();break;default:break;}closeProjectFileMenu();}
+function handleProjectFileAction(action){switch(action){case 'new-project':newProjectPrompt();break;case 'save-project':saveProjectLocal();break;case 'save-as':saveProjectAs();break;case 'export-contour-pdf':exportContourPdf();break;case 'export-contour-word':exportContourDocx();break;case 'export-contour-html':exportContourHtml();break;case 'export-table-pdf':if(isParallelActive())renderDualTables();else if(typeof renderTable==='function')renderTable();if(isParallelActive())exportTablePdfParallel();else exportTablePdf();break;case 'export-table-word':if(isParallelActive())renderDualTables();else if(typeof renderTable==='function')renderTable();document.getElementById('docxExport').click();break;case 'export-project-json':downloadProjectFile();break;case 'import-text':if(typeof openTopMenu==='function')openTopMenu('paste');break;case 'import-project':document.getElementById('projectFileInput').click();break;case 'settings-rename':renameCurrentProject();break;case 'settings-duplicate':duplicateCurrentProject();break;case 'settings-delete':deleteCurrentProject();break;default:break;}closeProjectFileMenu();}
 window.handleProjectFileAction=handleProjectFileAction;

@@ -97,7 +97,64 @@ async function main() {
   record('parallel-isolation', parallelOk.active && parallelOk.refsDistinct && !parallelOk.cross,
     parallelOk.active ? `L=${parallelOk.left} R=${parallelOk.right}` : 'parallel inactive');
 
+  // Parallel contour export modal — each choice must trigger download
+  await page.evaluate(() => { window.__exportTest.downloads = 0; });
+  await page.evaluate(() => exportContourDocxParallel());
+  await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
+  await page.click('#exportScopeLeft');
+  await page.waitForTimeout(200);
+  const leftExport = await page.evaluate(() => window.__exportTest.downloads);
+  record('parallel-export-left', leftExport > 0, `downloads=${leftExport}`);
+
+  await page.evaluate(() => { window.__exportTest.downloads = 0; });
+  await page.evaluate(() => exportContourDocxParallel());
+  await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
+  await page.click('#exportScopeRight');
+  await page.waitForTimeout(200);
+  const rightExport = await page.evaluate(() => window.__exportTest.downloads);
+  record('parallel-export-right', rightExport > 0, `downloads=${rightExport}`);
+
+  await page.evaluate(() => { window.__exportTest.downloads = 0; });
+  await page.evaluate(() => exportContourDocxParallel());
+  await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
+  await page.click('#exportScopeBoth');
+  await page.waitForTimeout(200);
+  const bothExport = await page.evaluate(() => window.__exportTest.downloads);
+  record('parallel-export-both', bothExport > 0, `downloads=${bothExport}`);
+
+  await page.evaluate(() => exportContourDocxParallel());
+  await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
+  await page.click('#exportScopeCancel');
+  await page.waitForTimeout(100);
+  const cancelClosed = await page.evaluate(() => !document.getElementById('exportScopeModal').classList.contains('show'));
+  record('parallel-export-cancel', cancelClosed, cancelClosed ? 'modal closed' : 'modal still open');
+
+  // Parallel table view
+  await page.click('[data-tab="table"]');
+  await page.waitForTimeout(300);
+  const parallelTables = await page.evaluate(() => ({
+    blocks: document.querySelectorAll('.parallel-table-block').length,
+    tables: document.querySelectorAll('.parallel-ann-table').length,
+    leftRef: stateBundle.panes[0].verses[0]?.ref,
+    rightRef: stateBundle.panes[1].verses[0]?.ref,
+    leftRows: document.querySelector('.parallel-ann-table[data-pane="0"] tbody')?.rows.length,
+    rightRows: document.querySelector('.parallel-ann-table[data-pane="1"] tbody')?.rows.length,
+    titles: [...document.querySelectorAll('.parallel-table-title')].map((el) => el.textContent),
+  }));
+  record('parallel-table-view', parallelTables.blocks === 2 && parallelTables.tables === 2,
+    `${parallelTables.blocks} blocks, titles: ${parallelTables.titles.join(' | ')}`);
+
+  await page.evaluate(() => { window.__exportTest.downloads = 0; });
+  await page.click('#docxExport');
+  if (await page.locator('#exportScopeModal.show').count()) {
+    await page.click('#exportScopeLeft');
+  }
+  await page.waitForTimeout(200);
+  const tableExport = await page.evaluate(() => window.__exportTest.downloads);
+  record('parallel-table-export', tableExport > 0, `downloads=${tableExport}`);
+
   // Arc toolbar does not collapse editor (single-pane contour view)
+  await page.click('[data-tab="contour"]');
   await page.evaluate(() => {
     const t = document.getElementById('parallelModeToggle');
     if (t) t.checked = false;
@@ -109,7 +166,6 @@ async function main() {
     const wrap = document.getElementById('editorWrap');
     return section && !section.classList.contains('hidden') && wrap && wrap.offsetHeight >= 180;
   }, { timeout: 8000 });
-  await page.click('[data-tab="contour"]');
   await page.click('.annotation-tab-btn[data-panel="ann-arcs"]');
   await page.waitForTimeout(300);
   const arcLayout = await page.evaluate(() => {
@@ -121,7 +177,17 @@ async function main() {
   });
   record('arc-toolbar-layout', arcLayout.h >= 180, `editor area height=${arcLayout.h}px${arcLayout.parallel ? ' (parallel)' : ''}`);
 
-  // Table view preserved (simple grid, no uppercase headers)
+  // Single table view when parallel off
+  await page.click('[data-tab="table"]');
+  await page.waitForTimeout(200);
+  const singleTable = await page.evaluate(() => ({
+    dualBlocks: document.querySelectorAll('.parallel-table-block').length,
+    singleTable: !!document.getElementById('annTable'),
+  }));
+  record('single-table-view', singleTable.dualBlocks === 0 && singleTable.singleTable,
+    singleTable.singleTable ? 'one #annTable' : 'missing table');
+
+  // Table styling preserved (simple grid, no uppercase headers)
   await page.click('[data-tab="table"]');
   await page.waitForTimeout(200);
   const tableOk = await page.evaluate(() => {

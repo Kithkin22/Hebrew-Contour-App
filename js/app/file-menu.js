@@ -162,8 +162,9 @@ function preparePrintFilename(fname){
   return {title,oldTitle};
 }
 
-function exportContourDocx(){
-  if(isParallelActive()){exportContourDocxParallel();return;}
+function exportContourDocx(opts){
+  opts=opts||{};
+  if(!opts.skipParallel&&isParallelActive()){exportContourDocxParallel();return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:contourDocxXml()}];
   let fname=askExportFilename(suggestedExportBase('contour-editor'),'docx');if(!fname)return;triggerDownload(makeZip(files),fname);
@@ -180,8 +181,9 @@ function exportContourHtml(){
   const html='<!doctype html><html><head><meta charset="utf-8"><title>'+xmlEscape(state.ref||'Contour Export')+'</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}#printEditor{direction:'+textDir+';text-align:'+textAlign+';font-size:26px;line-height:2.1;font-family:'+textFont+'}.clause,.word{font-family:'+textFont+'}</style></head><body><div class="export-title">'+xmlEscape(state.ref||'Contour Export')+'</div>'+legendHtmlForExport()+'<div id="printEditor" dir="'+textDir+'">'+editorHtml+'</div>'+commentsHtmlForExport()+arcsHtmlForExport()+'</body></html>';
   triggerDownload(new Blob([html],{type:'text/html;charset=utf-8'}),fname);
 }
-function exportContourPdf(){
-  if(isParallelActive()){exportContourPdfParallel();return;}
+function exportContourPdf(opts){
+  opts=opts||{};
+  if(!opts.skipParallel&&isParallelActive()){exportContourPdfParallel();return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   const fname=askExportFilename(suggestedExportBase('contour-editor'),'pdf');if(!fname)return;
   const printMeta=preparePrintFilename(fname);
