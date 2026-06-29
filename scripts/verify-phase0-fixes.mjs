@@ -672,6 +672,55 @@ async function main() {
     !singleRef.parallel && singleRef.verses > 0 && singleRef.ref.includes('1:5'),
     `ref=${singleRef.ref} verses=${singleRef.verses}`);
 
+  // Legend detect deduplication
+  await page.evaluate(() => loadSampleText());
+  await page.waitForTimeout(400);
+  const legendDedup = await page.evaluate(() => {
+    const pink = '#ffc0cb';
+    const blue = '#add8e6';
+    const words = state.verses[0]?.clauses[0]?.words || [];
+    if (words.length < 4) return { ok: false, reason: 'not enough words' };
+    [0, 1, 2].forEach((i) => {
+      words[i].format = words[i].format || {};
+      words[i].format.highlight = pink;
+    });
+    state.legend = [];
+    detectUsedLegendEntries();
+    const pinkRows = state.legend.filter(
+      (e) => e.type === 'highlight' && String(e.color).toLowerCase() === pink
+    ).length;
+    words[3].format = words[3].format || {};
+    words[3].format.highlight = blue;
+    const beforeSecond = state.legend.length;
+    detectUsedLegendEntries();
+    const afterSecond = state.legend.length;
+    const blueRows = state.legend.filter(
+      (e) => e.type === 'highlight' && String(e.color).toLowerCase() === blue
+    ).length;
+    const pinkIdx = state.legend.findIndex(
+      (e) => e.type === 'highlight' && String(e.color).toLowerCase() === pink
+    );
+    if (pinkIdx >= 0) state.legend[pinkIdx].label = 'My Pink Label';
+    const labelBefore = state.legend[pinkIdx]?.label || '';
+    detectUsedLegendEntries();
+    const labelAfter = state.legend.find(
+      (e) => e.type === 'highlight' && String(e.color).toLowerCase() === pink
+    )?.label || '';
+    return {
+      ok: pinkRows === 1 && blueRows === 1 && afterSecond === beforeSecond + 1
+        && labelBefore === 'My Pink Label' && labelAfter === 'My Pink Label',
+      pinkRows,
+      blueRows,
+      addedOnSecond: afterSecond - beforeSecond,
+      labelKept: labelAfter === 'My Pink Label',
+    };
+  });
+  record('legend-detect-dedup',
+    legendDedup.ok,
+    legendDedup.ok
+      ? `pink=1 blue=1 labelKept`
+      : `pink=${legendDedup.pinkRows} blue=${legendDedup.blueRows} added=${legendDedup.addedOnSecond} label=${legendDedup.labelKept}`);
+
   await browser.close();
 
   const passed = results.filter((r) => r.pass).length;
