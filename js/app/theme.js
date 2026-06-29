@@ -2,13 +2,16 @@
 (function(){
   function installThemeToggle(){
     if(document.getElementById('themeToggleBtn')) return;
+    const actions=document.getElementById('appToolbarActions');
     const top=document.querySelector('.top-stack');
-    if(!top) return;
+    if(!actions && !top) return;
 
     const btn=document.createElement('button');
     btn.id='themeToggleBtn';
     btn.type='button';
-    top.appendChild(btn);
+    btn.className='btn app-toolbar-btn';
+    if(actions) actions.insertBefore(btn, actions.firstChild);
+    else top.appendChild(btn);
 
     function apply(mode){
       const dark = mode === 'dark';

@@ -116,10 +116,64 @@ body.hc-project-menu-open .file-menu-dropdown-portal {
   display: block !important;
 }
 
-/* Legend / Key panel: stay visible below editor in single and parallel contour view. */
+/* Legend / Key panel: compact, collapsed by default, below editor. */
 #legendBelowEditor {
   flex-shrink: 0 !important;
-  margin-top: 12px !important;
+  margin-top: 4px !important;
+  border-radius: 6px !important;
+}
+
+#legendBelowEditor.collapsed {
+  margin-top: 2px !important;
+}
+
+#legendBelowHeader {
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+#legendBelowEditor:not(.collapsed) #legendBelowHeader {
+  border-bottom: 1px solid var(--hc-border, #e5e7eb);
+}
+
+#legendBelowEditor #legendPanel {
+  margin: 0 !important;
+  padding: 4px 6px 6px !important;
+  box-shadow: none !important;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+#legendBelowEditor #legendPanel > strong:first-child,
+#legendBelowEditor #legendPanel > p.muted:first-of-type {
+  display: none;
+}
+
+#legendBelowEditor #legendPanel > .row {
+  margin-bottom: 4px !important;
+  gap: 4px !important;
+}
+
+#legendBelowEditor #legendPanel .btn {
+  min-height: 24px !important;
+  padding: 2px 7px !important;
+  font-size: 11px !important;
+}
+
+#legendBelowEditor .legend-table {
+  font-size: 11px;
+}
+
+#legendBelowEditor .legend-table th,
+#legendBelowEditor .legend-table td {
+  padding: 2px 4px !important;
+}
+
+#legendBelowEditor .legend-preview-word,
+#legendBelowEditor .legend-preview-greek {
+  font-size: 14px !important;
 }
 
 #contourTab:not(.hidden) > #legendBelowEditor {

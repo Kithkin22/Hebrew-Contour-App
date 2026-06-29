@@ -67,13 +67,16 @@
   function installInspectorToggle(){
     if(document.getElementById('inspectorToggleBtn')) return;
     const themeBtn=document.getElementById('themeToggleBtn');
+    const actions=document.getElementById('appToolbarActions');
     const top=document.querySelector('.top-stack');
-    if(!top) return;
+    if(!actions && !top) return;
     const btn=document.createElement('button');
     btn.id='inspectorToggleBtn';
     btn.type='button';
+    btn.className='btn app-toolbar-btn';
     btn.onclick=()=>setInspectorEnabled(!window.CONTOUR_INSPECTOR_ENABLED);
     if(themeBtn && themeBtn.parentNode) themeBtn.parentNode.insertBefore(btn, themeBtn.nextSibling);
+    else if(actions) actions.insertBefore(btn, actions.firstChild);
     else top.appendChild(btn);
     const saved=localStorage.getItem(INSPECTOR_PREF_KEY);
     setInspectorEnabled(saved===null ? true : saved==='1');
@@ -144,17 +147,19 @@
   }
   function installManualButton(){
     if(document.getElementById('manualInspectorBtn')) return;
-    const top=document.querySelector('.top-stack');
+    const actions=document.getElementById('appToolbarActions');
     const inspectorBtn=document.getElementById('inspectorToggleBtn');
-    if(!top) return;
+    const top=document.querySelector('.top-stack');
+    if(!actions && !top) return;
     const btn=document.createElement('button');
     btn.id='manualInspectorBtn';
     btn.type='button';
-    btn.className='btn';
+    btn.className='btn app-toolbar-btn';
     btn.textContent='Manual Root';
     btn.title='Manually add root/parsing for selected word';
     btn.onclick=openManualInspector;
     if(inspectorBtn && inspectorBtn.parentNode) inspectorBtn.parentNode.insertBefore(btn, inspectorBtn.nextSibling);
+    else if(actions) actions.appendChild(btn);
     else top.appendChild(btn);
   }
 

@@ -235,32 +235,22 @@
       reader.readAsText(file);
     };
 
-    // Add button into the Project/File dropdown if possible.
-    const projectCard = document.querySelector('.top-stack .card.compact-card:has(.save-tools-title)') ||
-                        Array.from(document.querySelectorAll('.top-stack .card.compact-card')).find(c=>/Project|save|restore/i.test(c.textContent));
-    if(projectCard && !document.getElementById('importMorphDataBtn')){
-      const row = projectCard.querySelector('.row') || projectCard;
-      const btn = document.createElement('button');
-      btn.id = 'importMorphDataBtn';
-      btn.className = 'btn';
-      btn.type = 'button';
-      btn.textContent = 'Import Hebrew Morph Data (.json)';
-      btn.onclick = ()=>input.click();
-      row.appendChild(btn);
-
-      const clear = document.createElement('button');
-      clear.id = 'clearMorphDataBtn';
-      clear.className = 'btn danger';
-      clear.type = 'button';
-      clear.textContent = 'Clear Morph Data';
-      clear.onclick = ()=>{
+    // Wire File → Import submenu items (no top-toolbar morph buttons).
+    const importBtn = document.getElementById('importMorphDataBtn');
+    const clearBtn = document.getElementById('clearMorphDataBtn');
+    if(importBtn && !importBtn.dataset.morphBound){
+      importBtn.dataset.morphBound = '1';
+      importBtn.onclick = ()=>input.click();
+    }
+    if(clearBtn && !clearBtn.dataset.morphBound){
+      clearBtn.dataset.morphBound = '1';
+      clearBtn.onclick = ()=>{
         if(confirm('Clear imported Hebrew morphology data?')){
           localStorage.removeItem(MORPH_STORE_KEY);
           window.CONTOUR_MORPH_LOOKUP = {};
           updateMorphStatus();
         }
       };
-      row.appendChild(clear);
     }
 
     updateMorphStatus();
