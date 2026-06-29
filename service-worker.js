@@ -1,4 +1,4 @@
-const CACHE_NAME = 'contour-app-pwa-v22';
+const CACHE_NAME = 'contour-app-pwa-v23';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -6,6 +6,10 @@ const APP_ASSETS = [
   './manifest.json',
   './sefaria-bdb.js',
   './greek-lexicon.js',
+  './js/ui-shell.js',
+  './styles/design-system.css',
+  './styles/layout-modern.css',
+  './styles/text-first.css',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];

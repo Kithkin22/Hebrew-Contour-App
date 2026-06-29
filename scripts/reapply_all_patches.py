@@ -56,7 +56,8 @@ PATCH_SCRIPTS = [
     "apply_workspace_maximize.py",
     "apply_tab_switch_fix.py",
     "apply_editor_overflow_fix.py",
-    "apply_editor_text_zoom.py",
+    "apply_text_first_layout.py",
+    "remove_editor_text_zoom.py",
 ]
 
 # Full WLC bundle is ~16.5MB; truncated restores are usually <15MB.
@@ -84,9 +85,6 @@ LAYOUT_MARKERS = [
     "/* editor-overflow-fix-v2 */",
     "scheduleEditorLayoutFix",
     "setWorkspaceTab",
-    "/* editor-text-zoom-v1 */",
-    "initEditorTextZoom",
-    "editorZoomBar",
 ]
 
 

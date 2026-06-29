@@ -115,7 +115,7 @@ body{display:flex;flex-direction:column;}
 }
 .contour-with-comments{
   flex:1;display:grid!important;
-  grid-template-columns:minmax(0,1fr) 300px!important;
+  grid-template-columns:minmax(0,3fr) minmax(0,1fr)!important;
   gap:10px!important;min-height:0;align-items:stretch!important;
 }
 .contour-with-comments.comments-collapsed{
