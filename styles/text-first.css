@@ -1,6 +1,13 @@
-/* text-first-layout-v1 — The biblical text is the application */
+/* text-first-layout-v2 — Scripture dominates the viewport */
 
-/* ── App shell: narrow nav | 75% canvas | 25% secondary panel ── */
+/* ── Tighter shell chrome ── */
+.hc-shell-ready {
+  --hc-topnav-height: 38px;
+  --hc-secondary-height: 30px;
+  --hc-status-height: 22px;
+}
+
+/* ── App shell: narrow nav | canvas | secondary panel ── */
 .hc-app-body {
   grid-template-columns: var(--hc-sidebar-width) minmax(0, 3fr) minmax(0, 1fr) !important;
 }
@@ -17,12 +24,91 @@
   grid-template-columns: var(--hc-sidebar-collapsed) minmax(0, 1fr) !important;
 }
 
+/* ── Top nav & secondary toolbar: single compact strip ── */
+.hc-shell-ready .hc-top-nav {
+  height: var(--hc-topnav-height) !important;
+  padding: 0 10px !important;
+  gap: 6px !important;
+}
+
+.hc-shell-ready .hc-top-nav-logo {
+  font-size: 12px !important;
+}
+
+.hc-shell-ready .hc-top-nav-tagline {
+  display: none !important;
+}
+
+.hc-shell-ready .hc-top-nav .hc-nav-btn {
+  min-height: 26px !important;
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+}
+
+.hc-shell-ready .hc-top-nav-project-name {
+  font-size: 12px !important;
+  max-width: 200px;
+}
+
+.hc-shell-ready .hc-secondary-toolbar {
+  min-height: var(--hc-secondary-height) !important;
+  padding: 2px 10px !important;
+  gap: 6px !important;
+}
+
+.hc-shell-ready .hc-secondary-toolbar .btn,
+.hc-shell-ready .hc-secondary-toolbar .hc-toolbar-btn {
+  min-height: 24px !important;
+  padding: 2px 7px !important;
+  font-size: 11px !important;
+}
+
+.hc-shell-ready .hc-secondary-divider {
+  height: 18px !important;
+  margin: 0 4px !important;
+}
+
+/* ── Workspace header: one row, not a stack ── */
+.hc-shell-ready .hc-workspace-header {
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  padding: 2px 10px !important;
+}
+
+.hc-shell-ready .hc-workspace-header .hc-segmented {
+  padding: 2px !important;
+}
+
+.hc-shell-ready .hc-workspace-header .hc-segmented-btn {
+  min-width: 88px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+}
+
+.hc-shell-ready .hc-workspace-header .workspace-help-row {
+  margin: 0 !important;
+  gap: 4px !important;
+}
+
+.hc-shell-ready .hc-workspace-header .workspace-help-row .btn,
+.hc-shell-ready .hc-workspace-header .workspace-help-row .admin-link {
+  padding: 3px 7px !important;
+  font-size: 11px !important;
+}
+
+.hc-shell-ready .hc-workspace-content {
+  padding: 0 8px 4px !important;
+}
+
 /* ── Canvas: editor owns vertical space ── */
-.hc-shell-ready #singleEditorSection,
+.hc-shell-ready #contourWorkspaceShell,
 .hc-shell-ready #contourTab,
-.hc-shell-ready #contourWorkspaceShell {
-  flex: 1;
-  min-height: 0;
+.hc-shell-ready #singleEditorSection {
+  flex: 1 !important;
+  min-height: 0 !important;
 }
 
 .hc-shell-ready .contour-with-comments {
@@ -33,31 +119,42 @@
 .hc-shell-ready .contour-with-comments > #editorWrap {
   flex: 1 !important;
   min-height: 0 !important;
-  margin: var(--hc-space-2) var(--hc-space-3) !important;
+  margin: 2px 6px !important;
   border: 1px solid var(--hc-border) !important;
-  border-radius: var(--hc-radius-md) !important;
+  border-radius: var(--hc-radius-sm) !important;
   background: #fff !important;
-  box-shadow: var(--hc-shadow-xs) !important;
+  box-shadow: none !important;
+}
+
+.hc-shell-ready #editorWrap {
+  min-height: 0 !important;
+  height: auto !important;
 }
 
 .hc-shell-ready #editor,
 .hc-shell-ready .parallel-verse-body {
+  flex: 1 !important;
   min-height: 0 !important;
 }
 
+.hc-shell-ready #editor {
+  padding: 10px 12px !important;
+}
+
 .hc-shell-ready #singleEditorSection > .row:first-child {
-  padding: 4px var(--hc-space-3) !important;
-  margin: 0 !important;
+  padding: 2px 6px !important;
+  margin: 0 0 2px !important;
 }
 
 .hc-shell-ready #singleEditorSection > .row:first-child .btn {
-  padding: 3px 8px !important;
+  padding: 3px 7px !important;
   font-size: 11px !important;
 }
 
-/* Toolbars recede */
+/* ── Annotation toolbar: compact editor strip ── */
 .hc-shell-ready #annotationTabsShell {
-  margin: 0 !important;
+  flex-shrink: 0 !important;
+  margin: 0 0 4px !important;
   border: none !important;
   border-bottom: 1px solid var(--hc-border) !important;
   border-radius: 0 !important;
@@ -66,32 +163,86 @@
 }
 
 .hc-shell-ready #annotationTabsRow {
-  padding: 0 var(--hc-space-3) !important;
+  padding: 0 8px !important;
   gap: 8px !important;
 }
 
 .hc-shell-ready .annotation-tab-btn {
-  padding: 6px 2px 4px !important;
+  padding: 5px 2px 3px !important;
   font-size: 12px !important;
   font-weight: 700 !important;
+  border-bottom-width: 2px !important;
 }
 
 .hc-shell-ready #annotationShortcutsBar {
-  padding: 2px var(--hc-space-3) !important;
-  font-size: 11px !important;
+  padding: 2px 8px !important;
+  font-size: 10px !important;
+  gap: 6px !important;
+}
+
+.hc-shell-ready .shortcut-bar-label {
+  font-size: 9px !important;
+}
+
+.hc-shell-ready .shortcut-inline-text {
+  font-size: 10px !important;
+  gap: 5px !important;
 }
 
 .hc-shell-ready .annotation-tab-panel {
-  padding: 4px var(--hc-space-3) !important;
+  padding: 4px 8px !important;
+}
+
+.hc-shell-ready .annotation-tab-panel .btn {
+  padding: 3px 7px !important;
+  font-size: 11px !important;
+}
+
+.hc-shell-ready .annotation-tab-panel .toolbar-label {
+  min-width: 72px !important;
+  font-size: 11px !important;
+}
+
+.hc-shell-ready .annotation-tab-panel input[type="color"] {
+  width: 36px !important;
+  height: 24px !important;
+  padding: 1px !important;
 }
 
 .hc-shell-ready .toolbar-section,
 .hc-shell-ready .arc-toolbar {
   margin: 0 !important;
-  padding: 2px 0 !important;
+  padding: 0 !important;
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+.hc-shell-ready .annotation-tab-panel .row,
+.hc-shell-ready .annotation-tab-panel .arc-controls {
+  gap: 6px !important;
+}
+
+.hc-shell-ready .annotation-tab-panel #inclusioPanel {
+  margin: 0 !important;
+  padding: 4px 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.hc-shell-ready .annotation-tab-panel #inclusioPanel > strong {
+  font-size: 12px !important;
+}
+
+.hc-shell-ready .annotation-tab-panel #inclusioPanel > p.muted {
+  display: none !important;
+}
+
+.hc-shell-ready #bracketStatus,
+.hc-shell-ready #arcStatus,
+.hc-shell-ready .comment-start-status {
+  font-size: 10px !important;
 }
 
 .hc-shell-ready #commentToolbar,
@@ -99,15 +250,27 @@
   display: none !important;
 }
 
-/* Right panel: clearly secondary */
+/* ── Status bar ── */
+.hc-shell-ready .hc-status-bar {
+  height: var(--hc-status-height) !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  gap: 10px !important;
+}
+
+/* ── Right panel: secondary ── */
 .hc-right-panel {
   max-width: 28vw;
   font-size: 13px;
 }
 
 .hc-panel-tab {
-  padding: 8px 6px !important;
+  padding: 6px 4px !important;
   font-size: 10px !important;
+}
+
+.hc-shell-ready #persistentShowComments {
+  top: calc(var(--hc-topnav-height) + var(--hc-secondary-height) + 6px) !important;
 }
 
 /* ── Fallback when shell JS has not run (legacy DOM) ── */
@@ -184,5 +347,15 @@ body:not(.hc-shell-ready) #singleEditorSection > .row:first-child .btn {
 
   body:not(.hc-shell-ready) .comments-panel {
     max-height: 220px !important;
+  }
+
+  .hc-shell-ready .hc-workspace-header {
+    padding: 2px 6px !important;
+  }
+
+  .hc-shell-ready .hc-workspace-header .hc-segmented-btn {
+    min-width: 72px !important;
+    padding: 4px 6px !important;
+    font-size: 11px !important;
   }
 }

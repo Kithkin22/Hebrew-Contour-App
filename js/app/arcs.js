@@ -1,0 +1,60 @@
+/* 1.3.8a Anchor-Assisted Arc Connector Tool */
+let arcAnchorStart=null;
+let arcDraw={active:false,isDragging:false,start:null,current:null};
+function ensureArcs(){if(!Array.isArray(state.arcs))state.arcs=[];}
+function nextArcId(){ensureArcs();let max=0;state.arcs.forEach(a=>{let m=String(a.id||'').match(/arc-(\d+)/);if(m)max=Math.max(max,+m[1]);});return 'arc-'+(max+1);}
+function updateArcStatus(msg){let el=document.getElementById('arcStatus');if(el)el.textContent=msg;}
+function arcLabelText(arc){return (arc&&arc.label&&arc.label.trim())?arc.label.trim():'Arc connection';}
+function wordElForLoc(l,pane){const p=pane!=null?pane:(l&&l.pane!=null?l.pane:stateBundle.activePane);if(isParallelActive()){if(!locOKInPane({v:l.v,c:l.c,w:l.w},p))return null;return document.querySelector(`.word[data-pane="${p}"][data-v="${l.v}"][data-c="${l.c}"][data-w="${l.w}"]`);}if(!locOK(l))return null;return document.querySelector(`.word[data-v="${l.v}"][data-c="${l.c}"][data-w="${l.w}"]`);}
+function locFromWordEl(el){return locFromWordElWithPane(el);}
+function sameLoc(a,b){return locOK(a)&&locOK(b)&&a.v===b.v&&a.c===b.c&&a.w===b.w;}
+function arcColorValue(){return (document.getElementById('arcColor')&&document.getElementById('arcColor').value)||'#0b61d8';}
+function arcLabelValue(){return (document.getElementById('arcLabel')&&document.getElementById('arcLabel').value)||'';}
+function addArcFromLocs(start,end){if(isParallelActive()){const s=Object.assign({pane:start.pane!=null?+start.pane:stateBundle.activePane},start);const e=Object.assign({pane:end.pane!=null?+end.pane:stateBundle.activePane},end);return addArcFromLocsParallel(s,e);}markUndo();ensureArcs();if(!locOK(start)||!locOK(end))return null;if(sameLoc(start,end)){updateArcStatus('Drag to a different word to create an arc.');return null;}let arc={id:nextArcId(),start:cloneLoc(start),end:cloneLoc(end),color:arcColorValue(),label:arcLabelValue()};state.arcs.push(arc);state.activeArcId=arc.id;autoSaveProject();return arc;}
+function setArcStart(){if(!locOK(state.selected)){alert('Select the word where the arc should begin.');return;}arcAnchorStart=isParallelActive()?cloneLocWithPane(Object.assign({pane:stateBundle.activePane},state.selected)):cloneLoc(state.selected);updateArcStatus('Arc start set. Select the ending word, then click Set Arc End.');}
+function setArcEnd(){if(!arcAnchorStart){setArcStart();return;}if(!locOK(state.selected)){alert('Select the word where the arc should end.');return;}const end=isParallelActive()?Object.assign({pane:stateBundle.activePane},state.selected):state.selected;let arc=addArcFromLocs(arcAnchorStart,end);arcAnchorStart=null;if(arc)updateArcStatus(arc.start&&arc.start.pane!=null&&arc.end&&arc.end.pane!=null&&arc.start.pane!==arc.end.pane?'Cross-pane arc added.':'Arc connector added.');render();}
+function deleteSelectedArc(id){if(isParallelActive()&&String(id||state.activeArcId||'').startsWith('crossarc-')){deleteSelectedArcParallel(id);return;}ensureArcs();let target=id||state.activeArcId;if(!target){alert('Select an arc in the Arc connectors list first.');return;}state.arcs=state.arcs.filter(a=>a.id!==target);if(state.activeArcId===target)state.activeArcId=null;autoSaveProject();render();}
+function clearAllArcs(){ensureArcs();if(!state.arcs.length){updateArcStatus('No arcs to clear.');return;}if(confirm('Clear all arc connectors?')){state.arcs=[];state.activeArcId=null;arcAnchorStart=null;autoSaveProject();render();}}
+function toggleDrawArcMode(force){arcDraw.active=(typeof force==='boolean')?force:!arcDraw.active;arcDraw.isDragging=false;arcDraw.start=null;arcDraw.current=null;let wrap=document.getElementById('editorWrap');let btn=document.getElementById('drawArcMode');if(wrap)wrap.classList.toggle('arc-draw-active',arcDraw.active);if(btn){btn.textContent=arcDraw.active?'Drawing Arc…':'Draw Arc';btn.classList.toggle('warn',arcDraw.active);btn.classList.toggle('primary',!arcDraw.active);}updateArcStatus(arcDraw.active?'Draw mode on: drag from one word to another. Release to create the arc.':'Draw mode off.');renderArcOverlay();}
+function nearestWordLocFromPoint(x,y){if(isParallelActive())return nearestWordLocFromPointParallel(x,y);let fromPoint=(document.elementsFromPoint?document.elementsFromPoint(x,y):[]).find(el=>el.classList&&el.classList.contains('word'));if(fromPoint)return locFromWordEl(fromPoint);let words=[...document.querySelectorAll('#editor .word')];let best=null,bestDist=Infinity;words.forEach(el=>{let r=el.getBoundingClientRect();let cx=Math.min(Math.max(x,r.left),r.right),cy=Math.min(Math.max(y,r.top),r.bottom);let dx=x-cx,dy=y-cy;let d=dx*dx+dy*dy;if(d<bestDist){bestDist=d;best=el;}});return bestDist<16000?locFromWordEl(best):null;}
+function arcGeometryForLocs(start,end,wrapRect){let a=wordElForLoc(start),b=wordElForLoc(end);if(!a||!b)return null;let ar=a.getBoundingClientRect(),br=b.getBoundingClientRect();let isGreek=state.language==='greek';let y1=ar.top+ar.height/2-wrapRect.top,y2=br.top+br.height/2-wrapRect.top;let anchor1=isGreek?ar.left-wrapRect.left:ar.right-wrapRect.left;let anchor2=isGreek?br.left-wrapRect.left:br.right-wrapRect.left;let textEdge=isGreek?Math.min(ar.left,br.left)-wrapRect.left:Math.max(ar.right,br.right)-wrapRect.left;let sideX=isGreek?Math.max(8,textEdge-46):Math.min(wrapRect.width-8,textEdge+46);let mid=(y1+y2)/2;return {isGreek,y1,y2,anchor1,anchor2,sideX,mid};}
+function drawArcPath(svg,geo,color,opts={}){let path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('class',opts.preview?'arc-preview-path':'arc-path');path.setAttribute('stroke',color);path.setAttribute('d',`M ${geo.anchor1} ${geo.y1} C ${geo.sideX} ${geo.y1}, ${geo.sideX} ${geo.y1}, ${geo.sideX} ${geo.mid} C ${geo.sideX} ${geo.y2}, ${geo.sideX} ${geo.y2}, ${geo.anchor2} ${geo.y2}`);svg.appendChild(path);if(!opts.preview){[[geo.anchor1,geo.y1],[geo.anchor2,geo.y2]].forEach(([x,y])=>{let c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r','4');c.setAttribute('fill',color);svg.appendChild(c);});}return path;}
+function drawArcLabel(svg,geo,arc,color){if(!arc.label)return;let txt=document.createElementNS('http://www.w3.org/2000/svg','text');txt.setAttribute('class','arc-label');txt.setAttribute('fill',color);txt.setAttribute('x',geo.isGreek?geo.sideX-10:geo.sideX+10);txt.setAttribute('y',geo.mid);txt.setAttribute('text-anchor',geo.isGreek?'end':'start');txt.setAttribute('dominant-baseline','middle');txt.textContent=arc.label;svg.appendChild(txt);}
+function renderArcManager(){ensureArcs();let mgr=document.getElementById('arcManager');if(!mgr)return;if(!state.arcs.length){mgr.innerHTML='<span class="muted">No arc connectors yet.</span>';return;}let html='<strong>Existing arcs</strong>';state.arcs.forEach((a,idx)=>{let active=state.activeArcId===a.id;html+=`<div class="arc-item" data-arc-id="${esc(a.id)}" style="${active?'outline:2px solid #8ec5ff;':''}"><span><span class="arc-swatch" style="background:${esc(a.color||'#0b61d8')}"></span> <strong>[${idx+1}] ${esc(arcLabelText(a))}</strong><br><span class="muted">${esc(locToLabel(a.start))} → ${esc(locToLabel(a.end))}</span></span><span><button class="btn" data-select-arc="${esc(a.id)}">Select</button> <button class="btn danger" data-delete-arc="${esc(a.id)}">Delete</button></span></div>`;});mgr.innerHTML=html;mgr.querySelectorAll('[data-select-arc]').forEach(b=>b.onclick=()=>{state.activeArcId=b.dataset.selectArc;render();});mgr.querySelectorAll('[data-delete-arc]').forEach(b=>b.onclick=()=>deleteSelectedArc(b.dataset.deleteArc));}
+function renderArcOverlay(){if(isParallelActive()){renderParallelArcOverlays();renderCrossArcOverlay();renderArcManagerParallel();return;}ensureArcs();let svg=document.getElementById('arcSvg'),wrap=document.getElementById('editorWrap'),ed=document.getElementById('editor');if(!svg||!wrap||!ed)return;svg.innerHTML='';renderArcManager();let wr=wrap.getBoundingClientRect();svg.setAttribute('viewBox',`0 0 ${Math.max(1,wr.width)} ${Math.max(1,wr.height)}`);svg.setAttribute('width',wr.width);svg.setAttribute('height',wr.height);document.querySelectorAll('.word.arc-anchor').forEach(w=>w.classList.remove('arc-anchor'));state.arcs.forEach((arc)=>{let a=wordElForLoc(arc.start),b=wordElForLoc(arc.end);if(!a||!b)return;a.classList.add('arc-anchor');b.classList.add('arc-anchor');let geo=arcGeometryForLocs(arc.start,arc.end,wr);if(!geo)return;let color=arc.color||'#0b61d8';drawArcPath(svg,geo,color);drawArcLabel(svg,geo,arc,color);});if(arcDraw.active&&arcDraw.start&&arcDraw.current&&!sameLoc(arcDraw.start,arcDraw.current)){let geo=arcGeometryForLocs(arcDraw.start,arcDraw.current,wr);if(geo)drawArcPath(svg,geo,arcColorValue(),{preview:true});}}
+function arcsHtmlForExport(){ensureArcs();if(!state.arcs.length)return '';let html='<div class="export-comments"><h3>Arc Connections</h3>';state.arcs.forEach((arc,idx)=>{html+=`<div class="export-comment"><strong>[${idx+1}] ${esc(arcLabelText(arc))}</strong><br><span class="export-comment-anchor">From: ${esc(locToLabel(arc.start))}<br>To: ${esc(locToLabel(arc.end))}</span></div>`;});return html+'</div>';}
+const originalRenderEditorForArcs=renderEditor;
+renderEditor=function(){originalRenderEditorForArcs();setTimeout(renderArcOverlay,0);};
+window.addEventListener('resize',()=>setTimeout(renderArcOverlay,50));
+(function initArcTool(){
+  let draw=document.getElementById('drawArcMode');if(draw)draw.onclick=()=>toggleDrawArcMode();
+  let s=document.getElementById('setArcStart');if(s)s.onclick=setArcStart;
+  let e=document.getElementById('setArcEnd');if(e)e.onclick=setArcEnd;
+  let d=document.getElementById('clearSelectedArc');if(d)d.onclick=()=>deleteSelectedArc();
+  let c=document.getElementById('clearAllArcs');if(c)c.onclick=clearAllArcs;
+  let wrap=document.getElementById('editorWrap');
+  if(wrap){
+    wrap.addEventListener('pointerdown',e=>{if(!arcDraw.active)return;let loc=nearestWordLocFromPoint(e.clientX,e.clientY);if(!loc){updateArcStatus('Start the arc by pressing on or near a word.');return;}e.preventDefault();e.stopPropagation();arcDraw.isDragging=true;arcDraw.start=cloneLoc(loc);arcDraw.current=cloneLoc(loc);try{wrap.setPointerCapture(e.pointerId);}catch(err){}renderArcOverlay();},true);
+    wrap.addEventListener('pointermove',e=>{if(!arcDraw.active||!arcDraw.isDragging)return;e.preventDefault();e.stopPropagation();let loc=nearestWordLocFromPoint(e.clientX,e.clientY);if(loc){arcDraw.current=cloneLoc(loc);renderArcOverlay();}},true);
+    wrap.addEventListener('pointerup',e=>{if(!arcDraw.active||!arcDraw.isDragging)return;e.preventDefault();e.stopPropagation();let end=nearestWordLocFromPoint(e.clientX,e.clientY)||arcDraw.current;let start=arcDraw.start;arcDraw.isDragging=false;arcDraw.start=null;arcDraw.current=null;try{wrap.releasePointerCapture(e.pointerId);}catch(err){}let arc=addArcFromLocs(start,end);if(arc){updateArcStatus('Arc drawn and snapped to the nearest words.');toggleDrawArcMode(false);render();}else{renderArcOverlay();}},true);
+    wrap.addEventListener('pointercancel',()=>{arcDraw.isDragging=false;arcDraw.start=null;arcDraw.current=null;renderArcOverlay();},true);
+  }
+})();
+
+let appStarted=false;
+function startApp(){
+  if(appStarted)return;
+  appStarted=true;
+  autosaveReady=false;
+  initParallelMode();
+  initProjectManager();
+  render();
+  autosaveReady=true;
+}
+autosaveReady=false;
+window.contourOnUnlock=function(){
+  try{startApp();}catch(err){console.error('startApp failed:',err);}
+};
+if(window.__contourPendingUnlock||sessionStorage.getItem('hebrewContourAccessGranted')==='true'){
+  window.contourOnUnlock();
+}

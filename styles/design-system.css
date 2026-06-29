@@ -65,9 +65,9 @@
   --hc-sidebar-width: 200px;
   --hc-sidebar-collapsed: 44px;
   --hc-panel-width: min(28vw, 340px);
-  --hc-topnav-height: 52px;
-  --hc-secondary-height: 44px;
-  --hc-status-height: 32px;
+  --hc-topnav-height: 38px;
+  --hc-secondary-height: 30px;
+  --hc-status-height: 22px;
 
   /* Legacy bridge */
   --ui-bg: var(--hc-bg);
@@ -258,8 +258,8 @@ body {
   background: var(--hc-surface-2);
   border: 1px solid var(--hc-border);
   border-radius: var(--hc-radius-md);
-  padding: var(--hc-space-3) var(--hc-space-4);
-  margin: var(--hc-space-2) 0;
+  padding: 5px 8px;
+  margin: 4px 0;
 }
 
 .hc-tool-section .row,
@@ -281,9 +281,9 @@ body {
 
 .hc-segmented-btn {
   position: relative;
-  min-width: 140px;
-  padding: 10px 24px;
-  font-size: 14px;
+  min-width: 96px;
+  padding: 5px 12px;
+  font-size: 12px;
   font-weight: 600;
   border: none;
   border-radius: calc(var(--hc-radius-lg) - 3px);
@@ -506,9 +506,9 @@ body.dark-mode #annTable td[contenteditable] {
 }
 
 .annotation-tab-btn {
-  padding: 10px 14px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
+  padding: 6px 2px 4px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
   color: var(--hc-text-muted) !important;
   border: none !important;
   border-bottom: 2px solid transparent !important;
@@ -531,15 +531,15 @@ body.dark-mode .annotation-tab-btn.active {
 }
 
 #annotationShortcutsBar {
-  padding: var(--hc-space-2) var(--hc-space-4) !important;
+  padding: 3px 8px !important;
   background: var(--hc-surface-2);
   border-bottom: 1px solid var(--hc-border);
-  font-size: 12px;
+  font-size: 11px;
   color: var(--hc-text-muted);
 }
 
 .annotation-tab-panel {
-  padding: var(--hc-space-3) var(--hc-space-4) !important;
+  padding: 6px 8px !important;
 }
 
 /* ── Keycaps ── */

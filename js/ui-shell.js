@@ -24,7 +24,7 @@
   }
 
   function init() {
-    if (initialized) return;
+    if (initialized || document.querySelector('.hc-app-body')) return;
     var appRoot = $('#appRoot');
     var wrap = $('.wrap', appRoot);
     var mainWorkspace = $('.main-workspace', wrap);

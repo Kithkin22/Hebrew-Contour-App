@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Re-apply all index.html patch scripts in dependency order.
 
-index.html embeds the full WLC (~16MB). Git restores or agent edits often truncate it
-or drop inline patches, which reverts the UI to the old stacked toolbars and hover menus.
-Run this after restoring index.html from git or when layout looks wrong:
+After modularization (index.html is a small shell), patches live in css/ and js/.
+This script patches legacy monolithic index.html from git, then runs extract_modules.py.
 
-    python3 scripts/reapply_all_patches.py
-
-Patches are idempotent (each script skips if already applied). Order matters: later
-scripts depend on HTML/CSS from earlier ones (e.g. menu_layout_fix after phase_a).
+    python3 scripts/reapply_all_patches.py   # legacy monolith only
+    python3 scripts/validate.py              # normal post-edit check
 """
 from __future__ import annotations
 
@@ -64,6 +61,13 @@ PATCH_SCRIPTS = [
 MIN_BYTES = 15_500_000
 MAX_BYTES = 17_500_000
 TARGET_BYTES = 16_500_000
+
+MODULAR_MAX_BYTES = 600_000
+
+
+def is_modular(html: str) -> bool:
+    return len(html.encode("utf-8")) < MODULAR_MAX_BYTES and 'src="js/app/core.js"' in html
+
 
 LAYOUT_MARKERS = [
     "/* Phase A — click-to-open top menus",
@@ -148,8 +152,17 @@ def main() -> None:
     if not INDEX.is_file():
         raise SystemExit(f"{INDEX} not found")
 
+    html = INDEX.read_text(encoding="utf-8")
+    if is_modular(html):
+        print("Modular index.html detected — patches are in css/ and js/app/.")
+        validate = SCRIPTS_DIR / "validate.py"
+        result = subprocess.run([sys.executable, str(validate)], cwd=ROOT)
+        if result.returncode != 0:
+            raise SystemExit("validate.py failed")
+        return
+
     before = len(INDEX.read_bytes())
-    print(f"index.html before: {before:,} bytes")
+    print(f"Legacy monolithic index.html: {before:,} bytes")
 
     for name in PATCH_SCRIPTS:
         run_patch(name)
@@ -157,8 +170,14 @@ def main() -> None:
     html = INDEX.read_text(encoding="utf-8")
     verify_index(html)
 
-    after = len(html.encode("utf-8"))
-    print(f"\nDone. index.html: {before:,} -> {after:,} bytes.")
+    extract = SCRIPTS_DIR / "extract_modules.py"
+    print("\n--- extract_modules.py ---")
+    result = subprocess.run([sys.executable, str(extract)], cwd=ROOT)
+    if result.returncode != 0:
+        raise SystemExit("extract_modules.py failed")
+
+    after = len(INDEX.read_bytes())
+    print(f"\nDone. index.html: {before:,} -> {after:,} bytes (modular shell).")
 
 
 if __name__ == "__main__":
