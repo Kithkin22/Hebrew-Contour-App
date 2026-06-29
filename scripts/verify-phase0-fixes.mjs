@@ -36,6 +36,9 @@ async function main() {
   await page.evaluate(() => {
     window.confirm = () => true;
     window.prompt = (msg, def) => def || 'test-export';
+    window.__lastAlert = '';
+    const origAlert = window.alert;
+    window.alert = (msg) => { window.__lastAlert = String(msg || ''); origAlert(msg); };
     window.__exportTest = { downloads: 0, popups: 0 };
     const origCreate = URL.createObjectURL;
     URL.createObjectURL = function (blob) {
@@ -103,10 +106,14 @@ async function main() {
   await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
   await page.click('#exportScopeLeft');
   await page.waitForTimeout(200);
-  const leftExport = await page.evaluate(() => window.__exportTest.downloads);
-  record('parallel-export-left', leftExport > 0, `downloads=${leftExport}`);
+  const leftExport = await page.evaluate(() => ({
+    downloads: window.__exportTest.downloads,
+    tableAlert: window.__lastAlert === 'Switch to Table View or create a table first.',
+  }));
+  record('parallel-export-left', leftExport.downloads > 0 && !leftExport.tableAlert,
+    `downloads=${leftExport.downloads} tableAlert=${leftExport.tableAlert}`);
 
-  await page.evaluate(() => { window.__exportTest.downloads = 0; });
+  await page.evaluate(() => { window.__lastAlert = ''; window.__exportTest.downloads = 0; });
   await page.evaluate(() => exportContourDocxParallel());
   await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
   await page.click('#exportScopeRight');
@@ -143,6 +150,33 @@ async function main() {
   }));
   record('parallel-table-view', parallelTables.blocks === 2 && parallelTables.tables === 2,
     `${parallelTables.blocks} blocks, titles: ${parallelTables.titles.join(' | ')}`);
+
+  await page.evaluate(() => { window.__exportTest.downloads = 0; window.__exportTest.popups = 0; });
+  await page.evaluate(() => exportContourPdfParallel());
+  await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
+  await page.click('#exportScopeLeft');
+  await page.waitForTimeout(300);
+  const contourPdfOk = await page.evaluate(() => {
+    const hadTableAlert = window.__lastAlert === 'Switch to Table View or create a table first.';
+    const popup = window.__exportTest.popups > 0;
+    return { popup, hadTableAlert, editorFromState: typeof buildContourEditorHtmlFromState === 'function' && buildContourEditorHtmlFromState().indexOf('No text loaded yet') === -1 };
+  });
+  record('parallel-contour-pdf-left', contourPdfOk.popup && !contourPdfOk.hadTableAlert && contourPdfOk.editorFromState,
+    `popup=${contourPdfOk.popup} tableAlert=${contourPdfOk.hadTableAlert}`);
+
+  await page.click('[data-tab="table"]');
+  await page.waitForTimeout(300);
+  await page.evaluate(() => { window.__exportTest.popups = 0; });
+  await page.evaluate(() => exportTablePdfParallel());
+  await page.waitForSelector('#exportScopeModal.show', { timeout: 5000 });
+  await page.click('#exportScopeLeft');
+  await page.waitForTimeout(300);
+  const tablePdfOk = await page.evaluate(() => {
+    const html = typeof getTableHtmlForExport === 'function' ? getTableHtmlForExport({ panes: [0], mode: 'left' }) : '';
+    return { popup: window.__exportTest.popups > 0, hasTable: html.includes('<table'), hasHebrew: html.includes('</td>'), emptyState: html.includes('No text loaded') };
+  });
+  record('parallel-table-pdf-left', tablePdfOk.popup && tablePdfOk.hasTable && tablePdfOk.hasHebrew && !tablePdfOk.emptyState,
+    `popup=${tablePdfOk.popup} table=${tablePdfOk.hasTable}`);
 
   await page.evaluate(() => { window.__exportTest.downloads = 0; });
   await page.click('#docxExport');

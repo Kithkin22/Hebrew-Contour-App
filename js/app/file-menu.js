@@ -173,7 +173,8 @@ function exportContourHtml(){
   if(isParallelActive()){alert('For parallel passages, export each pane separately or use Word export.');return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   const fname=askExportFilename(suggestedExportBase('contour-editor'),'html');if(!fname)return;
-  const editorHtml=document.getElementById('editor').innerHTML;
+  const editorHtml=typeof buildContourEditorHtmlFromState==='function'?buildContourEditorHtmlFromState():document.getElementById('editor').innerHTML;
+  if(!editorHtml){alert('Create or generate text first.');return;}
   const isGreek=state.language==='greek';
   const textDir=isGreek?'ltr':'rtl';
   const textAlign=isGreek?'left':'right';
@@ -189,7 +190,8 @@ function exportContourPdf(opts){
   const printMeta=preparePrintFilename(fname);
   const win=window.open('', '_blank');
   if(!win){alert('Popup blocked. Allow popups for this page, then try again.');return;}
-  const editorHtml=document.getElementById('editor').innerHTML;
+  const editorHtml=typeof buildContourEditorHtmlFromState==='function'?buildContourEditorHtmlFromState():document.getElementById('editor').innerHTML;
+  if(!editorHtml){alert('Create or generate text first.');return;}
   const isGreek=state.language==='greek';
   const textDir=isGreek?'ltr':'rtl';
   const textAlign=isGreek?'left':'right';
@@ -203,20 +205,25 @@ function crc32(u8){let c=0xffffffff;for(let i=0;i<u8.length;i++)c=crcTable[(c^u8
 function u16(n){return [n&255,(n>>>8)&255]}function u32(n){return [n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255]}
 function makeZip(files){let enc=new TextEncoder(),parts=[],central=[],offset=0;files.forEach(f=>{let name=enc.encode(f.name),data=enc.encode(f.data),crc=crc32(data);let local=new Uint8Array([0x50,0x4b,3,4,20,0,0,0,0,0,0,0,0,0,...u32(crc),...u32(data.length),...u32(data.length),...u16(name.length),0,0,...name]);parts.push(local,data);central.push({name,crc,size:data.length,offset});offset+=local.length+data.length;});let cd=[];central.forEach(f=>{cd.push(new Uint8Array([0x50,0x4b,1,2,20,0,20,0,0,0,0,0,0,0,0,0,...u32(f.crc),...u32(f.size),...u32(f.size),...u16(f.name.length),0,0,0,0,0,0,0,0,0,0,...u32(f.offset),...f.name]));});let cdSize=cd.reduce((a,b)=>a+b.length,0);let end=new Uint8Array([0x50,0x4b,5,6,0,0,0,0,...u16(files.length),...u16(files.length),...u32(cdSize),...u32(offset),0,0]);return new Blob([...parts,...cd,end],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});}
 
-function exportTablePdf(){
-  if(!document.getElementById('annTable')){alert('Switch to Table View or create a table first.');return;}
+function openTablePdfPrintWindow(tableHtml,exportTitle){
   const fname=askExportFilename(suggestedExportBase('contour-table'),'pdf');if(!fname)return;
   const printMeta=preparePrintFilename(fname);
   const win=window.open('', '_blank');
   if(!win){alert('Popup blocked. Allow popups for this page, then try again.');return;}
-  const tableHtml=document.getElementById('annTable').outerHTML;
-  const textHeader=state.language==='greek'?'Greek Text':'Hebrew Text';
   const isGreek=state.language==='greek';
   const textDir=isGreek?'ltr':'rtl';
   const textAlign=isGreek?'left':'right';
   const textFont=isGreek?"'SBL Greek','Gentium Plus','Times New Roman',serif":"'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif";
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${xmlEscape(printMeta.title)}</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}table{border-collapse:collapse;width:100%;background:white;direction:ltr;text-align:left}th,td{border:1px solid #999;padding:7px;vertical-align:top}th{background:#eee}.ann-ltr{direction:ltr;text-align:left}.heb{direction:${textDir};text-align:${textAlign};font-size:20px;font-family:${textFont}}.greek{direction:ltr;text-align:left;font-size:20px;font-family:${textFont}}@page{margin:0.6in}@media print{button{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button><div class="export-title">${xmlEscape(state.ref||'Contour Table')}</div>${tableHtml}<script>document.title=${JSON.stringify(printMeta.title)};setTimeout(()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.title)};}catch(e){} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.oldTitle)};}catch(e){}}<\/script></body></html>`);
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${xmlEscape(printMeta.title)}</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}table{border-collapse:collapse;width:100%;background:white;direction:ltr;text-align:left}th,td{border:1px solid #999;padding:7px;vertical-align:top}th{background:#eee}.ann-ltr{direction:ltr;text-align:left}.heb{direction:${textDir};text-align:${textAlign};font-size:20px;font-family:${textFont}}.greek{direction:ltr;text-align:left;font-size:20px;font-family:${textFont}}.parallel-table-title{margin:18px 0 8px 0;font-size:18px}@page{margin:0.6in}@media print{button{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button><div class="export-title">${xmlEscape(exportTitle||state.ref||'Contour Table')}</div>${tableHtml}<script>document.title=${JSON.stringify(printMeta.title)};setTimeout(()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.title)};}catch(e){} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.oldTitle)};}catch(e){}}<\/script></body></html>`);
   win.document.close();
+}
+function exportTablePdf(opts){
+  opts=opts||{};
+  if(!opts.skipParallel&&isParallelActive()){exportTablePdfParallel();return;}
+  if(!state.verses.length){alert('Create or generate text first.');return;}
+  const tableHtml=typeof buildTableHtmlForPane==='function'?buildTableHtmlForPane(state,0):((document.getElementById('annTable')||{}).outerHTML||'');
+  if(!tableHtml){alert('Create or generate text first.');return;}
+  openTablePdfPrintWindow(tableHtml,state.ref||'Contour Table');
 }
 
 document.getElementById('docxExport').onclick=()=>{if(isParallelActive()){exportTableDocxParallel();return;}let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:docxXml()}];let fname=askExportFilename(suggestedExportBase('contour-table'),'docx');if(!fname)return;triggerDownload(makeZip(files),fname);};
