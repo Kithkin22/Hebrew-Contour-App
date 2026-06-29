@@ -721,6 +721,32 @@ async function main() {
       ? `pink=1 blue=1 labelKept`
       : `pink=${legendDedup.pinkRows} blue=${legendDedup.blueRows} added=${legendDedup.addedOnSecond} label=${legendDedup.labelKept}`);
 
+  const crossVerse = await page.evaluate(() => {
+    parseText('A B C\nD E', 'T 1:1-2', false);
+    state.selected = { v: 1, c: 0, w: 0 };
+    indent(-1);
+    const merged = {
+      verseCount: state.verses.length,
+      text: state.verses[0].clauses.flatMap((c) => c.words.map((w) => w.text)).join(' '),
+      selected: state.selected,
+    };
+    parseText('A B C\nD E', 'T 1:1-2', false);
+    state.selected = { v: 0, c: 0, w: 2 };
+    insertBreak();
+    const split = {
+      v0: state.verses[0].clauses.flatMap((c) => c.words.map((w) => w.text)).join(' '),
+      v1First: state.verses[1]?.clauses[0]?.words.map((w) => w.text).join(' ') || '',
+      v1Second: state.verses[1]?.clauses[1]?.words.map((w) => w.text).join(' ') || '',
+    };
+    return { merged, split };
+  });
+  record('cross-verse-merge-backspace',
+    crossVerse.merged.verseCount === 1 && crossVerse.merged.text === 'A B C D E',
+    `verses=${crossVerse.merged.verseCount} text=${crossVerse.merged.text}`);
+  record('cross-verse-break-enter',
+    crossVerse.split.v0 === 'A B' && crossVerse.split.v1First === 'C' && crossVerse.split.v1Second === 'D E',
+    `v0=${crossVerse.split.v0} v1a=${crossVerse.split.v1First} v1b=${crossVerse.split.v1Second}`);
+
   await browser.close();
 
   const passed = results.filter((r) => r.pass).length;
