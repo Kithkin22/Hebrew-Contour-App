@@ -308,41 +308,31 @@ textarea:focus {
   background: var(--hc-surface) !important;
 }
 
-/* ── Table: light token frame only (no layout redesign) ── */
-#tableWrap {
-  border: 1px solid var(--hc-border) !important;
-  border-radius: var(--hc-radius-lg) !important;
-  overflow: hidden;
-  box-shadow: var(--hc-shadow-xs) !important;
+/* ── Table: preserve Phase 0 table (no HCDS redesign) ── */
+#tableWrap,
+#annTable,
+#annTable th,
+#annTable td {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
 }
 
-/* Preserve Phase 0 table structure; undo aggressive design-system table skin */
 #annTable tbody tr:nth-child(even) td {
   background: inherit !important;
 }
 
 #annTable tbody tr:hover td {
-  background: #f3f6fa !important;
-}
-
-body.dark-mode #annTable tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.04) !important;
-}
-
-#annTable th {
-  text-transform: none !important;
-  letter-spacing: normal !important;
-  font-size: inherit !important;
-  background: var(--hc-surface-2) !important;
-  border-color: var(--hc-border) !important;
-}
-
-#annTable td {
-  border-color: var(--hc-border) !important;
+  background: inherit !important;
 }
 
 #annTable td[contenteditable] {
-  background: #fffdf8 !important;
+  background: #fffdf2 !important;
+}
+
+body.dark-mode #annTable td[contenteditable] {
+  background: #1e2836 !important;
 }
 
 /* ── Dark mode harmonization ── */

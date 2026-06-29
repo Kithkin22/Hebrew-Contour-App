@@ -1,0 +1,85 @@
+/**
+ * Word-like compact ribbon — cosmetic/layout only.
+ * Same controls, less vertical space.
+ */
+
+.top-stack {
+  padding: 6px 8px !important;
+  gap: 6px !important;
+}
+
+.top-stack .card.compact-card > strong:first-child,
+.top-stack .card.compact-card > .save-tools-title {
+  min-height: 32px !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+}
+
+#annotationTabsRow {
+  padding: 0 6px !important;
+  gap: 2px !important;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+}
+
+.annotation-tab-btn {
+  padding: 6px 10px 4px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  white-space: nowrap;
+}
+
+#annotationShortcutsBar {
+  padding: 2px 8px !important;
+  font-size: 10px !important;
+}
+
+.annotation-tab-panel {
+  padding: 6px 8px !important;
+}
+
+.annotation-tab-panel .btn {
+  min-height: 28px !important;
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+}
+
+.toolbar-section,
+.arc-toolbar {
+  padding: 4px 6px !important;
+  margin: 2px 0 !important;
+}
+
+.toolbar-label,
+.toolbar-section .small {
+  font-size: 11px !important;
+  min-width: auto !important;
+}
+
+.toolbar-section .row,
+.arc-toolbar .row {
+  gap: 4px !important;
+}
+
+.parallel-mode-bar {
+  padding: 6px 8px !important;
+  margin-bottom: 6px !important;
+  font-size: 12px !important;
+}
+
+.parallel-align-status {
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  padding: 4px 8px !important;
+}
+
+.card.main-workspace > .tabs .btn {
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+}
+
+.workspace-help-row .btn,
+.workspace-help-row .admin-link {
+  padding: 4px 10px !important;
+  font-size: 11px !important;
+}

@@ -1,5 +1,5 @@
 /* file-menu-new-project-v1 */
-function initProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const trigger=document.getElementById('projectMenuTrigger');const dd=document.getElementById('projectFileMenuDropdown');if(!card||!trigger||!dd)return;window.closeProjectFileMenu=closeProjectFileMenu;window.openProjectFileMenu=openProjectFileMenu;trigger.setAttribute('role','button');trigger.setAttribute('tabindex','0');trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(e){e.stopPropagation();toggleProjectFileMenu();});trigger.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleProjectFileMenu();}});dd.querySelectorAll('[data-action]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();handleProjectFileAction(btn.getAttribute('data-action'));});});card.querySelectorAll('.file-menu-has-submenu > .file-menu-item').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const li=btn.parentElement;if(!li)return;if(window.matchMedia('(hover: none)').matches||e.detail>0){li.classList.toggle('submenu-open');}});});document.getElementById('projectFileInput').onchange=function(e){importProjectFile(e.target.files[0]);e.target.value='';};document.addEventListener('click',function(e){if(!card.classList.contains('menu-open'))return;if(card.contains(e.target))return;closeProjectFileMenu();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&card.classList.contains('menu-open'))closeProjectFileMenu();});}
+function initProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const trigger=document.getElementById('projectMenuTrigger');const dd=document.getElementById('projectFileMenuDropdown');if(!card||!trigger||!dd)return;window.closeProjectFileMenu=closeProjectFileMenu;window.openProjectFileMenu=openProjectFileMenu;trigger.setAttribute('role','button');trigger.setAttribute('tabindex','0');trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(e){e.stopPropagation();toggleProjectFileMenu();});trigger.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleProjectFileMenu();}});dd.querySelectorAll('[data-action]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const action=btn.getAttribute('data-action');if(typeof window.handleProjectFileAction==='function')window.handleProjectFileAction(action);});});card.querySelectorAll('.file-menu-has-submenu > .file-menu-item').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const li=btn.parentElement;if(!li)return;if(window.matchMedia('(hover: none)').matches||e.detail>0){li.classList.toggle('submenu-open');}});});document.getElementById('projectFileInput').onchange=function(e){importProjectFile(e.target.files[0]);e.target.value='';};document.addEventListener('click',function(e){if(!card.classList.contains('menu-open'))return;if(card.contains(e.target))return;closeProjectFileMenu();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&card.classList.contains('menu-open'))closeProjectFileMenu();});}
 
 document.querySelectorAll('[data-text-color]').forEach(btn=>btn.onclick=()=>setSelectedColor(btn.dataset.textColor));
 document.getElementById('applyCustomColor').onclick=()=>setSelectedColor(document.getElementById('customTextColor').value);
@@ -129,14 +129,25 @@ function suggestedExportBase(kind){
 }
 function askExportFilename(defaultName, ext){
   let cleanDefault=stripExportPrefix(String(defaultName||'contour-export').replace(new RegExp('\\.'+ext+'$','i'),''));
-  let entered=prompt('Save/export as:', cleanDefault);
+  let entered=typeof prompt==='function'?prompt('Save/export as:', cleanDefault):cleanDefault;
   if(entered===null)return null;
-  entered=stripExportPrefix(entered.trim()||cleanDefault);
+  entered=stripExportPrefix(String(entered||cleanDefault).trim()||cleanDefault);
   entered=entered.replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim();
   if(!entered) entered=cleanDefault || 'contour-export';
   if(!entered.toLowerCase().endsWith('.'+ext))entered+='.'+ext;
   return entered;
 }
+function triggerDownload(blob,fname){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=fname;
+  a.rel='noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+window.triggerDownload=triggerDownload;
 
 function exportTitleFromFilename(fname){
   return stripExportPrefix(String(fname||'contour-export').replace(/\.[^.]+$/,''));
@@ -155,7 +166,7 @@ function exportContourDocx(){
   if(isParallelActive()){exportContourDocxParallel();return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:contourDocxXml()}];
-  let fname=askExportFilename(suggestedExportBase('contour-editor'),'docx');if(!fname)return;let a=document.createElement('a');a.href=URL.createObjectURL(makeZip(files));a.download=fname;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  let fname=askExportFilename(suggestedExportBase('contour-editor'),'docx');if(!fname)return;triggerDownload(makeZip(files),fname);
 }
 function exportContourHtml(){
   if(isParallelActive()){alert('For parallel passages, export each pane separately or use Word export.');return;}
@@ -167,11 +178,7 @@ function exportContourHtml(){
   const textAlign=isGreek?'left':'right';
   const textFont=isGreek?"'SBL Greek','Gentium Plus','Times New Roman',serif":"'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif";
   const html='<!doctype html><html><head><meta charset="utf-8"><title>'+xmlEscape(state.ref||'Contour Export')+'</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}#printEditor{direction:'+textDir+';text-align:'+textAlign+';font-size:26px;line-height:2.1;font-family:'+textFont+'}.clause,.word{font-family:'+textFont+'}</style></head><body><div class="export-title">'+xmlEscape(state.ref||'Contour Export')+'</div>'+legendHtmlForExport()+'<div id="printEditor" dir="'+textDir+'">'+editorHtml+'</div>'+commentsHtmlForExport()+arcsHtmlForExport()+'</body></html>';
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
-  a.download=fname;
-  a.click();
-  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+  triggerDownload(new Blob([html],{type:'text/html;charset=utf-8'}),fname);
 }
 function exportContourPdf(){
   if(isParallelActive()){exportContourPdfParallel();return;}
@@ -210,7 +217,7 @@ function exportTablePdf(){
   win.document.close();
 }
 
-document.getElementById('docxExport').onclick=()=>{if(isParallelActive()){exportTableDocxParallel();return;}let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:docxXml()}];let fname=askExportFilename(suggestedExportBase('contour-table'),'docx');if(!fname)return;let a=document.createElement('a');a.href=URL.createObjectURL(makeZip(files));a.download=fname;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+document.getElementById('docxExport').onclick=()=>{if(isParallelActive()){exportTableDocxParallel();return;}let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:docxXml()}];let fname=askExportFilename(suggestedExportBase('contour-table'),'docx');if(!fname)return;triggerDownload(makeZip(files),fname);};
 
 document.getElementById('tablePdfExport').onclick=()=>{if(isParallelActive()){exportTablePdfParallel();return;}exportTablePdf();};
 document.getElementById('addLegendEntry').onclick=()=>addLegend('highlight','#fff36d','');

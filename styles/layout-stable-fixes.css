@@ -1,0 +1,104 @@
+/**
+ * Phase 0 layout stability fixes.
+ * Keeps Scripture/editor dominant when annotation toolbars expand.
+ */
+
+#annotationTabsShell {
+  flex: 0 0 auto !important;
+  flex-shrink: 0 !important;
+  max-height: min(38vh, 320px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#annotationTabsRow {
+  flex: 0 0 auto;
+}
+
+#annotationShortcutsBar {
+  flex: 0 0 auto;
+}
+
+.annotation-tab-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(28vh, 220px);
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.annotation-tab-panel .toolbar-section,
+.annotation-tab-panel .arc-toolbar,
+.annotation-tab-panel .card {
+  margin: 0 !important;
+  padding: 4px 6px !important;
+}
+
+.annotation-tab-panel .row {
+  gap: 6px !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+}
+
+#arcManager {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+#contourTab:not(.hidden),
+#singleEditorSection:not(.hidden),
+.parallel-compare:not(.hidden) {
+  flex: 1 1 auto !important;
+  min-height: 280px !important;
+}
+
+.parallel-scroll-area {
+  flex: 1 1 auto !important;
+  min-height: 280px !important;
+}
+
+#editorWrap,
+#editorWrap.editor-arc-wrap {
+  flex: 1 1 auto !important;
+  min-height: 240px !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+#editor {
+  flex: 1 1 auto !important;
+  min-height: 200px !important;
+}
+
+.contour-with-comments > #editorWrap {
+  min-height: 240px !important;
+  max-height: none !important;
+}
+
+#singleEditorSection:not(.hidden) {
+  flex: 1 1 auto !important;
+  min-height: 280px !important;
+}
+
+#contourWorkspaceShell:not(.hidden) {
+  flex: 1 1 auto !important;
+  min-height: 0;
+}
+
+.contour-with-comments {
+  flex: 1 1 auto !important;
+  min-height: 280px !important;
+  align-items: stretch !important;
+}
+
+/* Parallel mode bar: compact, not dominant */
+.parallel-mode-bar {
+  flex-shrink: 0 !important;
+  max-height: none;
+}
+
+#parallelAlignStatus {
+  max-height: 96px;
+  overflow-y: auto;
+}
