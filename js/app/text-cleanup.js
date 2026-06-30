@@ -5,7 +5,7 @@ function isTextCleanupMode() { return !!textCleanupMode; }
 window.isTextCleanupMode = isTextCleanupMode;
 
 function freshWordToken(text) {
-  return { text, deleted: false, specials: [], note: '', translation: '', color: '', format: {} };
+  return freshWordFromText(text);
 }
 
 function updateTextCleanupUi() {
@@ -44,6 +44,7 @@ function removeWordAtLoc(loc) {
     });
   } else {
     clause.words.splice(w, 1);
+    pruneOrphanMaqafConnectors(clause);
     applyStructureRemap(mapWordRemoved(v, c, w));
   }
 
@@ -88,6 +89,11 @@ function openWordTextEditModal() {
       markUndo();
       if (!trimmed) {
         removeWordAtLoc(l);
+      } else if (MAQAF_SPLIT_RE.test(trimmed)) {
+        const clause = state.verses[l.v].clauses[l.c];
+        const expanded = tokenizeClauseWords([trimmed], state.language);
+        clause.words.splice(l.w, 1, ...expanded);
+        pruneOrphanMaqafConnectors(clause);
       } else {
         w.text = trimmed;
       }
@@ -101,37 +107,38 @@ function applyClauseTextCleanup(v, c, newText) {
   const clause = state.verses[v].clauses[c];
   if (!clause) return;
   const oldWords = clause.words.slice();
+  const oldSelectable = oldWords.filter(isSelectableWord);
   const tokens = String(newText || '').trim().split(/\s+/).filter(Boolean);
-  const newWords = [];
-  const oldIndexToNew = new Map();
+  const newWords = tokenizeClauseWords(tokens, state.language);
+  const newSelectable = newWords.filter(isSelectableWord);
   let oi = 0;
-  for (let ni = 0; ni < tokens.length; ni++) {
-    const tok = tokens[ni];
-    let matchedOi = -1;
-    for (let j = oi; j < oldWords.length; j++) {
-      if (oldWords[j].text === tok || normalizeHebrewWord(oldWords[j].text) === normalizeHebrewWord(tok)) {
-        matchedOi = j;
-        break;
-      }
-    }
-    if (matchedOi >= 0) {
-      oldWords[matchedOi].text = tok;
-      newWords.push(oldWords[matchedOi]);
-      oldIndexToNew.set(matchedOi, ni);
-      oi = matchedOi + 1;
-    } else {
-      newWords.push(freshWordToken(tok));
+  for (let ni = 0; ni < newSelectable.length; ni++) {
+    const ntxt = normalizeHebrewWord(newSelectable[ni].text);
+    while (oi < oldSelectable.length && normalizeHebrewWord(oldSelectable[oi].text) !== ntxt) oi++;
+    if (oi < oldSelectable.length) {
+      copyWordAnnotations(oldSelectable[oi], newSelectable[ni]);
+      oi++;
     }
   }
   clause.words = newWords;
+  pruneOrphanMaqafConnectors(clause);
   applyStructureRemap((loc) => {
     if (loc.v !== v || loc.c !== c) return loc;
-    if (oldIndexToNew.has(loc.w)) return { v, c, w: oldIndexToNew.get(loc.w) };
+    const ow = oldWords[loc.w];
+    if (!ow || isMaqafConnector(ow)) return null;
+    const ntxt = normalizeHebrewWord(ow.text);
+    for (let wi = 0; wi < newWords.length; wi++) {
+      if (!isSelectableWord(newWords[wi])) continue;
+      if (normalizeHebrewWord(newWords[wi].text) === ntxt) return { v, c, w: wi };
+    }
     return null;
   });
   if (state.selected && state.selected.v === v && state.selected.c === c) {
     const max = Math.max(0, newWords.length - 1);
     state.selected.w = Math.min(state.selected.w, max);
+    if (!isSelectableWord(newWords[state.selected.w])) {
+      state.selected.w = firstSelectableWordIndex(newWords);
+    }
   }
 }
 
@@ -142,7 +149,7 @@ function openClauseTextEditModal() {
   }
   const v = state.selected.v, c = state.selected.c;
   const clause = state.verses[v].clauses[c];
-  const current = clause.words.map((w) => w.text).join(' ');
+  const current = joinWordsForDisplay(clause.words);
   const layout = getLanguageLayout();
   promptModal(
     'Edit Clause Text',

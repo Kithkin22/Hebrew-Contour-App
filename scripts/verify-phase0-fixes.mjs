@@ -792,6 +792,65 @@ async function main() {
     textCleanup.savedText === 'alp beta',
     `saved=${textCleanup.savedText}`);
 
+  const maqafPhrases = [
+  'מִפְּנֵי־חֶרֶב',
+  'עַל־כֵּן',
+  'אֶל־יְהוָה',
+  'לֹא־יָדַעְתִּי',
+  ];
+  const maqafCore = await page.evaluate((phrases) => {
+    const MAQAF = '\u05BE';
+    parseText(phrases.join('\n'), 'Maqaf Test 1:1-4', false);
+    const v0 = state.verses[0].clauses[0].words;
+    const splitOk = v0.length === 3
+      && v0[0].text === 'מִפְּנֵי'
+      && v0[1].connector === 'maqaf'
+      && v0[2].text === 'חֶרֶב';
+    state.selected = { v: 0, c: 0, w: 0 };
+    state.verses[0].clauses[0].words[0].color = '#ff0000';
+    state.verses[0].clauses[0].words[2].color = '#0000ff';
+    const html = buildContourEditorHtmlFromState();
+    const connectorCount = (html.match(/maqaf-connector/g) || []).length;
+    const hasMaqafChar = html.includes(MAQAF);
+    const tableHebrew = clauseRows()[0].hebrew;
+    const payload = projectPayload();
+    const savedWords = payload.state.panes
+      ? payload.state.panes[0].verses[0].clauses[0].words
+      : payload.state.verses[0].clauses[0].words;
+    const savedHasConnector = savedWords.some((w) => w.connector === 'maqaf');
+    state.selected = { v: 0, c: 0, w: 2 };
+    removeWordAtLoc({ v: 0, c: 0, w: 2 });
+    const afterDelete = joinWordsForDisplay(state.verses[0].clauses[0].words);
+    return {
+      splitOk,
+      leftColored: state.verses[0].clauses[0].words[0].color === '#ff0000',
+      rightGone: state.verses[0].clauses[0].words.length === 1,
+      afterDelete,
+      tableHebrew,
+      connectorCount,
+      hasMaqafChar,
+      savedHasConnector,
+      wordSpanCount: (html.match(/class="word /g) || []).length,
+    };
+  }, maqafPhrases);
+  record('maqaf-token-split', maqafCore.splitOk,
+    maqafCore.splitOk ? 'מִפְּנֵי־חֶרֶב -> 3 tokens' : 'split failed');
+  record('maqaf-independent-annotate',
+    maqafCore.leftColored && maqafCore.wordSpanCount >= 2,
+    `leftColored=${maqafCore.leftColored} wordSpans=${maqafCore.wordSpanCount}`);
+  record('maqaf-render-connector',
+    maqafCore.connectorCount >= 1 && maqafCore.hasMaqafChar,
+    `connectors=${maqafCore.connectorCount} char=${maqafCore.hasMaqafChar}`);
+  record('maqaf-table-display',
+    maqafCore.tableHebrew.includes('מִפְּנֵי\u05BEחֶרֶב') || maqafCore.tableHebrew.includes('מִפְּנֵי־חֶרֶב'),
+    `hebrew=${maqafCore.tableHebrew}`);
+  record('maqaf-delete-one-side',
+    maqafCore.afterDelete === 'מִפְּנֵי' && maqafCore.rightGone,
+    `after=${maqafCore.afterDelete}`);
+  record('maqaf-save-structure',
+    maqafCore.savedHasConnector,
+    `connectorInPayload=${maqafCore.savedHasConnector}`);
+
   await browser.close();
 
   const passed = results.filter((r) => r.pass).length;
