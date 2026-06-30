@@ -501,16 +501,7 @@ body.dark-mode .shortcut-bar-label,body.dark-mode .shortcut-inline-text{color:#a
 }
 
 
-/* Comments restore button */
-#showCommentsPanel{
- position:fixed;
- right:20px;
- top:90px;
- z-index:40000;
-}
-
-
-/* Persistent Show Comments button */
+#showCommentsPanel.hidden{display:none!important}
 #persistentShowComments{
  position:fixed;
  right:20px;
@@ -1960,4 +1951,23 @@ body.workspace-table-view #commentPopover{
   .top-menu-hint{display:block!important;}
   .parallel-scroll-area{min-height:200px;}
   #editorWrap{min-height:200px;}
+}
+
+/* Text cleanup mode */
+.text-cleanup-banner{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;
+  margin:0 0 8px;padding:8px 10px;
+  border:1px solid #f0c36d;border-radius:8px;
+  background:#fff8e6;color:#5c4a12;
+}
+.text-cleanup-banner.hidden{display:none!important;}
+.text-cleanup-banner-actions{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto;}
+body.text-cleanup-mode #editor .word.selected{
+  outline:2px dashed #c45c00;outline-offset:2px;
+}
+body.text-cleanup-mode #textCleanupModeBtn.warn{
+  background:#fff3cd;border-color:#e0a800;
+}
+body.dark-mode .text-cleanup-banner{
+  background:#3a3018;border-color:#8a6d2b;color:#f5e6b8;
 }

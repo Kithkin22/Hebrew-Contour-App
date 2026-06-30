@@ -747,6 +747,51 @@ async function main() {
     crossVerse.split.v0 === 'A B' && crossVerse.split.v1First === 'C' && crossVerse.split.v1Second === 'D E',
     `v0=${crossVerse.split.v0} v1a=${crossVerse.split.v1First} v1b=${crossVerse.split.v1Second}`);
 
+  const textCleanup = await page.evaluate(() => {
+    parseText('alpha beta gamma\ndelta epsilon', 'T 1:1-2', false);
+    state.comments = [{
+      id: 'comment-tc-1',
+      start: { v: 0, c: 0, w: 1 },
+      end: { v: 0, c: 0, w: 1 },
+      text: 'note on beta',
+      createdAt: new Date().toISOString(),
+    }];
+    state.selected = { v: 0, c: 0, w: 2 };
+    removeWordAtLoc({ v: 0, c: 0, w: 2 });
+    const afterWordDelete = state.verses[0].clauses[0].words.map((w) => w.text).join(' ');
+    const commentOnBeta = state.comments.some((c) => c.id === 'comment-tc-1'
+      && c.start.v === 0 && c.start.w === 1);
+    state.verses[0].clauses[0].words[0].text = 'alp';
+    const charEdit = state.verses[0].clauses[0].words[0].text;
+    const tableHebrew = clauseRows()[0].hebrew;
+    const exportHtml = buildContourEditorHtmlFromState();
+    const exportHasGamma = exportHtml.includes('gamma');
+    const payload = projectPayload();
+    const savedText = payload.state.panes
+      ? payload.state.panes[0].verses[0].clauses[0].words.map((w) => w.text).join(' ')
+      : payload.state.verses[0].clauses[0].words.map((w) => w.text).join(' ');
+    return {
+      afterWordDelete,
+      commentOnBeta,
+      charEdit,
+      tableHebrew,
+      exportHasGamma,
+      savedText,
+    };
+  });
+  record('text-cleanup-delete-word',
+    textCleanup.afterWordDelete === 'alpha beta' && textCleanup.commentOnBeta,
+    `text=${textCleanup.afterWordDelete} commentKept=${textCleanup.commentOnBeta}`);
+  record('text-cleanup-char-edit',
+    textCleanup.charEdit === 'alp' && textCleanup.tableHebrew.startsWith('alp'),
+    `word=${textCleanup.charEdit} table=${textCleanup.tableHebrew}`);
+  record('text-cleanup-table-export',
+    !textCleanup.exportHasGamma && textCleanup.tableHebrew === 'alp beta',
+    `table=${textCleanup.tableHebrew} exportHasGamma=${textCleanup.exportHasGamma}`);
+  record('text-cleanup-persist',
+    textCleanup.savedText === 'alp beta',
+    `saved=${textCleanup.savedText}`);
+
   await browser.close();
 
   const passed = results.filter((r) => r.pass).length;

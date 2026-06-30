@@ -187,6 +187,8 @@ function mapSplitClauseCrossVerse(v,fromC,splitW){const toV=v+1;return(loc)=>{if
 function mapMergeClause(v,removedC,targetC,targetWordLen){return(loc)=>{if(loc.v!==v)return loc;if(loc.c===removedC)return{v,c:targetC,w:targetWordLen+loc.w};if(loc.c>removedC)return{v,c:loc.c-1,w:loc.w};return loc;};}
 function mapCrossVerseMerge(mv,targetV,targetC,targetWordLen){return(loc)=>{if(loc.v===mv&&loc.c===0)return{v:targetV,c:targetC,w:targetWordLen+loc.w};if(loc.v===mv&&loc.c>0)return{v:mv,c:loc.c-1,w:loc.w};return loc;};}
 function mapVerseRemoved(removedV){return(loc)=>{if(loc.v===removedV)return null;if(loc.v>removedV)return{v:loc.v-1,c:loc.c,w:loc.w};return loc;};}
+function mapWordRemoved(v,c,removedW){return(loc)=>{if(loc.v!==v||loc.c!==c)return loc;if(loc.w===removedW)return null;if(loc.w>removedW)return{v,c,w:loc.w-1};return loc;};}
+function mapClauseRemoved(v,removedC){return(loc)=>{if(loc.v!==v)return loc;if(loc.c===removedC)return null;if(loc.c>removedC)return{v,c:loc.c-1,w:loc.w};return loc;};}
 function locInRange(l,start,end){if(!locOK(l)||!locOK(start)||!locOK(end))return false;let r=locRank(l),a=locRank(start),b=locRank(end);return r>=Math.min(a,b)&&r<=Math.max(a,b);}
 function commentAnchorText(start,end){if(!locOK(start)||!locOK(end))return '';let [s,e]=orderedLocs(start,end);let words=[];state.verses.forEach((v,vi)=>v.clauses.forEach((c,ci)=>c.words.forEach((w,wi)=>{let l={v:vi,c:ci,w:wi};if(locInRange(l,s,e)&&!w.deleted)words.push(w.text);})));return words.join(' ');}
 function commentIdsForLoc(l){ensureComments();return state.comments.filter(cm=>locOK(cm.start)&&locOK(cm.end)&&locInRange(l,cm.start,cm.end)).map(cm=>cm.id);}
