@@ -39,7 +39,7 @@ async function main() {
     window.__lastAlert = '';
     const origAlert = window.alert;
     window.alert = (msg) => { window.__lastAlert = String(msg || ''); origAlert(msg); };
-    window.__exportTest = { downloads: 0, popups: 0 };
+    window.__exportTest = { downloads: 0, popups: 0, pdfHtml: '', alerts: [] };
     const origCreate = URL.createObjectURL;
     URL.createObjectURL = function (blob) {
       window.__exportTest.downloads += 1;
@@ -49,7 +49,13 @@ async function main() {
     const origOpen = window.open;
     window.open = function (...args) {
       window.__exportTest.popups += 1;
-      return { document: { write() {}, close() {} }, focus() {} };
+      return {
+        document: {
+          write(html) { window.__exportTest.pdfHtml = String(html || ''); },
+          close() {},
+        },
+        focus() {},
+      };
     };
   });
 
@@ -850,6 +856,56 @@ async function main() {
   record('maqaf-save-structure',
     maqafCore.savedHasConnector,
     `connectorInPayload=${maqafCore.savedHasConnector}`);
+
+  const maqafPdf = await page.evaluate(() => {
+    window.__exportTest = window.__exportTest || { downloads: 0, popups: 0, pdfHtml: '', alerts: [] };
+    window.confirm = () => true;
+    window.prompt = () => 'maqaf-export';
+    window.open = function () {
+      window.__exportTest.popups += 1;
+      return {
+        document: {
+          write(html) { window.__exportTest.pdfHtml = String(html || ''); },
+          close() {},
+        },
+        focus() {},
+      };
+    };
+    parseText('מִפְּנֵי־חֶרֶב עַל־כֵּן', 'Maqaf PDF', false);
+    const w = state.verses[0].clauses[0].words[0];
+    delete w.specials;
+    window.__exportTest.pdfHtml = '';
+    window.__exportTest.popups = 0;
+    window.__exportTest.alerts = [];
+    try {
+      const html = buildContourEditorHtmlFromState(true);
+      exportContourPdf({ skipParallel: true });
+      const contourPdfHtml = window.__exportTest.pdfHtml || '';
+      let docxOk = true;
+      try { contourDocxXml(); } catch (e) { docxOk = false; }
+      exportTablePdf({ skipParallel: true });
+      return {
+        htmlOk: html.length > 0 && html.includes('maqaf-connector'),
+        contourPopup: window.__exportTest.popups >= 1,
+        docxOk,
+        tablePopup: window.__exportTest.popups >= 2,
+        hasPrintEditor: contourPdfHtml.includes('printEditor'),
+        hasMaqaf: contourPdfHtml.includes('maqaf-connector') || contourPdfHtml.includes('־'),
+        alerts: window.__exportTest.alerts,
+      };
+    } catch (e) {
+      return { err: String(e) };
+    }
+  });
+  record('maqaf-contour-pdf-export',
+    !maqafPdf.err && maqafPdf.contourPopup && maqafPdf.hasPrintEditor && maqafPdf.htmlOk,
+    maqafPdf.err ? maqafPdf.err : `popup=${maqafPdf.contourPopup} maqaf=${maqafPdf.hasMaqaf}`);
+  record('maqaf-docx-export-with-connectors',
+    !maqafPdf.err && maqafPdf.docxOk,
+    `docxOk=${maqafPdf.docxOk}`);
+  record('maqaf-table-pdf-export',
+    !maqafPdf.err && maqafPdf.tablePopup,
+    `popup=${maqafPdf.tablePopup}`);
 
   await browser.close();
 

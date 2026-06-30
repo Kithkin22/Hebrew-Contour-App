@@ -168,6 +168,7 @@ const MAQAF_CHAR='\u05BE';
 const MAQAF_SPLIT_RE=/־/;
 function isMaqafConnector(w){return!!(w&&w.connector==='maqaf');}
 function isSelectableWord(w){return!!(w&&!isMaqafConnector(w));}
+function ensureSelectableWordFields(w){if(!w||isMaqafConnector(w))return;if(!Array.isArray(w.specials))w.specials=[];if(w.deleted==null)w.deleted=false;if(w.note==null)w.note='';if(w.translation==null)w.translation='';if(w.color==null)w.color='';}
 function freshMaqafConnector(){return{connector:'maqaf',text:MAQAF_CHAR};}
 function freshWordFromText(text){return{text,deleted:false,specials:[],note:'',translation:'',color:''};}
 function expandMaqafInToken(tok){const parts=String(tok||'').split(MAQAF_SPLIT_RE);if(parts.length<=1)return[freshWordFromText(tok)];const words=[];for(let i=0;i<parts.length;i++){if(parts[i])words.push(freshWordFromText(parts[i]));if(i<parts.length-1)words.push(freshMaqafConnector());}return words;}
@@ -176,7 +177,7 @@ function joinWordsForDisplay(words,opts){const includeDeleted=opts&&opts.include
 function needsSpaceAfterWord(words,wi){const w=words[wi];if(!w||isMaqafConnector(w))return false;for(let j=wi+1;j<words.length;j++){const nw=words[j];if(nw.deleted)continue;return!isMaqafConnector(nw);}return false;}
 function pruneOrphanMaqafConnectors(clause){if(!clause||!Array.isArray(clause.words))return;const words=clause.words;while(words.length&&isMaqafConnector(words[0]))words.shift();while(words.length&&isMaqafConnector(words[words.length-1]))words.pop();for(let i=words.length-1;i>=0;i--){if(!isMaqafConnector(words[i]))continue;const hasPrev=i>0&&isSelectableWord(words[i-1])&&!words[i-1].deleted;const hasNext=i<words.length-1&&isSelectableWord(words[i+1])&&!words[i+1].deleted;if(!hasPrev||!hasNext)words.splice(i,1);}}
 function expandLegacyMaqafWord(w){if(isMaqafConnector(w)||!w.text||!MAQAF_SPLIT_RE.test(w.text))return[w];const parts=String(w.text).split(MAQAF_SPLIT_RE);const out=[];for(let i=0;i<parts.length;i++){if(!parts[i])continue;const nw=freshWordFromText(parts[i]);if(!out.length)copyWordAnnotations(w,nw);out.push(nw);if(i<parts.length-1)out.push(freshMaqafConnector());}return out.length?out:[w];}
-function normalizeClauseMaqafWords(clause){if(!clause||!Array.isArray(clause.words))return;const expanded=[];for(const w of clause.words){if(isMaqafConnector(w)){expanded.push(w);continue;}expanded.push(...expandLegacyMaqafWord(w));}clause.words=expanded;pruneOrphanMaqafConnectors(clause);}
+function normalizeClauseMaqafWords(clause){if(!clause||!Array.isArray(clause.words))return;const expanded=[];for(const w of clause.words){if(isMaqafConnector(w)){expanded.push(w);continue;}expanded.push(...expandLegacyMaqafWord(w));}clause.words=expanded;pruneOrphanMaqafConnectors(clause);clause.words.forEach(ensureSelectableWordFields);}
 function normalizePaneMaqafTokens(pane){if(!pane||!Array.isArray(pane.verses))return;pane.verses.forEach(v=>v.clauses.forEach(normalizeClauseMaqafWords));}
 function firstSelectableWordIndex(words){for(let i=0;i<words.length;i++)if(isSelectableWord(words[i]))return i;return 0;}
 function verseRefMatchKey(ref,fallbackIdx){const s=String(ref||'').trim();let m=s.match(/(\d+)\s*:\s*(\d+)/);if(m)return m[1]+':'+m[2];if(fallbackIdx!=null)return 'i'+fallbackIdx;return s.toLowerCase();}
