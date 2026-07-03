@@ -13,7 +13,8 @@
 <link rel="stylesheet" href="styles/layout-stable-fixes.css?v=31">
 <link rel="stylesheet" href="styles/ribbon-compact.css?v=30">
 <link rel="stylesheet" href="styles/app-toolbar-compact.css?v=1">
-<link rel="stylesheet" href="styles/dark-mode-pro.css?v=2">
+<link rel="stylesheet" href="styles/dark-mode-pro.css?v=3">
+<link rel="stylesheet" href="styles/contour-polish-v1.css?v=3">
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
@@ -155,6 +156,18 @@
       <button class="btn" data-tab="table">Table View</button>
       <!-- Legend tab removed -->
     </div>
+    <div class="workspace-layout-controls desktop-only" aria-label="Layout options">
+      <label class="parallel-toggle-compact" for="parallelModeToggle" title="Compare two passages side by side (desktop)">
+        <input type="checkbox" id="parallelModeToggle">
+        <span>Parallel</span>
+      </label>
+      <span id="activePaneIndicator" class="workspace-layout-status muted small" aria-live="polite"></span>
+      <button type="button" class="btn workspace-comments-btn" id="showCommentsPanel">Comments</button>
+    </div>
+    </div>
+    <div class="row ann-export-source visually-hidden" aria-hidden="true">
+      <button type="button" class="btn good" id="contourDocxExport" tabindex="-1">Export Contour to Word</button>
+      <button type="button" class="btn good" id="contourPdfExport" tabindex="-1">Export Contour to PDF</button>
     </div>
     <div class="toolbar-section"><div class="row" id="colorToolbar">
       <strong class="small toolbar-label">Text color:</strong>
@@ -253,27 +266,21 @@
         </div>
       </div>
 
-      <div class="parallel-mode-bar desktop-only" id="parallelModeBar">
-        <label><input type="checkbox" id="parallelModeToggle"> Parallel passages</label>
-        <span id="activePaneIndicator" class="muted"></span>
-        <div class="parallel-align-toolbar">
-          <span class="parallel-offset-stepper" title="Shift the right pane up or down; the left pane stays put">
-            <span class="parallel-align-heading">Right pane ↑↓</span>
-            <button type="button" class="btn parallel-step-btn" id="shiftRightUpBtn" aria-label="Shift right pane up one row" title="Shift right pane up one row (Alt+↑)">↑</button>
-            <button type="button" class="btn parallel-step-btn" id="shiftRightDownBtn" aria-label="Shift right pane down one row" title="Shift right pane down one row (Alt+↓)">↓</button>
-          </span>
-        </div>
-        <p class="parallel-align-status" id="parallelAlignStatus" role="status" aria-live="polite" tabindex="-1"></p>
-        <span class="muted small" id="parallelAlignHint">Edit a pane reference and press Enter to reload that passage (annotations kept on matching verses). Click a word to annotate; matching forms highlight in yellow in both panes.</span>
-      </div>
       <div id="parallelCompareWrap" class="parallel-compare hidden">
+        <p class="parallel-align-status" id="parallelAlignStatus" role="status" aria-live="polite" tabindex="-1"></p>
         <div class="parallel-compare-head">
           <div class="parallel-pane-cell" data-pane="0">
             <input type="text" class="parallel-pane-head parallel-pane-ref-input" data-pane="0" id="parallelPaneRef0" aria-label="Reference for left passage" title="Edit reference and press Enter to reload (annotations kept on matching verses)" placeholder="Left passage">
             <select class="parallel-pane-load" data-pane="0" id="parallelPaneLoad0" aria-label="Load saved project into left pane"><option value="">Load saved project…</option></select>
           </div>
-          <div class="parallel-pane-cell" data-pane="1">
-            <input type="text" class="parallel-pane-head parallel-pane-ref-input" data-pane="1" id="parallelPaneRef1" aria-label="Reference for right passage" title="Edit reference and press Enter to reload (annotations kept on matching verses)" placeholder="Right passage">
+          <div class="parallel-pane-cell parallel-pane-cell-right" data-pane="1">
+            <div class="parallel-pane-ref-row">
+              <input type="text" class="parallel-pane-head parallel-pane-ref-input" data-pane="1" id="parallelPaneRef1" aria-label="Reference for right passage" title="Edit reference and press Enter to reload (annotations kept on matching verses)" placeholder="Right passage">
+              <span class="parallel-offset-stepper compact" title="Shift the right pane up or down; the left pane stays put">
+                <button type="button" class="btn parallel-step-btn" id="shiftRightUpBtn" aria-label="Shift right pane up one row" title="Shift right pane up one row (Alt+↑)">↑</button>
+                <button type="button" class="btn parallel-step-btn" id="shiftRightDownBtn" aria-label="Shift right pane down one row" title="Shift right pane down one row (Alt+↓)">↓</button>
+              </span>
+            </div>
             <select class="parallel-pane-load" data-pane="1" id="parallelPaneLoad1" aria-label="Load saved project into right pane"><option value="">Load saved project…</option></select>
           </div>
         </div>
@@ -283,11 +290,6 @@
         </div>
       </div>
       <div id="singleEditorSection">
-      <div class="row" style="margin-bottom:10px">
-        <button class="btn good" id="contourDocxExport">Export Contour to Word</button>
-        <button class="btn good" id="contourPdfExport">Export Contour to PDF</button>
-        <button class="btn" id="showCommentsPanel">💬 Show Comments</button>
-      </div>
       <div class="contour-with-comments">
         <div id="editorWrap" class="editor-arc-wrap"><svg id="arcSvg" aria-hidden="true"></svg><div id="editor"></div></div>
         <aside id="commentsPanel" class="comments-panel"></aside>

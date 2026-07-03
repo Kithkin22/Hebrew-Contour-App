@@ -369,9 +369,17 @@ body.dark-mode #editor {
   color: #fff !important;
 }
 
-body.dark-mode #editor .word,
+body.dark-mode #editor .word:not(.has-text-color):not(.pred):not(.subj),
 body.dark-mode #editor .clause {
-  color: #fff !important;
+  color: #fff;
+}
+
+body.dark-mode #editor .word.pred {
+  color: #0b61a4 !important;
+}
+
+body.dark-mode #editor .word.subj {
+  color: #b02a2a !important;
 }
 
 body.dark-mode #themeToggleBtn {

@@ -79,7 +79,7 @@
     else if(actions) actions.insertBefore(btn, actions.firstChild);
     else top.appendChild(btn);
     const saved=localStorage.getItem(INSPECTOR_PREF_KEY);
-    setInspectorEnabled(saved===null ? true : saved==='1');
+    setInspectorEnabled(saved==='1');
   }
   function installManualModal(){
     if(document.getElementById('manualInspectorModal')) return;

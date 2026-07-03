@@ -97,19 +97,27 @@ body.dark-mode .parallel-scroll-area {
   background: var(--dm-canvas) !important;
 }
 
-/* ── Hebrew text — brightest element ── */
-body.dark-mode #editor .word,
+/* ── Hebrew text — default white; .has-text-color keeps inline user colors ── */
+body.dark-mode #editor .word:not(.has-text-color):not(.pred):not(.subj),
 body.dark-mode #editor .clause,
 body.dark-mode #editor .verse,
-body.dark-mode.lang-hebrew #editor .word,
-body.dark-mode.lang-hebrew #editor,
-body.dark-mode.lang-greek #editor .word,
-body.dark-mode .parallel-verse-body .word {
+body.dark-mode .parallel-verse-body .word:not(.has-text-color):not(.pred):not(.subj) {
   color: var(--dm-hebrew) !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
+
+/* Semantic annotation colors (class-based) */
+body.dark-mode #editor .word.pred {
+  color: #0b61a4 !important;
+}
+
+body.dark-mode #editor .word.subj {
+  color: #b02a2a !important;
+}
+
+/* Inline user text colors — no override; cascade wins over defaults above */
 
 body.dark-mode #editor .ref,
 body.dark-mode #editor .verse-ref,
@@ -146,9 +154,12 @@ body.dark-mode .word.sameword.selected {
   border-color: #cc6600 !important;
 }
 
-/* Highlight fills need dark Hebrew text on bright backgrounds */
-body.dark-mode #editor .word[style*="background-color"],
-body.dark-mode .parallel-verse-body .word[style*="background-color"] {
+/* Highlight fills without explicit text color need dark Hebrew text */
+/* Highlight fills without explicit text color */
+body.dark-mode #editor .word.fmt-highlight:not(.has-text-color):not(.pred):not(.subj),
+body.dark-mode #editor .word[style*="background-color"]:not(.has-text-color),
+body.dark-mode .parallel-verse-body .word.fmt-highlight:not(.has-text-color),
+body.dark-mode .parallel-verse-body .word[style*="background-color"]:not(.has-text-color) {
   color: #000000 !important;
 }
 

@@ -195,6 +195,21 @@ Every design decision should ask: *"Does this give more space back to the Script
 
 ---
 
+## Next Aleph redesign pass (July 2026 notes)
+
+The reverted Aleph shell spike (`066ef3a`) is **not** the template for the next attempt.
+
+Before any new UI work, read **[ALEPH_UI_REDESIGN_NEXT.md](./ALEPH_UI_REDESIGN_NEXT.md)**. Key constraints for that pass:
+
+1. **Remove** the Color / Format / Highlight / Brackets / Arcs / Inclusio / Export **annotation tab bar** — do not replace with another horizontal tab strip.
+2. Integrate tools into a coherent toolbar, inspector, and contextual controls.
+3. Fix Undo / B / I / U / Comments grouping and spacing.
+4. Preserve all annotation functionality; document remains the focus.
+5. Keep the current stable layout and dark mode until a redesign is explicitly requested.
+6. **July 2026 polish pass** (`styles/contour-polish-v1.css`): spacing/typography only — no shell, no sidebars, comments column collapses by default.
+
+---
+
 ## Warning
 
 The previous HCDS spike tried to move too much at once and caused regressions. Future work should use this document as a visual guide while preserving the stable foundation and changing one area at a time.

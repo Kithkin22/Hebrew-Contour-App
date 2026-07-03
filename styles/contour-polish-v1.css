@@ -1,0 +1,415 @@
+/**
+ * Contour polish v1 — refine stable layout (no shell / no sidebars).
+ * Document-first spacing, quieter tabs, collapsible comments column.
+ */
+
+/* ── Workspace: more room for Scripture ── */
+.card.main-workspace {
+  padding: 8px 10px 10px !important;
+  margin-bottom: 8px !important;
+  border-radius: var(--hc-radius-md, 8px) !important;
+}
+
+.workspace-view-header {
+  margin-bottom: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+/* ── Compact layout controls (parallel + comments) ── */
+.workspace-layout-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 2px 0;
+}
+
+.parallel-toggle-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--hc-text-secondary, #636366);
+  border: 1px solid var(--hc-border, #e5e7eb);
+  border-radius: var(--hc-radius-sm, 6px);
+  background: var(--hc-surface, #fff);
+  cursor: pointer;
+  user-select: none;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.parallel-toggle-compact:hover {
+  background: var(--hc-surface-2, #f8fafc);
+  border-color: var(--hc-border-strong, #cbd5e1);
+}
+
+.parallel-toggle-compact input {
+  margin: 0;
+  accent-color: var(--hc-blue, #2563eb);
+}
+
+body.parallel-enabled .parallel-toggle-compact {
+  border-color: var(--hc-blue, #2563eb);
+  color: var(--hc-text, #1c1c1e);
+  background: var(--hc-blue-muted, #dbeafe);
+}
+
+.workspace-layout-status {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px !important;
+}
+
+body:not(.parallel-enabled) .workspace-layout-status {
+  display: none;
+}
+
+.workspace-comments-btn {
+  min-height: 26px !important;
+  padding: 3px 10px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+body.dark-mode .parallel-toggle-compact {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #c7c7cc;
+}
+
+body.dark-mode.parallel-enabled .parallel-toggle-compact {
+  background: #121212;
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #f5f5f7;
+}
+
+body.workspace-table-view .workspace-layout-controls .parallel-toggle-compact,
+body.workspace-table-view .workspace-layout-status {
+  display: none;
+}
+
+/* Legacy parallel toolbar row removed */
+#parallelModeBar,
+.parallel-mode-bar {
+  display: none !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* ── Parallel compare: compact pane headers ── */
+.parallel-compare {
+  margin-bottom: 6px !important;
+}
+
+.parallel-compare-head {
+  gap: 10px !important;
+  margin-bottom: 6px !important;
+}
+
+.parallel-pane-ref-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.parallel-pane-ref-row .parallel-pane-ref-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.parallel-offset-stepper.compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.parallel-offset-stepper.compact .parallel-step-btn {
+  min-width: 26px !important;
+  min-height: 26px !important;
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+.parallel-align-status {
+  margin: 0 0 6px !important;
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  border-radius: 6px;
+  border: 1px solid var(--hc-border, #e5e7eb);
+  background: var(--hc-surface-2, #f8fafc);
+}
+
+.parallel-align-status:empty {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+body.dark-mode .parallel-align-status {
+  background: #121212;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #c7c7cc;
+}
+
+.parallel-pane-cell .parallel-pane-ref-input,
+.parallel-pane-load {
+  font-size: 12px !important;
+}
+
+/* Duplicate contour export row — buttons live in ann-export panel */
+.visually-hidden,
+.ann-export-source {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+#persistentShowComments {
+  display: none !important;
+}
+
+body.workspace-table-view .workspace-comments-btn {
+  display: none !important;
+}
+
+.main-workspace > .tabs.row,
+.workspace-view-header .tabs.row {
+  gap: 4px !important;
+  margin: 0 0 4px !important;
+}
+
+.main-workspace > .tabs .btn,
+.workspace-view-header .tabs .btn {
+  font-weight: 600 !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--hc-text-muted, #8e8e93) !important;
+  opacity: 0.85;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+
+.main-workspace > .tabs .btn:hover,
+.workspace-view-header .tabs .btn:hover {
+  opacity: 1;
+  color: var(--hc-text-secondary, #636366) !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+
+.main-workspace > .tabs .btn.active,
+.workspace-view-header .tabs .btn.active {
+  opacity: 1 !important;
+  background: var(--hc-surface, #fff) !important;
+  color: var(--hc-text, #1c1c1e) !important;
+  border-color: var(--hc-border, #e5e7eb) !important;
+  box-shadow: var(--hc-shadow-xs, 0 1px 2px rgba(0, 0, 0, 0.04)) !important;
+}
+
+body.dark-mode .main-workspace > .tabs .btn,
+body.dark-mode .workspace-view-header .tabs .btn {
+  color: var(--hc-text-muted, #98989d) !important;
+}
+
+body.dark-mode .main-workspace > .tabs .btn:hover,
+body.dark-mode .workspace-view-header .tabs .btn:hover {
+  color: #c7c7cc !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+body.dark-mode .main-workspace > .tabs .btn.active,
+body.dark-mode .workspace-view-header .tabs .btn.active {
+  background: #1c1c1e !important;
+  color: #f5f5f7 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* ── Annotation tabs: quieter inactive ── */
+#annotationTabsShell {
+  border-radius: var(--hc-radius-sm, 6px) !important;
+  border: 1px solid var(--hc-border, #e5e7eb) !important;
+  background: var(--hc-surface-2, #f8fafc) !important;
+  overflow: hidden;
+}
+
+#annotationTabsRow {
+  border-bottom: 1px solid var(--hc-border, #e5e7eb);
+  gap: 0 !important;
+}
+
+.annotation-tab-btn {
+  color: var(--hc-text-muted, #8e8e93) !important;
+  opacity: 0.72;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  padding: 7px 10px 5px !important;
+  transition: color 150ms ease, opacity 150ms ease, border-color 150ms ease,
+    background 150ms ease;
+}
+
+.annotation-tab-btn:hover {
+  opacity: 1;
+  color: var(--hc-text-secondary, #636366) !important;
+  background: rgba(0, 0, 0, 0.03) !important;
+}
+
+.annotation-tab-btn.active {
+  opacity: 1 !important;
+  color: var(--hc-text, #1c1c1e) !important;
+  border-bottom-color: var(--hc-blue, #2563eb) !important;
+  background: var(--hc-surface, #fff) !important;
+}
+
+body.dark-mode #annotationTabsShell {
+  background: #0a0a0a !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode #annotationTabsRow {
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode .annotation-tab-btn {
+  color: #8e8e93 !important;
+}
+
+body.dark-mode .annotation-tab-btn:hover {
+  color: #c7c7cc !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+body.dark-mode .annotation-tab-btn.active {
+  color: #f5f5f7 !important;
+  border-bottom-color: #f5f5f7 !important;
+  background: #121212 !important;
+}
+
+.annotation-tab-panel {
+  background: var(--hc-surface, #fff) !important;
+  padding: 6px 8px !important;
+  max-height: 88px !important;
+}
+
+.annotation-tab-panel .toolbar-label {
+  font-size: 11px !important;
+  min-width: 72px !important;
+}
+
+.annotation-tab-panel .row {
+  gap: 5px !important;
+}
+
+#annotationShortcutsBar {
+  display: none !important;
+}
+
+body.dark-mode .annotation-tab-panel {
+  background: #050505 !important;
+}
+
+/* ── Comments: full width until explicitly opened ── */
+.contour-with-comments {
+  gap: 0 !important;
+}
+
+.contour-with-comments:not(.comments-open) {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.contour-with-comments:not(.comments-open) #commentsPanel {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+}
+
+.contour-with-comments.comments-open {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) !important;
+  gap: 12px !important;
+}
+
+.contour-with-comments.comments-open #commentsPanel {
+  visibility: visible;
+}
+
+#showCommentsPanel.hidden {
+  display: none !important;
+}
+
+body.comments-open #showCommentsPanel {
+  display: none !important;
+}
+
+/* ── Editor canvas: comfortable reading area ── */
+#editorWrap {
+  border-radius: 8px !important;
+}
+
+#editor {
+  padding: 16px 18px !important;
+  line-height: 2 !important;
+}
+
+body.dark-mode #editorWrap {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 8px 28px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* ── Top toolbar consistency ── */
+.top-stack {
+  margin-bottom: 6px !important;
+}
+
+/* ── Responsive ── */
+@media (max-width: 950px) {
+  .contour-with-comments.comments-open {
+    grid-template-columns: 1fr !important;
+  }
+
+  .contour-with-comments.comments-open #commentsPanel {
+    max-height: 40vh;
+    position: relative !important;
+    top: auto !important;
+  }
+
+  #annotationTabsRow {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 640px) {
+  .card.main-workspace {
+    padding: 6px 8px 8px !important;
+  }
+
+  #editor {
+    padding: 12px 14px !important;
+    font-size: 22px !important;
+  }
+}

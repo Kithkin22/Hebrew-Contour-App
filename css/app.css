@@ -777,11 +777,19 @@ body.dark-mode #themeToggleBtn{
   border-color:rgba(255,255,255,0.14);
 }
 
-/* Dark mode editor/readability */
+/* Dark mode editor/readability — default only; inline/class colors preserved below */
 body.dark-mode #editor,
-body.dark-mode #editorWrap,
-body.dark-mode .word{
+body.dark-mode #editorWrap{
   color:var(--ui-text);
+}
+body.dark-mode .word:not(.has-text-color):not(.pred):not(.subj){
+  color:var(--ui-text);
+}
+body.dark-mode .word.pred{
+  color:#0b61a4 !important;
+}
+body.dark-mode .word.subj{
+  color:#b02a2a !important;
 }
 body.dark-mode .word.selected{
   background:#ff9900!important;
@@ -822,10 +830,18 @@ body.dark-mode #editor{
   background:#000 !important;
   color:#fff !important;
 }
-body.dark-mode #editor .word,
+body.dark-mode #editor .word:not(.has-text-color):not(.pred):not(.subj),
 body.dark-mode #editor .verse,
 body.dark-mode #editor .clause{
   color:#fff !important;
+}
+
+body.dark-mode #editor .word.pred{
+  color:#0b61a4 !important;
+}
+
+body.dark-mode #editor .word.subj{
+  color:#b02a2a !important;
 }
 body.dark-mode #editor .word.sameword,
 body.dark-mode .word.sameword{
@@ -841,9 +857,11 @@ body.dark-mode .word.sameword.selected{
   border-color:#cc6600 !important;
 }
 
-/* Highlight fills (yellow/green/blue/pink) need dark Hebrew text in dark mode */
-body.dark-mode #editor .word[style*="background-color"],
-body.dark-mode .parallel-verse-body .word[style*="background-color"]{
+/* Highlight fills without explicit text color need dark Hebrew text in dark mode */
+body.dark-mode #editor .word.fmt-highlight:not(.has-text-color),
+body.dark-mode #editor .word[style*="background-color"]:not(.has-text-color),
+body.dark-mode .parallel-verse-body .word.fmt-highlight:not(.has-text-color),
+body.dark-mode .parallel-verse-body .word[style*="background-color"]:not(.has-text-color){
   color:#000 !important;
 }
 body.dark-mode #editor .muted,
