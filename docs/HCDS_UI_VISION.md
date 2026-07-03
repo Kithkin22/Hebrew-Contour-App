@@ -137,6 +137,42 @@ Avoid:
 - Bootstrap admin feel
 - decorative buttons that do not work
 
+### 12. Aleph Visual Identity (not the Clause Formatter)
+
+Aleph Contour and the [Hebrew Clause Formatter](https://clauses.hebrewtools.org) both work with Biblical Hebrew, but they are **different products**. Aleph must develop and maintain its **own recognizable design language**—not converge toward the Clause Formatter’s look and feel.
+
+#### Do not use as a visual reference
+
+- Overall page layout
+- Toolbar arrangement, spacing, typography, or visual hierarchy
+- Color palette, button styling, or panel structure that mimics that site
+
+The Clause Formatter may still inform **functionality** when appropriate (e.g. how scholars expect certain editing behaviors). It must **not** inform **appearance**.
+
+#### Primary design references for Aleph
+
+1. **This document** and the [Vision mockup](./assets/hcds-ui-vision-contour.jpeg)
+2. **Aleph’s existing interface** on the stable layout (`contour-polish-v1`, HCDS tokens, dark mode)
+3. Academic document editors (Word, Logos) for *interaction patterns*—not for copying another Hebrew tool’s skin
+
+#### What Aleph should emphasize
+
+- Document-first workspace (Scripture is the hero)
+- Professional academic editing software
+- Rich annotation capabilities (color, format, highlight, brackets, arcs, inclusio, export)
+- Modern typography (Inter + dedicated Hebrew/Greek reading faces)
+- Consistent spacing and quiet visual hierarchy
+- Thoughtful true-black dark mode
+- A polished experience suitable for extended scholarly contouring sessions
+
+#### Pre-ship check for significant UI changes
+
+Before merging meaningful UI work, ask:
+
+> *Does this make Aleph look more like the Clause Formatter?*
+
+If yes, choose an alternative that achieves the same functionality while reinforcing Aleph’s identity. The goal is not difference for its own sake—it is a **distinctive, recognizable interface** users associate specifically with Aleph.
+
 ### 11. Annotation Ribbon (Phase 1)
 
 **Scope:** Phase 1 visual refinement only. Do not implement during Phase 0. No functionality should change—only the presentation and organization of annotation controls should evolve toward the Ribbon model.
@@ -223,3 +259,5 @@ Functionality first.
 Scripture second to none.
 
 Visual polish only after stability.
+
+For appearance: use the Vision mockup and Aleph’s own UI—not the Hebrew Clause Formatter (see **§12 Aleph Visual Identity**).
