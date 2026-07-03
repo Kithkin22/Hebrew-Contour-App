@@ -62,57 +62,13 @@
   font-weight: 600;
 }
 
-/* Bottom status bar */
-.app-status-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 6px;
-  padding: 4px 10px;
-  min-height: 26px;
-  font-size: 11px;
-  color: var(--hc-text-muted, #64748b);
-  background: var(--hc-surface-2, #f8fafc);
-  border: 1px solid var(--hc-border, #e5e7eb);
-  border-radius: var(--hc-radius-md, 8px);
-}
-
-.app-status-bar-project {
-  font-weight: 600;
-  color: var(--hc-text-secondary, #475569);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 40%;
-}
-
-.app-status-bar-spacer {
-  flex: 1;
-}
-
-.app-status-bar-save {
-  white-space: nowrap;
-}
-
 body.dark-mode .header-project-name {
   color: var(--hc-text, #f5f5f7);
-}
-
-body.dark-mode .app-status-bar {
-  background: #0a0a0a;
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-body.dark-mode .app-status-bar-project {
-  color: #d4d4d8;
 }
 
 @media (max-width: 900px) {
   .header-project-name {
     max-width: min(240px, 36vw);
     font-size: 14px;
-  }
-  .app-status-bar-project {
-    display: none;
   }
 }

@@ -185,33 +185,6 @@
     }
   }
 
-  function mountAppStatusBar() {
-    if (document.getElementById('appStatusBar')) return;
-    const wrap = document.querySelector('#appRoot > .wrap') || document.getElementById('appRoot');
-    if (!wrap) return;
-    const bar = document.createElement('footer');
-    bar.id = 'appStatusBar';
-    bar.className = 'app-status-bar';
-    bar.setAttribute('aria-live', 'polite');
-    bar.innerHTML =
-      '<span class="app-status-bar-project" id="appStatusBarProject"></span>' +
-      '<span class="app-status-bar-spacer"></span>' +
-      '<span class="app-status-bar-save" data-save-indicator id="appStatusBarSave"></span>';
-    wrap.appendChild(bar);
-
-    const syncBarProject = () => {
-      const rec = typeof getCurrentProjectRecord === 'function' ? getCurrentProjectRecord() : null;
-      const el = document.getElementById('appStatusBarProject');
-      if (el && rec) el.textContent = rec.name || 'Untitled Project';
-    };
-    const orig = window.updateProjectHeaderName;
-    window.updateProjectHeaderName = function () {
-      if (typeof orig === 'function') orig();
-      syncBarProject();
-    };
-    syncBarProject();
-  }
-
   function bindSaveShortcut() {
     if (window._projectSaveShortcutBound) return;
     window._projectSaveShortcutBound = 1;
@@ -229,7 +202,6 @@
 
   window.initProjectHeader = function () {
     mountProjectHeader();
-    mountAppStatusBar();
     bindSaveShortcut();
     updateProjectHeaderName();
     const rec = typeof getCurrentProjectRecord === 'function' ? getCurrentProjectRecord() : null;
