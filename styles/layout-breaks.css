@@ -15,6 +15,22 @@
   margin-bottom: 48px;
 }
 
-#visualBreakToolbar [data-spacing-after].primary {
+#editor .verse-block.verse-spacing-single,
+.parallel-verse-cell .verse-block.verse-spacing-single {
+  margin-bottom: 2.1em;
+}
+
+#editor .verse-block.verse-spacing-oneHalf,
+.parallel-verse-cell .verse-block.verse-spacing-oneHalf {
+  margin-bottom: 3.15em;
+}
+
+#editor .verse-block.verse-spacing-double,
+.parallel-verse-cell .verse-block.verse-spacing-double {
+  margin-bottom: 4.2em;
+}
+
+#visualBreakToolbar [data-spacing-after].primary,
+#visualBreakToolbar [data-verse-spacing-after].primary {
   font-weight: 700;
 }

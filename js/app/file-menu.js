@@ -106,7 +106,10 @@ function contourDocxXml(){
       let indent=Math.max(0,(c.indent||0)*720);
       let runs=c.words.map((w,wi)=>wordRun(w,{v:vi,c:ci,w:wi})).join('');
       let ppr=isGreek?`<w:jc w:val="left"/><w:ind w:left="${indent}"/>`:`<w:bidi/><w:jc w:val="right"/><w:ind w:right="${indent}"/>`;
-      const spaceTwips=typeof spacingAfterDocxTwips==='function'?spacingAfterDocxTwips(c):0;
+      const clauseTwips=typeof spacingAfterDocxTwips==='function'?spacingAfterDocxTwips(c):0;
+      const isLastClause=ci===v.clauses.length-1;
+      const verseTwips=isLastClause&&typeof verseSpacingAfterDocxTwips==='function'?verseSpacingAfterDocxTwips(v):0;
+      const spaceTwips=clauseTwips+verseTwips;
       if(spaceTwips)ppr+=`<w:spacing w:after="${spaceTwips}"/>`;
       body+=`<w:p><w:pPr>${ppr}</w:pPr>${runs}</w:p>`;
     });

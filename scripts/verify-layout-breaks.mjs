@@ -25,6 +25,7 @@ async function unlock(page) {
   await page.waitForFunction(
     () =>
       typeof normalizeSpacingAfter === 'function' &&
+      typeof normalizeVerseSpacingAfter === 'function' &&
       typeof mergeVerseData === 'function' &&
       typeof buildContourEditorHtmlFromState === 'function',
     { timeout: 25000 }
@@ -136,6 +137,32 @@ async function main() {
       const exportHtml = buildContourEditorHtmlFromState(true);
       const docx = contourDocxXml();
 
+      generatedRefs = ['Genesis 1:1', 'Genesis 1:2'];
+      state.ref = 'Genesis 1:1-2';
+      stateBundle.parallelEnabled = false;
+      const toggle2 = document.getElementById('parallelModeToggle');
+      if (toggle2) toggle2.checked = false;
+      parseText('בְּרֵאשִׁית בָּרָא\nוְהָאָרֶץ הָיְתָה', 'Genesis 1:1-2', false, { skipRender: true });
+      state.selected = { v: 0, c: 0, w: 0 };
+      render();
+      setSelectedVerseSpacingAfter('double');
+      const verseAfterDouble = {
+        data: state.verses[0].spacingAfter || 'default',
+        cls: document.querySelector('#editor .verse-block[data-v="0"]')?.className || '',
+      };
+      setSelectedVerseSpacingAfter('default');
+      const verseAfterDefault = {
+        hasProp: Object.prototype.hasOwnProperty.call(state.verses[0], 'spacingAfter'),
+      };
+      setSelectedVerseSpacingAfter('oneHalf');
+      const oldVerse = JSON.parse(JSON.stringify(state.verses[0]));
+      const newVerse = JSON.parse(JSON.stringify(state.verses[0]));
+      delete newVerse.spacingAfter;
+      mergeVerseData(oldVerse, newVerse);
+      const verseAfterMerge = newVerse.spacingAfter || 'default';
+      const verseExportHtml = buildContourEditorHtmlFromState(true);
+      const verseDocx = contourDocxXml();
+
       return {
         afterMedium,
         afterDefault,
@@ -149,6 +176,11 @@ async function main() {
         wordsUnchanged:
           state.verses[0].clauses[0].words.length > 0 &&
           !state.verses[0].clauses.some((c) => c.words.some((w) => w.text === '')),
+        verseAfterDouble,
+        verseAfterDefault,
+        verseAfterMerge,
+        verseExportHasClass: verseExportHtml.includes('verse-spacing-oneHalf'),
+        verseDocxHasSpacing: verseDocx.includes('w:spacing w:after="720"'),
       };
     });
 
@@ -182,6 +214,31 @@ async function main() {
     record('pdf-html-export', unit.exportHasClass, `export HTML has layout-break-md=${unit.exportHasClass}`);
     record('docx-export', unit.docxHasSpacing, `DOCX has w:spacing after medium=${unit.docxHasSpacing}`);
     record('words-unchanged', unit.wordsUnchanged, `words[] not modified by spacingAfter=${unit.wordsUnchanged}`);
+    record(
+      'verse-set-double',
+      unit.verseAfterDouble.data === 'double' && unit.verseAfterDouble.cls.includes('verse-spacing-double'),
+      `verse spacingAfter=${unit.verseAfterDouble.data}, class=${unit.verseAfterDouble.cls}`
+    );
+    record(
+      'verse-clear-default',
+      !unit.verseAfterDefault.hasProp,
+      `verse spacingAfter property removed=${!unit.verseAfterDefault.hasProp}`
+    );
+    record(
+      'verse-merge',
+      unit.verseAfterMerge === 'oneHalf',
+      `verse spacingAfter after mergeVerseData=${unit.verseAfterMerge}`
+    );
+    record(
+      'verse-export-html',
+      unit.verseExportHasClass,
+      `export HTML has verse-spacing-oneHalf=${unit.verseExportHasClass}`
+    );
+    record(
+      'verse-docx',
+      unit.verseDocxHasSpacing,
+      `DOCX has verse w:spacing 720 twips=${unit.verseDocxHasSpacing}`
+    );
 
     const report = {
       feature: 'layout-breaks',

@@ -1,7 +1,7 @@
 {
   "feature": "layout-breaks",
   "url": "http://127.0.0.1:8765",
-  "at": "2026-07-03T19:41:51.034Z",
+  "at": "2026-07-03T23:24:41.028Z",
   "pass": true,
   "results": [
     {
@@ -43,6 +43,31 @@
       "id": "words-unchanged",
       "pass": true,
       "detail": "words[] not modified by spacingAfter=true"
+    },
+    {
+      "id": "verse-set-double",
+      "pass": true,
+      "detail": "verse spacingAfter=double, class=verse-block verse-spacing-double"
+    },
+    {
+      "id": "verse-clear-default",
+      "pass": true,
+      "detail": "verse spacingAfter property removed=true"
+    },
+    {
+      "id": "verse-merge",
+      "pass": true,
+      "detail": "verse spacingAfter after mergeVerseData=oneHalf"
+    },
+    {
+      "id": "verse-export-html",
+      "pass": true,
+      "detail": "export HTML has verse-spacing-oneHalf=true"
+    },
+    {
+      "id": "verse-docx",
+      "pass": true,
+      "detail": "DOCX has verse w:spacing 720 twips=true"
     }
   ]
 }

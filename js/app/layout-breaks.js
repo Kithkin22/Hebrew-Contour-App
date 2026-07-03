@@ -1,11 +1,19 @@
-/* Visual discourse breaks — clause-level layout metadata (spacingAfter) */
+/* Visual discourse breaks — clause/verse layout metadata (spacingAfter) */
 const SPACING_AFTER_LEVELS = ['default', 'small', 'medium', 'large'];
+const VERSE_SPACING_LEVELS = ['default', 'single', 'oneHalf', 'double'];
 
 function normalizeSpacingAfter(value) {
   const s = String(value || 'default').toLowerCase();
   return SPACING_AFTER_LEVELS.includes(s) ? s : 'default';
 }
 window.normalizeSpacingAfter = normalizeSpacingAfter;
+
+function normalizeVerseSpacingAfter(value) {
+  const s = String(value || 'default');
+  if (s === 'onehalf' || s === '1.5') return 'oneHalf';
+  return VERSE_SPACING_LEVELS.includes(s) ? s : 'default';
+}
+window.normalizeVerseSpacingAfter = normalizeVerseSpacingAfter;
 
 function clauseSpacingAfterClass(clause) {
   const level = normalizeSpacingAfter(clause && clause.spacingAfter);
@@ -38,9 +46,47 @@ function exportLayoutBreakCss() {
   return '.clause{display:block;border-radius:6px;padding:2px 8px;margin:2px 0}'
     + '.clause.layout-break-sm{margin-bottom:14px!important}'
     + '.clause.layout-break-md{margin-bottom:28px!important}'
-    + '.clause.layout-break-lg{margin-bottom:48px!important}';
+    + '.clause.layout-break-lg{margin-bottom:48px!important}'
+    + '.verse-block{margin-bottom:0}'
+    + '.verse-block.verse-spacing-single{margin-bottom:2.1em!important}'
+    + '.verse-block.verse-spacing-oneHalf{margin-bottom:3.15em!important}'
+    + '.verse-block.verse-spacing-double{margin-bottom:4.2em!important}';
 }
 window.exportLayoutBreakCss = exportLayoutBreakCss;
+
+function verseSpacingAfterClass(verse) {
+  const level = normalizeVerseSpacingAfter(verse && verse.spacingAfter);
+  if (level === 'single') return 'verse-spacing-single';
+  if (level === 'oneHalf') return 'verse-spacing-oneHalf';
+  if (level === 'double') return 'verse-spacing-double';
+  return '';
+}
+window.verseSpacingAfterClass = verseSpacingAfterClass;
+
+function verseBlockClassNames(verse) {
+  let cls = 'verse-block';
+  const sp = verseSpacingAfterClass(verse);
+  if (sp) cls += ' ' + sp;
+  return cls;
+}
+window.verseBlockClassNames = verseBlockClassNames;
+
+function verseSpacingAfterDocxTwips(verse) {
+  const level = normalizeVerseSpacingAfter(verse && verse.spacingAfter);
+  if (level === 'single') return 480;
+  if (level === 'oneHalf') return 720;
+  if (level === 'double') return 960;
+  return 0;
+}
+window.verseSpacingAfterDocxTwips = verseSpacingAfterDocxTwips;
+
+function copyVerseLayoutFields(fromVerse, toVerse) {
+  if (!fromVerse || !toVerse) return;
+  const level = normalizeVerseSpacingAfter(fromVerse.spacingAfter);
+  if (level === 'default') delete toVerse.spacingAfter;
+  else toVerse.spacingAfter = level;
+}
+window.copyVerseLayoutFields = copyVerseLayoutFields;
 
 function copyClauseLayoutFields(fromClause, toClause) {
   if (!fromClause || !toClause) return;
@@ -76,6 +122,30 @@ function setSelectedClauseSpacingAfter(level) {
 }
 window.setSelectedClauseSpacingAfter = setSelectedClauseSpacingAfter;
 
+function selectedVerseIndex() {
+  if (!state || !state.selected || state.selected.v == null) return null;
+  const v = state.selected.v;
+  if (!state.verses[v]) return null;
+  return v;
+}
+
+function setSelectedVerseSpacingAfter(level) {
+  const vi = selectedVerseIndex();
+  if (vi == null) {
+    alert('Select a word in the verse you want to adjust.');
+    return;
+  }
+  markUndo();
+  const verse = state.verses[vi];
+  const norm = normalizeVerseSpacingAfter(level);
+  if (norm === 'default') delete verse.spacingAfter;
+  else verse.spacingAfter = norm;
+  syncStateBundle();
+  if (autosaveReady) autoSaveProject();
+  render();
+}
+window.setSelectedVerseSpacingAfter = setSelectedVerseSpacingAfter;
+
 function updateVisualBreakToolbar() {
   const loc = selectedClauseLoc();
   const level = loc
@@ -85,6 +155,14 @@ function updateVisualBreakToolbar() {
     btn.classList.toggle('primary', btn.dataset.spacingAfter === level);
     btn.setAttribute('aria-pressed', btn.dataset.spacingAfter === level ? 'true' : 'false');
   });
+  const vi = selectedVerseIndex();
+  const verseLevel = vi != null
+    ? normalizeVerseSpacingAfter(state.verses[vi].spacingAfter)
+    : 'default';
+  document.querySelectorAll('[data-verse-spacing-after]').forEach(btn => {
+    btn.classList.toggle('primary', btn.dataset.verseSpacingAfter === verseLevel);
+    btn.setAttribute('aria-pressed', btn.dataset.verseSpacingAfter === verseLevel ? 'true' : 'false');
+  });
 }
 window.updateVisualBreakToolbar = updateVisualBreakToolbar;
 
@@ -93,6 +171,11 @@ function initVisualBreakControls() {
     if (btn.dataset.spacingBound) return;
     btn.dataset.spacingBound = '1';
     btn.onclick = () => setSelectedClauseSpacingAfter(btn.dataset.spacingAfter);
+  });
+  document.querySelectorAll('[data-verse-spacing-after]').forEach(btn => {
+    if (btn.dataset.verseSpacingBound) return;
+    btn.dataset.verseSpacingBound = '1';
+    btn.onclick = () => setSelectedVerseSpacingAfter(btn.dataset.verseSpacingAfter);
   });
   updateVisualBreakToolbar();
 }
