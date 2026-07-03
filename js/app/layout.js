@@ -280,11 +280,19 @@ async function generateFromReference(){
   }
   const parsed=parseBibleReference(box.value);
   if(!parsed){status.textContent='Could not read that reference. Try examples like Ruth 3:4-18, Jn 3:1-5, or 1 Cor 13:1-4.';return;}
+  if(stateBundle.parallelEnabled){
+    if(typeof bindParallelTargetPaneFromFocus==='function')bindParallelTargetPaneFromFocus();
+    else bindActivePane(stateBundle.activePane);
+  }
   setGeneratorFromParsedRef(parsed);
   await generateWlc();
 }
 
 async function generateWlc(){
+  if(stateBundle.parallelEnabled){
+    if(typeof bindParallelTargetPaneFromFocus==='function')bindParallelTargetPaneFromFocus();
+    else bindActivePane(stateBundle.activePane);
+  }
   const source=(document.getElementById('textSource')&&document.getElementById('textSource').value)||'hebrew-bhsa';
   const sel=document.getElementById('bookSelect');
   const book=sel.value,bname=sel.options[sel.selectedIndex].textContent;
@@ -364,7 +372,7 @@ async function loadSampleWlcPassage(){
   document.getElementById('endVerse').value=4;
   await generateWlc();
 }
-document.getElementById('makeText').onclick=()=>{generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value);box.value=cleaned;parseText(cleaned,document.getElementById('refBox').value,true);if(stateBundle.parallelEnabled)syncStateBundle();closeTopMenus();};
+document.getElementById('makeText').onclick=()=>{if(stateBundle.parallelEnabled){if(typeof bindParallelTargetPaneFromFocus==='function')bindParallelTargetPaneFromFocus();else bindActivePane(stateBundle.activePane);}generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value);box.value=cleaned;parseText(cleaned,document.getElementById('refBox').value,true);if(stateBundle.parallelEnabled)syncStateBundle();closeTopMenus();};
 document.getElementById('sampleText').onclick=loadSampleText;
 
 function ensureLegend(){if(!Array.isArray(state.legend))state.legend=[];}
