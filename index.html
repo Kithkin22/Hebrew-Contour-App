@@ -135,11 +135,12 @@
   <div class="card compact-card" data-menu="paste">
     <strong class="menu-trigger">Paste text</strong>
     <div class="top-menu-panel">
-    <p class="muted">Paste Hebrew/Greek text here. Each line becomes a verse/section.</p>
+    <p class="muted">Paste Hebrew/Greek text here. Use <strong>Paste Plain</strong> for one verse per line, or <strong>Paste with Layout</strong> to keep Word blank-line spacing as visual discourse breaks.</p>
     <textarea id="pasteBox" dir="rtl" class="heb" placeholder=""></textarea>
     <input id="refBox" type="hidden" value="">
     <div class="row">
-      <button class="btn primary" id="makeText">Create Text from Paste</button>
+      <button class="btn primary" id="makeText">Paste Plain</button>
+      <button class="btn" id="makeTextWithLayout" title="Preserve blank lines from Word as visual discourse breaks">Paste with Layout</button>
       <button class="btn" id="sampleText">Load Sample</button>
     </div>
     </div>

@@ -42,6 +42,92 @@ function spacingAfterDocxTwips(clause) {
 }
 window.spacingAfterDocxTwips = spacingAfterDocxTwips;
 
+function spacingAfterFromBlankLineCount(blankCount) {
+  if (blankCount >= 2) return 'large';
+  if (blankCount === 1) return 'medium';
+  return 'default';
+}
+window.spacingAfterFromBlankLineCount = spacingAfterFromBlankLineCount;
+
+function parseLayoutPasteLines(text) {
+  const lines = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  const contentLines = [];
+  let blankRun = 0;
+  lines.forEach(line => {
+    if (!String(line).trim()) {
+      blankRun++;
+      return;
+    }
+    if (contentLines.length) {
+      contentLines[contentLines.length - 1].spacingAfter = spacingAfterFromBlankLineCount(blankRun);
+    }
+    blankRun = 0;
+    contentLines.push({ text: String(line).trim(), spacingAfter: 'default' });
+  });
+  return contentLines;
+}
+window.parseLayoutPasteLines = parseLayoutPasteLines;
+
+function layoutTextFromWordHtml(html) {
+  if (!html) return '';
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const blocks = doc.body ? Array.from(doc.body.querySelectorAll('p, div, li')) : [];
+    if (!blocks.length) return '';
+    const hasHebrew = /[\u0590-\u05FF]/.test(doc.body.textContent || '');
+    if (!hasHebrew) return '';
+    const out = [];
+    blocks.forEach(el => {
+      const txt = (el.textContent || '').replace(/\u00a0/g, ' ').trim();
+      const style = (el.getAttribute('style') || '').toLowerCase();
+      let extraBlanks = 0;
+      const marginMatch = style.match(/margin-top:\s*([0-9.]+)pt/);
+      if (marginMatch) {
+        const pt = parseFloat(marginMatch[1]) || 0;
+        if (pt >= 18) extraBlanks = 2;
+        else if (pt >= 8) extraBlanks = 1;
+      }
+      while (extraBlanks-- > 0) out.push('');
+      out.push(txt);
+    });
+    return out.join('\n');
+  } catch (e) {
+    return '';
+  }
+}
+window.layoutTextFromWordHtml = layoutTextFromWordHtml;
+
+function buildVersesFromLayoutPaste(text, ref, language, refs) {
+  const contentLines = parseLayoutPasteLines(text);
+  if (!contentLines.length) return [];
+  const generated = Array.isArray(refs) ? refs : [];
+  const usePerLineVerses = generated.length === contentLines.length && generated.length > 1;
+
+  function clauseFromLine(line) {
+    const words = tokenizeClauseWords(line.text.split(/\s+/).filter(Boolean), language);
+    if (!words.length) return null;
+    const clause = { indent: 0, words, ann: {} };
+    const level = normalizeSpacingAfter(line.spacingAfter);
+    if (level !== 'default') clause.spacingAfter = level;
+    return clause;
+  }
+
+  if (usePerLineVerses) {
+    return contentLines.map((line, i) => {
+      const clause = clauseFromLine(line);
+      if (!clause) return null;
+      return { ref: generated[i], clauses: [clause] };
+    }).filter(Boolean);
+  }
+
+  const normRef = ref ? normalizePassageRangeRef(ref) : '';
+  const verseRef = generated[0] || normRef || 'Pasted passage';
+  const clauses = contentLines.map(clauseFromLine).filter(Boolean);
+  if (!clauses.length) return [];
+  return [{ ref: verseRef, clauses }];
+}
+window.buildVersesFromLayoutPaste = buildVersesFromLayoutPaste;
+
 function exportLayoutBreakCss() {
   return '.clause{display:block;border-radius:6px;padding:2px 8px;margin:2px 0}'
     + '.clause.layout-break-sm{margin-bottom:14px!important}'

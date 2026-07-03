@@ -339,7 +339,10 @@ document.getElementById('textSource').onchange=()=>{syncLanguageFromSource();set
 
 document.getElementById('pasteBox').addEventListener('paste',e=>{
   e.preventDefault();
-  const cleaned=cleanLogosPaste(e.clipboardData.getData('text/plain'));
+  const html=e.clipboardData.getData('text/html');
+  const plain=e.clipboardData.getData('text/plain');
+  const layoutHtml=typeof layoutTextFromWordHtml==='function'?layoutTextFromWordHtml(html):'';
+  const cleaned=cleanLogosPaste(layoutHtml||plain,{preserveBlankLines:true});
   const box=e.target;
   const start=box.selectionStart,end=box.selectionEnd;
   box.value=box.value.slice(0,start)+cleaned+box.value.slice(end);
@@ -372,7 +375,10 @@ async function loadSampleWlcPassage(){
   document.getElementById('endVerse').value=4;
   await generateWlc();
 }
-document.getElementById('makeText').onclick=()=>{if(stateBundle.parallelEnabled){if(typeof bindParallelTargetPaneFromFocus==='function')bindParallelTargetPaneFromFocus();else bindActivePane(stateBundle.activePane);}generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value);box.value=cleaned;parseText(cleaned,document.getElementById('refBox').value,true);if(stateBundle.parallelEnabled)syncStateBundle();closeTopMenus();};
+function bindPasteTargetPane(){if(stateBundle.parallelEnabled){if(typeof bindParallelTargetPaneFromFocus==='function')bindParallelTargetPaneFromFocus();else bindActivePane(stateBundle.activePane);}}
+function createTextFromPaste(opts){opts=opts||{};bindPasteTargetPane();if(!opts.preserveLayout)generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value,opts.preserveLayout?{preserveBlankLines:true}:undefined);box.value=cleaned;parseText(cleaned,document.getElementById('refBox').value,true,{preserveLayout:!!opts.preserveLayout});if(stateBundle.parallelEnabled)syncStateBundle();closeTopMenus();}
+document.getElementById('makeText').onclick=()=>createTextFromPaste({preserveLayout:false});
+document.getElementById('makeTextWithLayout').onclick=()=>createTextFromPaste({preserveLayout:true});
 document.getElementById('sampleText').onclick=loadSampleText;
 
 function ensureLegend(){if(!Array.isArray(state.legend))state.legend=[];}
