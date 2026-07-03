@@ -1,0 +1,20 @@
+/* Visual discourse breaks — extra vertical space after a contour line (layout only) */
+
+#editor .clause.layout-break-sm,
+.parallel-verse-body .clause.layout-break-sm {
+  margin-bottom: 14px;
+}
+
+#editor .clause.layout-break-md,
+.parallel-verse-body .clause.layout-break-md {
+  margin-bottom: 28px;
+}
+
+#editor .clause.layout-break-lg,
+.parallel-verse-body .clause.layout-break-lg {
+  margin-bottom: 48px;
+}
+
+#visualBreakToolbar [data-spacing-after].primary {
+  font-weight: 700;
+}

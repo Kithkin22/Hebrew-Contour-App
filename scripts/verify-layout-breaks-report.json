@@ -1,0 +1,48 @@
+{
+  "feature": "layout-breaks",
+  "url": "http://127.0.0.1:8765",
+  "at": "2026-07-03T19:41:51.034Z",
+  "pass": true,
+  "results": [
+    {
+      "id": "set-medium",
+      "pass": true,
+      "detail": "spacingAfter=medium, class=clause selected layout-break-md"
+    },
+    {
+      "id": "clear-default",
+      "pass": true,
+      "detail": "spacingAfter=default, hasProp=false"
+    },
+    {
+      "id": "save-reload",
+      "pass": true,
+      "detail": "saved=large, reloaded=large"
+    },
+    {
+      "id": "merge-verse",
+      "pass": true,
+      "detail": "spacingAfter after mergeVerseData=small"
+    },
+    {
+      "id": "parallel-independent",
+      "pass": true,
+      "detail": "pane0=medium, pane1=default"
+    },
+    {
+      "id": "pdf-html-export",
+      "pass": true,
+      "detail": "export HTML has layout-break-md=true"
+    },
+    {
+      "id": "docx-export",
+      "pass": true,
+      "detail": "DOCX has w:spacing after medium=true"
+    },
+    {
+      "id": "words-unchanged",
+      "pass": true,
+      "detail": "words[] not modified by spacingAfter=true"
+    }
+  ]
+}
