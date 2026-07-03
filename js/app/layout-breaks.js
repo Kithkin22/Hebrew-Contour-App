@@ -85,8 +85,37 @@ function copyVerseLayoutFields(fromVerse, toVerse) {
   const level = normalizeVerseSpacingAfter(fromVerse.spacingAfter);
   if (level === 'default') delete toVerse.spacingAfter;
   else toVerse.spacingAfter = level;
+  if (fromVerse.hideRef) toVerse.hideRef = true;
+  else delete toVerse.hideRef;
 }
 window.copyVerseLayoutFields = copyVerseLayoutFields;
+
+function verseRefHidden(verse) {
+  return !!(verse && verse.hideRef);
+}
+window.verseRefHidden = verseRefHidden;
+
+function contourVerseRefHtml(verse, vi, opts) {
+  opts = opts || {};
+  if (verseRefHidden(verse)) return '';
+  const ref = esc(verse.ref || '');
+  if (opts.parallel) {
+    const picked = !!opts.picked;
+    const pane = opts.pane != null ? opts.pane : 0;
+    return `<span class="muted parallel-verse-ref parallel-verse-pick${picked ? ' parallel-verse-picked' : ''}" data-pane="${pane}" data-vi="${vi}" title="Click this label, then click a verse label in the other column to line them up on one row">${ref}</span>`;
+  }
+  return `<div class="muted verse-ref" dir="ltr">${ref}</div>`;
+}
+window.contourVerseRefHtml = contourVerseRefHtml;
+
+function parallelVerseRefBarHtml(verse, vi, pane, row, picked) {
+  const ri = row != null ? row : 0;
+  const refPart = verseRefHidden(verse)
+    ? `<span class="parallel-verse-ref parallel-verse-pick parallel-verse-ref-compact${picked ? ' parallel-verse-picked' : ''}" data-pane="${pane}" data-vi="${vi}" title="Verse ${vi + 1} (reference hidden) — click to pair with the other column">•</span>`
+    : contourVerseRefHtml(verse, vi, { parallel: true, pane, picked });
+  return `<div class="parallel-verse-ref-bar${verseRefHidden(verse) ? ' parallel-verse-ref-bar-compact' : ''}" dir="ltr">${pane === 1 ? `<button type="button" class="parallel-nudge-btn" data-row="${ri}" data-gap="${pane}" data-dir="up" title="Move this verse up one row">↑</button>` : ''}${refPart}${pane === 1 ? `<button type="button" class="parallel-nudge-btn" data-row="${ri}" data-gap="${pane}" title="Move this verse down one row">↓</button>` : ''}<button type="button" class="parallel-verse-remove" data-pane="${pane}" data-vi="${vi}" title="Remove this verse from this pane">×</button></div>`;
+}
+window.parallelVerseRefBarHtml = parallelVerseRefBarHtml;
 
 function copyClauseLayoutFields(fromClause, toClause) {
   if (!fromClause || !toClause) return;
@@ -146,6 +175,38 @@ function setSelectedVerseSpacingAfter(level) {
 }
 window.setSelectedVerseSpacingAfter = setSelectedVerseSpacingAfter;
 
+function toggleSelectedVerseRefHidden() {
+  const vi = selectedVerseIndex();
+  if (vi == null) {
+    alert('Select a word in the verse whose label you want to hide or show.');
+    return;
+  }
+  markUndo();
+  const verse = state.verses[vi];
+  if (verse.hideRef) delete verse.hideRef;
+  else verse.hideRef = true;
+  syncStateBundle();
+  if (autosaveReady) autoSaveProject();
+  render();
+}
+window.toggleSelectedVerseRefHidden = toggleSelectedVerseRefHidden;
+
+function setAllVerseRefsHidden(hidden) {
+  if (!state || !state.verses.length) {
+    alert('Load text first.');
+    return;
+  }
+  markUndo();
+  state.verses.forEach(v => {
+    if (hidden) v.hideRef = true;
+    else delete v.hideRef;
+  });
+  syncStateBundle();
+  if (autosaveReady) autoSaveProject();
+  render();
+}
+window.setAllVerseRefsHidden = setAllVerseRefsHidden;
+
 function updateVisualBreakToolbar() {
   const loc = selectedClauseLoc();
   const level = loc
@@ -163,6 +224,13 @@ function updateVisualBreakToolbar() {
     btn.classList.toggle('primary', btn.dataset.verseSpacingAfter === verseLevel);
     btn.setAttribute('aria-pressed', btn.dataset.verseSpacingAfter === verseLevel ? 'true' : 'false');
   });
+  const hideBtn = document.getElementById('toggleVerseRefHidden');
+  if (hideBtn) {
+    const hidden = vi != null && verseRefHidden(state.verses[vi]);
+    hideBtn.classList.toggle('primary', hidden);
+    hideBtn.textContent = hidden ? 'Show verse label' : 'Hide verse label';
+    hideBtn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+  }
 }
 window.updateVisualBreakToolbar = updateVisualBreakToolbar;
 
@@ -177,6 +245,21 @@ function initVisualBreakControls() {
     btn.dataset.verseSpacingBound = '1';
     btn.onclick = () => setSelectedVerseSpacingAfter(btn.dataset.verseSpacingAfter);
   });
+  const hideBtn = document.getElementById('toggleVerseRefHidden');
+  if (hideBtn && !hideBtn.dataset.bound) {
+    hideBtn.dataset.bound = '1';
+    hideBtn.onclick = () => toggleSelectedVerseRefHidden();
+  }
+  const hideAllBtn = document.getElementById('hideAllVerseRefs');
+  if (hideAllBtn && !hideAllBtn.dataset.bound) {
+    hideAllBtn.dataset.bound = '1';
+    hideAllBtn.onclick = () => setAllVerseRefsHidden(true);
+  }
+  const showAllBtn = document.getElementById('showAllVerseRefs');
+  if (showAllBtn && !showAllBtn.dataset.bound) {
+    showAllBtn.dataset.bound = '1';
+    showAllBtn.onclick = () => setAllVerseRefsHidden(false);
+  }
   updateVisualBreakToolbar();
 }
 

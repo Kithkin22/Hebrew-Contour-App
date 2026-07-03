@@ -101,7 +101,9 @@ function contourDocxXml(){
     });
   }
   state.verses.forEach((v,vi)=>{
-    body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:color w:val="666666"/><w:sz w:val="20"/></w:rPr><w:t>${xmlEscape(v.ref)}</w:t></w:r></w:p>`;
+    if(!(typeof verseRefHidden==='function'&&verseRefHidden(v))){
+      body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:color w:val="666666"/><w:sz w:val="20"/></w:rPr><w:t>${xmlEscape(v.ref)}</w:t></w:r></w:p>`;
+    }
     v.clauses.forEach((c,ci)=>{
       let indent=Math.max(0,(c.indent||0)*720);
       let runs=c.words.map((w,wi)=>wordRun(w,{v:vi,c:ci,w:wi})).join('');

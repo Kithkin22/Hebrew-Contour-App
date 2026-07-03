@@ -163,6 +163,24 @@ async function main() {
       const verseExportHtml = buildContourEditorHtmlFromState(true);
       const verseDocx = contourDocxXml();
 
+      stateBundle.parallelEnabled = false;
+      if (toggle2) toggle2.checked = false;
+      state.selected = { v: 0, c: 0, w: 0 };
+      render();
+      toggleSelectedVerseRefHidden();
+      const hideRefEditor = !document.querySelector('#editor .verse-block[data-v="0"] .verse-ref');
+      const hideRefExport = !buildContourEditorHtmlFromState(true).includes('Genesis 1:1');
+      setAllVerseRefsHidden(false);
+      setAllVerseRefsHidden(true);
+      const hideAll = state.verses.every((v) => v.hideRef === true)
+        && !document.querySelector('#editor .verse-ref');
+      setAllVerseRefsHidden(false);
+      const oldVerseHide = JSON.parse(JSON.stringify(state.verses[0]));
+      oldVerseHide.hideRef = true;
+      const newVerseHide = JSON.parse(JSON.stringify(state.verses[0]));
+      delete newVerseHide.hideRef;
+      mergeVerseData(oldVerseHide, newVerseHide);
+
       return {
         afterMedium,
         afterDefault,
@@ -181,6 +199,9 @@ async function main() {
         verseAfterMerge,
         verseExportHasClass: verseExportHtml.includes('verse-spacing-oneHalf'),
         verseDocxHasSpacing: verseDocx.includes('w:spacing w:after="720"'),
+        hideRefEditor,
+        hideAll,
+        hideRefMerge: newVerseHide.hideRef === true,
       };
     });
 
@@ -239,6 +260,9 @@ async function main() {
       unit.verseDocxHasSpacing,
       `DOCX has verse w:spacing 720 twips=${unit.verseDocxHasSpacing}`
     );
+    record('hide-verse-ref', unit.hideRefEditor, `contour editor hides selected verse ref=${unit.hideRefEditor}`);
+    record('hide-all-verse-refs', unit.hideAll, `hide all verse refs in pane=${unit.hideAll}`);
+    record('hide-ref-merge', unit.hideRefMerge, `mergeVerseData preserves hideRef=${unit.hideRefMerge}`);
 
     const report = {
       feature: 'layout-breaks',

@@ -31,6 +31,18 @@
 }
 
 #visualBreakToolbar [data-spacing-after].primary,
-#visualBreakToolbar [data-verse-spacing-after].primary {
+#visualBreakToolbar [data-verse-spacing-after].primary,
+#formatToolbar #toggleVerseRefHidden.primary {
   font-weight: 700;
+}
+
+.parallel-verse-ref-bar-compact {
+  margin-bottom: 2px;
+}
+
+.parallel-verse-ref-compact {
+  font-size: 11px;
+  opacity: 0.55;
+  min-width: 12px;
+  text-align: center;
 }

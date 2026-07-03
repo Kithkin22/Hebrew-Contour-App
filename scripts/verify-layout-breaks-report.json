@@ -1,7 +1,7 @@
 {
   "feature": "layout-breaks",
   "url": "http://127.0.0.1:8765",
-  "at": "2026-07-03T23:24:41.028Z",
+  "at": "2026-07-03T23:25:43.746Z",
   "pass": true,
   "results": [
     {
@@ -68,6 +68,21 @@
       "id": "verse-docx",
       "pass": true,
       "detail": "DOCX has verse w:spacing 720 twips=true"
+    },
+    {
+      "id": "hide-verse-ref",
+      "pass": true,
+      "detail": "contour editor hides selected verse ref=true"
+    },
+    {
+      "id": "hide-all-verse-refs",
+      "pass": true,
+      "detail": "hide all verse refs in pane=true"
+    },
+    {
+      "id": "hide-ref-merge",
+      "pass": true,
+      "detail": "mergeVerseData preserves hideRef=true"
     }
   ]
 }
