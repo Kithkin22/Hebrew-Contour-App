@@ -173,6 +173,21 @@ Before merging meaningful UI work, ask:
 
 If yes, choose an alternative that achieves the same functionality while reinforcing Aleph’s identity. The goal is not difference for its own sake—it is a **distinctive, recognizable interface** users associate specifically with Aleph.
 
+### 13. TextAnchor-first literary tools
+
+Aleph’s literary and structural tools (Inclusio, future chiasm/leitwort/refrain work, parallel links, allusion assistance) should follow a shared **TextAnchor-first** model:
+
+- **Anchored text** (words or phrases on the contour) is the **source of truth**.
+- **Derived Span**, structure lists, exports, and reports are **computed** from anchors — never edited as primary data.
+- A reusable **TextAnchor** object should represent anchored words/phrases.
+- A general **Relationship** model should represent literary connections between anchors. Inclusio is the first implementation, not a one-off model.
+
+Inclusio design detail: [INCLUSIO_DESIGN_PROPOSAL.md](./INCLUSIO_DESIGN_PROPOSAL.md) §8–9.
+
+User-facing inclusio terms: **Opening Anchor**, **Closing Anchor**, **Derived Span**, and **Relationship Basis**.
+
+**UI split:** Inclusio tab = create/edit active inclusio; Legend / Key = document-wide inclusio registry (§12 in [INCLUSIO_DESIGN_PROPOSAL.md](./INCLUSIO_DESIGN_PROPOSAL.md)).
+
 ### 11. Annotation Ribbon (Phase 1)
 
 **Scope:** Phase 1 visual refinement only. Do not implement during Phase 0. No functionality should change—only the presentation and organization of annotation controls should evolve toward the Ribbon model.
@@ -243,6 +258,7 @@ Before any new UI work, read **[ALEPH_UI_REDESIGN_NEXT.md](./ALEPH_UI_REDESIGN_N
 4. Preserve all annotation functionality; document remains the focus.
 5. Keep the current stable layout and dark mode until a redesign is explicitly requested.
 6. **July 2026 polish pass** (`styles/contour-polish-v1.css`): spacing/typography only — no shell, no sidebars, comments column collapses by default.
+7. **Inclusio anchor-first model** ([INCLUSIO_DESIGN_PROPOSAL.md](./INCLUSIO_DESIGN_PROPOSAL.md)): reusable TextAnchor + Relationship architecture, Opening/Closing Anchors, Derived Span, Relationship Basis — Phase A approved, implementation scope limited to Inclusios.
 
 ---
 

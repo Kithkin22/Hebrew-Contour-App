@@ -15,6 +15,8 @@
 <link rel="stylesheet" href="styles/app-toolbar-compact.css?v=1">
 <link rel="stylesheet" href="styles/dark-mode-pro.css?v=3">
 <link rel="stylesheet" href="styles/contour-polish-v1.css?v=3">
+<link rel="stylesheet" href="styles/inclusio-phase-a.css?v=1">
+<link rel="stylesheet" href="styles/project-header.css?v=1">
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
@@ -223,7 +225,7 @@
     <div id="legendTab" class="hidden">
     <div class="card" id="legendPanel" style="margin:0 0 12px 0;background:#fafafa">
       <strong>Export Legend / Key</strong>
-      <p class="muted">Create custom labels for the markings you use. These appear in the Word/PDF contour export.</p>
+      <p class="muted">Custom labels for markings used in Word/PDF export. Inclusios are listed separately below.</p>
       <div class="row" style="margin-bottom:8px">
         <button class="btn" id="addLegendEntry">Add Legend Entry</button>
         <button class="btn" id="detectLegendEntries">Detect Used Markings</button>
@@ -242,19 +244,15 @@
         <button type="button" class="btn small" id="textCleanupExitBtn">Exit</button>
       </span>
     </div>
-    <div class="card" id="inclusioPanel" style="margin:0 0 12px 0;background:#fbfcff;border-left:4px solid #315efb">
-      <strong>Inclusio / Structural Markers</strong>
-      <p class="muted" style="margin:6px 0">Use this to mark matching start/end phrases, like an inclusio. Select a word, set start, select the ending word, then set end.</p>
-      <div class="row">
-        <label class="small">Label <input id="inclusioLabel" value="Inclusio A" style="min-width:160px"></label>
-        <label class="small">Color <input id="inclusioColor" type="color" value="#315efb" style="width:48px;height:34px;padding:2px"></label>
-        <button class="btn primary" id="newInclusio">New Inclusio</button>
-        <button class="btn" id="setInclusioStart">Set Start</button>
-        <button class="btn" id="setInclusioEnd">Set End</button>
-        <button class="btn" id="applyInclusioBrackets">Apply/Refresh Brackets</button>
-        <button class="btn danger" id="clearInclusioMarkers">Clear Inclusio Markers</button>
+    <div class="card" id="inclusioPanel">
+      <strong>Inclusio</strong>
+      <p class="muted inclusio-panel-hint">Mark literary frame anchors on the Hebrew text. Set opening and closing anchors; derived span is calculated automatically. View all inclusios in Legend / Key below the editor.</p>
+      <div class="row inclusio-toolbar">
+        <button class="btn primary" id="newInclusio" type="button">New Inclusio</button>
+        <button class="btn danger" id="deleteActiveInclusio" type="button">Delete Active</button>
+        <button class="btn" id="clearInclusioMarkers" type="button">Clear All</button>
       </div>
-      <div id="inclusioManager" class="small" style="margin-top:8px"></div>
+      <div id="inclusioEditor" class="inclusio-editor small"></div>
     </div>
       <div class="toolbar-section" id="commentToolbar">
         <div class="row">
@@ -376,6 +374,17 @@
   </div>
 </div>
 
+<div class="modal" id="renameProjectModal" aria-hidden="true" role="dialog" aria-labelledby="renameProjectModalTitle">
+  <div class="panel help-panel">
+    <h3 id="renameProjectModalTitle">Rename project?</h3>
+    <p id="renameProjectConfirmText" class="muted"></p>
+    <div class="row">
+      <button type="button" class="btn" id="renameProjectCancel">Cancel</button>
+      <button type="button" class="btn primary" id="renameProjectConfirm">Confirm Rename</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="feedbackModal" aria-hidden="true" role="dialog" aria-labelledby="feedbackModalTitle">
   <div class="panel feedback-panel">
     <h3 id="feedbackModalTitle">Send feedback</h3>
@@ -418,7 +427,9 @@
 <script src="js/data/wlc-text.js"></script>
 <script src="js/app/core.js"></script>
 <script src="js/app/undo.js"></script>
+<script src="js/app/inclusios.js"></script>
 <script src="js/app/layout.js"></script>
+<script src="js/app/project-header.js"></script>
 <script src="js/app/file-menu.js"></script>
 <script src="js/app/arcs.js"></script>
 <script src="js/app/keyboard.js"></script>

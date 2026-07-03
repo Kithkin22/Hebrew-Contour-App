@@ -1,0 +1,118 @@
+/* Project header — name + save status in toolbar */
+
+.project-header-block {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 10px;
+  gap: 1px;
+}
+
+.project-header-title-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.header-project-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--hc-text, #1c1c1e);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: min(420px, 42vw);
+  line-height: 1.2;
+  cursor: default;
+  user-select: none;
+}
+
+.project-rename-btn {
+  min-height: 22px !important;
+  padding: 2px 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.project-rename-btn:hover {
+  opacity: 1;
+}
+
+.header-save-status {
+  font-size: 11px;
+  color: var(--hc-text-muted, #64748b);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.header-save-status[data-mode='saving'] {
+  color: var(--hc-blue, #2563eb);
+  font-weight: 600;
+}
+
+.header-save-status[data-mode='manual-saved'] {
+  color: var(--hc-green, #15803d);
+  font-weight: 600;
+}
+
+/* Bottom status bar */
+.app-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  min-height: 26px;
+  font-size: 11px;
+  color: var(--hc-text-muted, #64748b);
+  background: var(--hc-surface-2, #f8fafc);
+  border: 1px solid var(--hc-border, #e5e7eb);
+  border-radius: var(--hc-radius-md, 8px);
+}
+
+.app-status-bar-project {
+  font-weight: 600;
+  color: var(--hc-text-secondary, #475569);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40%;
+}
+
+.app-status-bar-spacer {
+  flex: 1;
+}
+
+.app-status-bar-save {
+  white-space: nowrap;
+}
+
+body.dark-mode .header-project-name {
+  color: var(--hc-text, #f5f5f7);
+}
+
+body.dark-mode .app-status-bar {
+  background: #0a0a0a;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .app-status-bar-project {
+  color: #d4d4d8;
+}
+
+@media (max-width: 900px) {
+  .header-project-name {
+    max-width: min(240px, 36vw);
+    font-size: 14px;
+  }
+  .app-status-bar-project {
+    display: none;
+  }
+}
