@@ -121,17 +121,35 @@ body.dark-mode .hc-secondary-ref {
   font-weight: 500;
 }
 
-body.dark-mode #editor .word.selected {
-  background: #262626 !important;
-  color: var(--dm-hebrew) !important;
-  outline-color: rgba(255, 255, 255, 0.45) !important;
-  border-color: rgba(255, 255, 255, 0.35) !important;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+body.dark-mode #editor .word.selected,
+body.dark-mode .word.selected {
+  background: #ff9900 !important;
+  color: #000000 !important;
+  border: 2px solid #cc6600 !important;
+  outline-color: #cc6600 !important;
+  box-shadow: 0 0 4px rgba(255, 153, 0, 0.55) !important;
+  font-weight: normal !important;
 }
 
-body.dark-mode .word.selected {
-  background: #262626 !important;
-  outline-color: rgba(255, 255, 255, 0.45) !important;
+body.dark-mode #editor .word.sameword,
+body.dark-mode .word.sameword {
+  background: #ffff00 !important;
+  color: #000000 !important;
+  border: 2px solid #d4aa00 !important;
+  box-shadow: 0 0 4px rgba(255, 255, 0, 0.35) !important;
+}
+
+body.dark-mode #editor .word.sameword.selected,
+body.dark-mode .word.sameword.selected {
+  background: #ff9900 !important;
+  color: #000000 !important;
+  border-color: #cc6600 !important;
+}
+
+/* Highlight fills need dark Hebrew text on bright backgrounds */
+body.dark-mode #editor .word[style*="background-color"],
+body.dark-mode .parallel-verse-body .word[style*="background-color"] {
+  color: #000000 !important;
 }
 
 body.dark-mode .clause.selected {

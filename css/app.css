@@ -784,8 +784,10 @@ body.dark-mode .word{
   color:var(--ui-text);
 }
 body.dark-mode .word.selected{
-  background:#262626!important;
-  outline-color:rgba(255,255,255,.45)!important;
+  background:#ff9900!important;
+  color:#000!important;
+  outline-color:#cc6600!important;
+  border-color:#cc6600!important;
 }
 body.dark-mode .kbd{
   background:#243244!important;
@@ -825,14 +827,35 @@ body.dark-mode #editor .verse,
 body.dark-mode #editor .clause{
   color:#fff !important;
 }
+body.dark-mode #editor .word.sameword,
+body.dark-mode .word.sameword{
+  background:#ffff00 !important;
+  color:#000 !important;
+  border-color:#d4aa00 !important;
+}
+
+body.dark-mode #editor .word.sameword.selected,
+body.dark-mode .word.sameword.selected{
+  background:#ff9900 !important;
+  color:#000 !important;
+  border-color:#cc6600 !important;
+}
+
+/* Highlight fills (yellow/green/blue/pink) need dark Hebrew text in dark mode */
+body.dark-mode #editor .word[style*="background-color"],
+body.dark-mode .parallel-verse-body .word[style*="background-color"]{
+  color:#000 !important;
+}
 body.dark-mode #editor .muted,
 body.dark-mode #editor .ref{
   color:#8e8e93 !important;
 }
 body.dark-mode #editor .word.selected{
-  background:#262626 !important;
-  color:#fff !important;
-  outline-color:rgba(255,255,255,.45) !important;
+  background:#ff9900 !important;
+  color:#000 !important;
+  outline-color:#cc6600 !important;
+  border-color:#cc6600 !important;
+  box-shadow:0 0 4px rgba(255,153,0,.55) !important;
 }
 body.dark-mode .comment-marker{
   color:#ff6b6b !important;

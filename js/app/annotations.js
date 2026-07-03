@@ -82,7 +82,7 @@
    if(document.getElementById('persistentShowComments')) return;
    const btn=document.createElement('button');
    btn.id='persistentShowComments';
-   btn.textContent='Show Comments';
+   btn.textContent='💬 Show Comments';
    document.body.appendChild(btn);
 
    function sync(){
