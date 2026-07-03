@@ -141,6 +141,7 @@ function remapInclusiosInPane(panest, fixFn) {
 
 function deriveInclusioSpan(inc) {
   const item = migrateInclusioItem(inc);
+  if (!item) return '—';
   const open = anchorRangeOrdered(item.openingAnchor);
   const close = anchorRangeOrdered(item.closingAnchor);
   if (!open || !close) return '—';
@@ -275,13 +276,16 @@ function setInclusioAnchor(side) {
     if (o && c) item.evidence = o === c ? o : `${o} … ${c}`;
   }
   inclusioPhraseDraft = null;
-  syncInclusioWordMarkers();
+  syncStateBundle();
+  if (typeof syncAllPaneInclusioWordMarkers === 'function') syncAllPaneInclusioWordMarkers();
+  else syncInclusioWordMarkers();
   updateInclusioPhraseStatus();
   render();
 }
 
-function clearInclusioWordMarkers() {
-  state.verses.forEach(v => v.clauses.forEach(c => c.words.forEach(w => {
+function clearInclusioWordMarkersOnVerses(verses) {
+  if (!Array.isArray(verses)) return;
+  verses.forEach(v => v.clauses.forEach(c => c.words.forEach(w => {
     if (w.inclusioId) {
       delete w.inclusioId;
       delete w.inclusioRole;
@@ -298,17 +302,20 @@ function clearInclusioWordMarkers() {
   })));
 }
 
-function syncInclusioWordMarkers() {
-  ensureInclusios();
-  migrateAllInclusios();
-  clearInclusioWordMarkers();
-  state.inclusios.forEach(item => {
+function syncInclusioWordMarkers(paneState) {
+  const st = paneState || state;
+  if (!st || !Array.isArray(st.verses)) return;
+  if (!Array.isArray(st.inclusios)) st.inclusios = [];
+  st.inclusios = st.inclusios.map(migrateInclusioItem).filter(Boolean);
+  clearInclusioWordMarkersOnVerses(st.verses);
+  const verses = st.verses;
+  st.inclusios.forEach(item => {
     const color = item.color || '#315efb';
     const applyAnchor = (anchor, side) => {
       const ord = anchorRangeOrdered(anchor);
       if (!ord) return;
       let started = false;
-      state.verses.forEach((v, vi) => v.clauses.forEach((c, ci) => c.words.forEach((w, wi) => {
+      verses.forEach((v, vi) => v.clauses.forEach((c, ci) => c.words.forEach((w, wi) => {
         const l = { v: vi, c: ci, w: wi };
         if (!locInRange(l, ord.start, ord.end) || isMaqafConnector(w)) return;
         w.inclusioId = item.id;
@@ -336,6 +343,22 @@ function syncInclusioWordMarkers() {
     if (item.closingAnchor) applyAnchor(item.closingAnchor, 'closing');
   });
 }
+
+function clearInclusioWordMarkers() {
+  clearInclusioWordMarkersOnVerses(state.verses);
+}
+
+function syncAllPaneInclusioWordMarkers() {
+  ensureStateBundle();
+  if (typeof isParallelActive === 'function' && isParallelActive()) {
+    stateBundle.panes.forEach(p => syncInclusioWordMarkers(p));
+  } else {
+    ensureInclusios();
+    migrateAllInclusios();
+    syncInclusioWordMarkers(state);
+  }
+}
+if (typeof window !== 'undefined') window.syncAllPaneInclusioWordMarkers = syncAllPaneInclusioWordMarkers;
 
 function clearInclusioMarkers() {
   markUndo();
