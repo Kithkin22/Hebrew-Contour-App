@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Hebrew/Greek Contour Table App</title>
+<title>Aleph Contour</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,6 +13,10 @@
 <link rel="stylesheet" href="styles/layout-stable-fixes.css?v=31">
 <link rel="stylesheet" href="styles/ribbon-compact.css?v=30">
 <link rel="stylesheet" href="styles/app-toolbar-compact.css?v=1">
+<link rel="stylesheet" href="styles/layout-modern.css?v=1">
+<link rel="stylesheet" href="styles/text-first.css?v=1">
+<link rel="stylesheet" href="styles/aleph-tokens.css?v=2">
+<link rel="stylesheet" href="styles/dark-mode-pro.css?v=1">
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
@@ -26,7 +30,7 @@
 </div>
 <script src="gate.js"></script>
 <div id="appRoot" class="hidden">
-<header><h1>Hebrew/Greek Contour Table App</h1></header>
+<header><h1>Aleph Contour</h1></header>
 <div class="wrap">
   <div id="topMenuBackdrop" aria-hidden="true"></div>
   <div class="top-stack">
@@ -285,7 +289,7 @@
       <div class="row" style="margin-bottom:10px">
         <button class="btn good" id="contourDocxExport">Export Contour to Word</button>
         <button class="btn good" id="contourPdfExport">Export Contour to PDF</button>
-        <button class="btn" id="showCommentsPanel">💬 Show Comments</button>
+        <button class="btn" id="showCommentsPanel">Show Comments</button>
       </div>
       <div class="contour-with-comments">
         <div id="editorWrap" class="editor-arc-wrap"><svg id="arcSvg" aria-hidden="true"></svg><div id="editor"></div></div>
@@ -399,7 +403,7 @@
 
 
 <div id="commentPopover" class="comment-popover">
-  <button class="comment-float-icon" id="commentActionIcon" title="Comment actions">💬</button>
+  <button class="comment-float-icon" id="commentActionIcon" title="Comment actions" aria-label="Comment actions">+</button>
   <div class="comment-menu">
     <button class="btn" id="popoverSetCommentStart">Set Comment Start</button>
     <button class="btn primary" id="popoverAddComment">Add New Comment</button>
@@ -425,6 +429,9 @@
 <script src="js/app/inspector.js"></script>
 <script src="js/app/inspector-morph.js"></script>
 <script src="js/app/ui-init.js"></script>
+<script src="js/hc-nav-menus.js"></script>
+<script src="js/aleph-menus.js"></script>
+<script src="js/ui-shell.js" defer></script>
 <script src="sefaria-bdb.js"></script>
 <script src="greek-lexicon.js"></script>
 </body>

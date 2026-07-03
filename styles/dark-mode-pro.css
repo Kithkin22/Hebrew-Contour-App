@@ -1,0 +1,524 @@
+/**
+ * Dark Mode Pro — true-black, high-contrast polish
+ * Visual-only; no layout or workflow changes.
+ */
+
+/* ── Foundation tokens (legacy bridge) ── */
+body.dark-mode {
+  --ui-bg: #000000;
+  --ui-surface: #0a0a0a;
+  --ui-surface-2: #121212;
+  --ui-text: #f5f5f7;
+  --ui-muted: #a1a1a6;
+  --ui-line: rgba(255, 255, 255, 0.1);
+  --ui-blue: #f5f5f7;
+  --ui-shadow: 0 4px 24px rgba(0, 0, 0, 0.65);
+
+  --dm-canvas: #000000;
+  --dm-canvas-edge: #050505;
+  --dm-panel: #0a0a0a;
+  --dm-panel-raised: #121212;
+  --dm-btn: #1c1c1e;
+  --dm-btn-hover: #2c2c2e;
+  --dm-btn-active: #3a3a3c;
+  --dm-hebrew: #ffffff;
+  --dm-ref: #8e8e93;
+  --dm-label: #a1a1a6;
+
+  background: var(--dm-canvas) !important;
+  color: var(--ui-text) !important;
+}
+
+/* ── Shell chrome — no navy ── */
+body.dark-mode .hc-top-nav {
+  background: #0a0a0a !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none !important;
+}
+
+body.dark-mode .hc-secondary-toolbar,
+body.dark-mode .hc-workspace-header,
+body.dark-mode .hc-status-bar {
+  background: #050505 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--ui-text) !important;
+}
+
+body.dark-mode .hc-sidebar {
+  background: #050505 !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+body.dark-mode .hc-right-panel,
+body.dark-mode .hc-panel-tab-content,
+body.dark-mode .hc-comments-dock .comments-panel {
+  background: #0a0a0a !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode .hc-workspace,
+body.dark-mode .hc-workspace-content,
+body.dark-mode .card.main-workspace {
+  background: #000000 !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode #appRoot > header {
+  background: #0a0a0a !important;
+}
+
+/* ── Contour canvas — floating paper ── */
+body.dark-mode #editorWrap {
+  background: var(--dm-canvas-edge) !important;
+  color: var(--dm-hebrew) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 12px 40px rgba(0, 0, 0, 0.75) !important;
+}
+
+body.dark-mode #editor {
+  background: var(--dm-canvas) !important;
+  color: var(--dm-hebrew) !important;
+}
+
+body.dark-mode .hc-shell-ready .contour-with-comments > #editorWrap {
+  background: var(--dm-canvas-edge) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 12px 40px rgba(0, 0, 0, 0.75) !important;
+}
+
+body.dark-mode .parallel-verse-body,
+body.dark-mode .parallel-scroll-area {
+  background: var(--dm-canvas) !important;
+}
+
+/* ── Hebrew text — brightest element ── */
+body.dark-mode #editor .word,
+body.dark-mode #editor .clause,
+body.dark-mode #editor .verse,
+body.dark-mode.lang-hebrew #editor .word,
+body.dark-mode.lang-hebrew #editor,
+body.dark-mode.lang-greek #editor .word,
+body.dark-mode .parallel-verse-body .word {
+  color: var(--dm-hebrew) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body.dark-mode #editor .ref,
+body.dark-mode #editor .verse-ref,
+body.dark-mode #editor .muted,
+body.dark-mode #editor .ref.muted,
+body.dark-mode .parallel-verse-head,
+body.dark-mode .hc-secondary-ref {
+  color: var(--dm-ref) !important;
+  font-weight: 500;
+}
+
+body.dark-mode #editor .word.selected {
+  background: #262626 !important;
+  color: var(--dm-hebrew) !important;
+  outline-color: rgba(255, 255, 255, 0.45) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+
+body.dark-mode .word.selected {
+  background: #262626 !important;
+  outline-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+body.dark-mode .clause.selected {
+  outline-color: rgba(255, 255, 255, 0.35) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* ── Document toolbar ── */
+body.dark-mode .hc-doc-toolbar {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode .hc-toolbar-btn {
+  color: #f5f5f7 !important;
+}
+
+body.dark-mode .hc-toolbar-btn:hover {
+  background: var(--dm-btn-hover) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+body.dark-mode .hc-toolbar-divider {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ── Annotation tabs (Color / Format / …) ── */
+body.dark-mode #annotationTabsShell {
+  background: #050505 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode #annotationTabsRow {
+  gap: 4px !important;
+  padding: 0 4px !important;
+}
+
+body.dark-mode .annotation-tab-btn {
+  color: var(--dm-ref) !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  letter-spacing: 0.01em;
+  padding: 8px 6px 6px !important;
+  border-bottom-width: 2px !important;
+  border-radius: 4px 4px 0 0;
+  transition: color 150ms ease, background 150ms ease, border-color 150ms ease;
+}
+
+body.dark-mode .annotation-tab-btn:hover {
+  color: #e5e5ea !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+body.dark-mode .annotation-tab-btn.active {
+  color: #ffffff !important;
+  border-bottom-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+body.dark-mode .annotation-tab-panel {
+  padding: 10px 12px !important;
+}
+
+body.dark-mode .annotation-tab-panel .toolbar-label,
+body.dark-mode .annotation-tab-panel .small {
+  color: var(--dm-label) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+body.dark-mode #annotationShortcutsBar {
+  background: #0a0a0a !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode .shortcut-bar-label,
+body.dark-mode .shortcut-inline-text {
+  color: var(--dm-label) !important;
+  font-size: 11px !important;
+}
+
+/* ── Buttons — charcoal, tactile ── */
+body.dark-mode .btn {
+  background: var(--dm-btn) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #f5f5f7 !important;
+  font-weight: 600 !important;
+  transition: background 150ms ease, border-color 150ms ease, transform 80ms ease;
+}
+
+body.dark-mode .btn:hover {
+  background: var(--dm-btn-hover) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+body.dark-mode .btn:active {
+  background: var(--dm-btn-active) !important;
+  transform: translateY(1px);
+}
+
+body.dark-mode .btn.primary,
+body.dark-mode .btn.good {
+  background: #f5f5f7 !important;
+  color: #000000 !important;
+  border-color: #f5f5f7 !important;
+}
+
+body.dark-mode .btn.primary:hover,
+body.dark-mode .btn.good:hover {
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+body.dark-mode .btn.danger {
+  background: #2a1515 !important;
+  border-color: rgba(255, 100, 100, 0.35) !important;
+  color: #ffb4b4 !important;
+}
+
+body.dark-mode .btn.danger:hover {
+  background: #3a1a1a !important;
+  border-color: rgba(255, 120, 120, 0.45) !important;
+}
+
+body.dark-mode .hc-top-nav .hc-nav-btn,
+body.dark-mode #themeToggleBtn,
+body.dark-mode #inspectorToggleBtn,
+body.dark-mode #manualInspectorBtn {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f5f5f7 !important;
+}
+
+body.dark-mode .hc-top-nav .hc-nav-btn:hover,
+body.dark-mode #themeToggleBtn:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ── Color / highlight controls ── */
+body.dark-mode #colorToolbar .btn,
+body.dark-mode #highlightToolbar .btn {
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  min-height: 30px !important;
+}
+
+body.dark-mode #colorToolbar .btn:hover,
+body.dark-mode #highlightToolbar .btn:hover {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode input[type="color"] {
+  background: #1c1c1e !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 6px !important;
+}
+
+body.dark-mode #applyCustomColor,
+body.dark-mode #applyCustomHighlight,
+body.dark-mode #clearTextColor,
+body.dark-mode #clearHighlight {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* ── Segmented view toggle ── */
+body.dark-mode .hc-segmented {
+  background: #121212 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode .hc-segmented-btn {
+  color: var(--dm-ref) !important;
+}
+
+body.dark-mode .hc-segmented-btn:hover {
+  color: #e5e5ea !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+body.dark-mode .hc-segmented-btn.active {
+  background: #1c1c1e !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ── Inspector ── */
+body.dark-mode #wordInspector,
+body.dark-mode #wordInspector.hc-docked {
+  background: #0a0a0a !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+  color: #f5f5f7 !important;
+}
+
+body.dark-mode #wordInspector .wi-title {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 4px !important;
+}
+
+body.dark-mode #wordInspector .wi-row {
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+  padding: 8px 0 !important;
+}
+
+body.dark-mode #wordInspector .wi-label {
+  color: var(--dm-label) !important;
+  font-weight: 600 !important;
+  font-size: 11px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+body.dark-mode #wordInspector .wi-value,
+body.dark-mode #wordInspector .wi-hebrew,
+body.dark-mode #wordInspector .wi-greek,
+body.dark-mode #wordInspector #wiWord,
+body.dark-mode #wordInspector #wiRoot,
+body.dark-mode #wordInspector #wiParsing {
+  color: #ffffff !important;
+}
+
+body.dark-mode .hc-inspector-placeholder {
+  color: var(--dm-label) !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+}
+
+body.dark-mode .hc-panel-tab {
+  color: var(--dm-ref) !important;
+  border-bottom-color: transparent !important;
+}
+
+body.dark-mode .hc-panel-tab:hover {
+  color: #e5e5ea !important;
+}
+
+body.dark-mode .hc-panel-tab.active {
+  color: #ffffff !important;
+  border-bottom-color: #ffffff !important;
+}
+
+/* ── Sidebar & panels ── */
+body.dark-mode .hc-sidebar-section-title {
+  color: var(--dm-label) !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+body.dark-mode .hc-sidebar-action {
+  color: #e5e5ea !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode .hc-sidebar-action:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+body.dark-mode .hc-verse-nav-item {
+  color: #c7c7cc !important;
+}
+
+body.dark-mode .hc-verse-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .hc-verse-nav-item.active {
+  background: #1c1c1e !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .hc-empty-placeholder {
+  color: var(--dm-label) !important;
+}
+
+body.dark-mode .muted,
+body.dark-mode .small {
+  color: var(--dm-label) !important;
+}
+
+body.dark-mode .card,
+body.dark-mode .comments-panel,
+body.dark-mode .comment-card,
+body.dark-mode #tableWrap,
+body.dark-mode #legendPanel {
+  background: var(--dm-panel) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+/* ── Table view ── */
+body.dark-mode #annTable th,
+body.dark-mode table th {
+  background: #121212 !important;
+  color: #e5e5ea !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body.dark-mode #annTable td,
+body.dark-mode table td {
+  background: #0a0a0a !important;
+  color: #f5f5f7 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode.lang-hebrew #annTable .heb,
+body.dark-mode.lang-hebrew #annTable [dir="rtl"] {
+  color: #ffffff !important;
+}
+
+body.dark-mode #annTable td[contenteditable] {
+  background: #121212 !important;
+}
+
+body.dark-mode #annTable td:focus,
+body.dark-mode #annTable td[contenteditable]:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.35) !important;
+  background: #1a1a1a !important;
+}
+
+/* ── Parallel passages — remove blue tint ── */
+body.dark-mode .parallel-pane-ref-input,
+body.dark-mode .parallel-pane-load,
+body.dark-mode .parallel-row-btn,
+body.dark-mode .parallel-nudge-btn {
+  background: #1c1c1e !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f5f5f7 !important;
+}
+
+body.dark-mode .parallel-align-status {
+  background: #1a1a12 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #e5e5ea !important;
+}
+
+/* ── Menus & modals ── */
+body.dark-mode .file-menu-dropdown,
+body.dark-mode .hc-aleph-flyout,
+body.dark-mode .hc-flyout-menu,
+body.dark-mode .top-menu-panel,
+body.dark-mode .modal .panel {
+  background: #121212 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #f5f5f7 !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark-mode .file-menu-item:hover,
+body.dark-mode .hc-aleph-flyout-item:hover,
+body.dark-mode .hc-flyout-menu-item:hover {
+  background: #1c1c1e !important;
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background: #1c1c1e !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f5f5f7 !important;
+}
+
+body.dark-mode input:focus,
+body.dark-mode select:focus,
+body.dark-mode textarea:focus {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark-mode .keycap,
+body.dark-mode .kbd {
+  background: #1c1c1e !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #e5e5ea !important;
+}
+
+/* ── Status hints (bracket / arc) ── */
+body.dark-mode #bracketStatus,
+body.dark-mode #arcStatus,
+body.dark-mode .comment-start-status {
+  color: var(--dm-label) !important;
+  font-size: 11px !important;
+}

@@ -341,7 +341,7 @@ body.dark-mode {
 }
 
 body.dark-mode #appRoot > header {
-  background: linear-gradient(180deg, #070d18 0%, var(--hc-navy-deep) 100%) !important;
+  background: #0a0a0a !important;
 }
 
 body.dark-mode .top-stack,
@@ -359,7 +359,8 @@ body.dark-mode .main-workspace > .tabs.row {
 }
 
 body.dark-mode .main-workspace > .tabs .btn.active {
-  background: var(--hc-navy-soft) !important;
+  background: #1c1c1e !important;
+  color: #ffffff !important;
 }
 
 body.dark-mode #editorWrap,

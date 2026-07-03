@@ -69,9 +69,18 @@
     setupVerseNavigation(sidebar);
     setupParallelInSecondary(secondary);
     relocateMorphButtons(secondary);
+    setupDocumentToolbar();
     syncProjectName();
     syncPanelVisibility();
     hookRenderForVerseNav();
+    hookRenderForSidebarNotes();
+
+    if (typeof window.setupHcNavMenus === 'function' && topNav._navButtons) {
+      window.setupHcNavMenus(topNav._navButtons);
+    }
+    if (typeof window.reapplyHcNavMenuPatches === 'function') {
+      window.reapplyHcNavMenuPatches();
+    }
 
   }
 
@@ -83,10 +92,33 @@
 
     var brand = el('div', 'hc-top-nav-brand');
     brand.innerHTML =
-      '<span class="hc-top-nav-logo">HEBREW CONTOUR</span>' +
-      '<span class="hc-top-nav-tagline">See the Shape. See the Scripture.</span>';
+      '<span class="hc-top-nav-logo">ALEPH CONTOUR</span>' +
+      '<span class="hc-top-nav-tagline">Contour</span>';
+
+    var menubar = el('div', 'hc-aleph-menubar');
+    menubar.setAttribute('role', 'menubar');
+
+    var projectBtn = el('button', 'hc-nav-menu-btn hc-aleph-menu-btn');
+    projectBtn.type = 'button';
+    projectBtn.textContent = 'Project';
+    projectBtn.dataset.hcMenu = 'file';
+    projectBtn.setAttribute('role', 'menuitem');
+    menubar.appendChild(projectBtn);
+
+    if (typeof window.setupAlephMenus === 'function') {
+      window.setupAlephMenus(menubar);
+    }
+
+    var exportBtn = el('button', 'hc-nav-menu-btn hc-aleph-menu-btn');
+    exportBtn.type = 'button';
+    exportBtn.textContent = 'Export';
+    exportBtn.dataset.hcMenu = 'export';
+    exportBtn.setAttribute('role', 'menuitem');
+    menubar.appendChild(exportBtn);
 
     var left = el('div', 'hc-top-nav-left');
+    left.appendChild(menubar);
+
     var center = el('div', 'hc-top-nav-center');
     var projectNameEl = el('span', 'hc-top-nav-project-name');
     projectNameEl.id = 'hcTopNavProjectName';
@@ -96,33 +128,7 @@
 
     var right = el('div', 'hc-top-nav-right');
 
-    /* Nav triggers that proxy to existing top-stack menus */
-    var fileCard = $('.file-menu-card') || $('[data-menu="project"]');
-    var genCard = $('[data-menu="generate"]');
-    var pasteCard = $('[data-menu="paste"]');
-
-    if (fileCard) {
-      left.appendChild(makeNavProxy('Project', function () {
-        if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(this);
-      }));
-    }
-    if (genCard) {
-      left.appendChild(makeNavProxy('Generate', function () { openTopMenu(genCard); }));
-    }
-    if (pasteCard) {
-      left.appendChild(makeNavProxy('Paste Text', function () { openTopMenu(pasteCard); }));
-    }
-    left.appendChild(makeNavProxy('Export', function () {
-      if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(this);
-      var exportItem = document.querySelector('.file-menu-has-submenu .file-menu-item[aria-haspopup="true"]');
-      if (exportItem && exportItem.textContent.indexOf('Export') !== -1) {
-        exportItem.parentElement.classList.add('submenu-open');
-        exportItem.focus();
-      }
-    }));
-
-    /* Move existing injected buttons to right nav */
-    ['themeToggleBtn', 'inspectorToggleBtn', 'manualInspectorBtn'].forEach(function (id) {
+    ['inspectorToggleBtn', 'themeToggleBtn', 'manualInspectorBtn'].forEach(function (id) {
       var btn = document.getElementById(id);
       if (btn) {
         btn.classList.add('hc-nav-btn');
@@ -130,27 +136,18 @@
       }
     });
 
-    var helpBtn = $('#helpBtn');
-    if (helpBtn) {
-      helpBtn.classList.add('hc-nav-btn');
-      right.appendChild(helpBtn);
-    }
-
     var adminLink = $('#adminLink');
-    if (adminLink) right.appendChild(adminLink);
-
-  var settingsBtn = makeNavProxy('Settings', function () {
-      if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(this);
-      var settingsItem = $('#projectSettingsSubmenu');
-      if (settingsItem) settingsItem.closest('.file-menu-has-submenu')?.classList.add('submenu-open');
-    });
-    settingsBtn.title = 'Project settings';
-    right.appendChild(settingsBtn);
+    if (adminLink) {
+      adminLink.classList.add('hc-nav-btn');
+      right.appendChild(adminLink);
+    }
 
     nav.appendChild(brand);
     nav.appendChild(left);
     nav.appendChild(center);
     nav.appendChild(right);
+
+    nav._navButtons = { file: projectBtn, export: exportBtn };
     return nav;
   }
 
@@ -177,68 +174,108 @@
     }
   }
 
-  /* ── Secondary Toolbar ── */
+  /* ── Secondary Toolbar — workspace context only ── */
   function buildSecondaryToolbar(wrap) {
     var bar = el('div', 'hc-secondary-toolbar');
     bar.setAttribute('role', 'toolbar');
-    bar.setAttribute('aria-label', 'Workspace tools');
+    bar.setAttribute('aria-label', 'Document context');
 
     var left = el('div', 'hc-secondary-toolbar-group');
     var right = el('div', 'hc-secondary-toolbar-group hc-secondary-right');
 
-    var fileCard = $('.file-menu-card');
-    if (fileCard) {
-      var fileTrigger = fileCard.querySelector('.save-tools-title, .menu-trigger');
-      if (fileTrigger) {
-        var fileBtn = el('button', 'btn hc-toolbar-btn');
-        fileBtn.type = 'button';
-        fileBtn.textContent = 'File';
-        fileBtn.addEventListener('click', function () {
-          if (typeof window.openProjectFileMenu === 'function') window.openProjectFileMenu(fileBtn);
-        });
-        left.appendChild(fileBtn);
-      }
-    }
-
-    var genCard = $('[data-menu="generate"]');
-    if (genCard) {
-      var genBtn = el('button', 'btn hc-toolbar-btn');
-      genBtn.type = 'button';
-      genBtn.textContent = 'Generate Text';
-      genBtn.addEventListener('click', function () { openTopMenu(genCard); });
-      left.appendChild(genBtn);
-    }
-
-    var pasteCard = $('[data-menu="paste"]');
-    if (pasteCard) {
-      var pasteBtn = el('button', 'btn hc-toolbar-btn');
-      pasteBtn.type = 'button';
-      pasteBtn.textContent = 'Paste Text';
-      pasteBtn.addEventListener('click', function () { openTopMenu(pasteCard); });
-      left.appendChild(pasteBtn);
-    }
-
-    left.appendChild(el('span', 'hc-secondary-divider'));
-
-    /* Morph buttons get relocated here when injected */
     var morphSlot = el('div', 'hc-morph-slot');
     morphSlot.id = 'hcMorphSlot';
     left.appendChild(morphSlot);
 
-    /* Parallel controls slot */
     var parallelSlot = el('div', 'hc-parallel-controls');
     parallelSlot.id = 'hcParallelSlot';
     right.appendChild(parallelSlot);
 
-    /* Reference display from passage */
     var refDisplay = el('span', 'hc-secondary-ref muted small');
     refDisplay.id = 'hcRefDisplay';
-    refDisplay.textContent = '';
     right.appendChild(refDisplay);
 
     bar.appendChild(left);
     bar.appendChild(right);
     return bar;
+  }
+
+  function setupDocumentToolbar() {
+    function tryBuild() {
+      var header = $('.hc-workspace-header');
+      if (!header) return;
+
+      var toolbar = $('#hcDocToolbar');
+      if (!toolbar) {
+        toolbar = el('div', 'hc-doc-toolbar');
+        toolbar.id = 'hcDocToolbar';
+        toolbar.setAttribute('role', 'toolbar');
+        toolbar.setAttribute('aria-label', 'Document tools');
+
+        var undoGroup = el('div', 'hc-toolbar-group');
+        var undoBtn = el('button', 'hc-toolbar-btn hc-ghost-btn');
+        undoBtn.type = 'button';
+        undoBtn.title = 'Undo (⌘Z)';
+        undoBtn.innerHTML = '<span class="hc-toolbar-icon" aria-hidden="true">↶</span><span class="hc-toolbar-text">Undo</span>';
+        undoBtn.addEventListener('click', function () {
+          if (typeof window.undoLastChange === 'function') window.undoLastChange();
+        });
+        undoGroup.appendChild(undoBtn);
+
+        var formatGroup = el('div', 'hc-toolbar-group');
+        [
+          { id: 'toggleBold', label: 'B', title: 'Bold (⌘B)' },
+          { id: 'toggleItalic', label: 'I', title: 'Italic (⌘I)' },
+          { id: 'toggleUnderline', label: 'U', title: 'Underline (⌘U)' }
+        ].forEach(function (def) {
+          var src = document.getElementById(def.id);
+          if (!src) return;
+          var proxy = el('button', 'hc-toolbar-btn hc-ghost-btn hc-format-btn');
+          proxy.type = 'button';
+          proxy.title = def.title;
+          proxy.innerHTML = '<span class="hc-toolbar-icon">' + def.label + '</span>';
+          proxy.addEventListener('click', function () { src.click(); });
+          formatGroup.appendChild(proxy);
+        });
+
+        var commentsGroup = el('div', 'hc-toolbar-group');
+        var commentsBtn = el('button', 'hc-toolbar-btn hc-ghost-btn');
+        commentsBtn.type = 'button';
+        commentsBtn.title = 'Show comments';
+        commentsBtn.innerHTML = '<span class="hc-toolbar-icon" aria-hidden="true">◇</span><span class="hc-toolbar-text">Comments</span>';
+        commentsBtn.addEventListener('click', function () {
+          var btn = document.getElementById('showCommentsPanel');
+          if (btn) btn.click();
+          var tab = $('.hc-panel-tab[data-panel="comments"]');
+          if (tab) tab.click();
+        });
+        commentsGroup.appendChild(commentsBtn);
+
+        var toolsSlot = el('div', 'hc-toolbar-tools');
+        toolsSlot.id = 'hcAnnotationToolsSlot';
+
+        toolbar.appendChild(undoGroup);
+        toolbar.appendChild(el('div', 'hc-toolbar-divider'));
+        toolbar.appendChild(formatGroup);
+        toolbar.appendChild(el('div', 'hc-toolbar-divider'));
+        toolbar.appendChild(commentsGroup);
+        toolbar.appendChild(toolsSlot);
+        header.appendChild(toolbar);
+      }
+
+      var annShell = $('#annotationTabsShell');
+      var slot = $('#hcAnnotationToolsSlot');
+      if (annShell && slot && annShell.parentNode !== slot) {
+        slot.appendChild(annShell);
+      }
+
+      var viewHeader = $('.workspace-view-header');
+      if (viewHeader) viewHeader.classList.add('hc-legacy-hidden');
+    }
+
+    tryBuild();
+    setTimeout(tryBuild, 600);
+    setTimeout(tryBuild, 2000);
   }
 
   function relocateMorphButtons(secondary) {
@@ -355,12 +392,50 @@
 
     /* Passage outline */
     var outlineSection = el('div', 'hc-sidebar-section');
-    outlineSection.innerHTML = '<div class="hc-sidebar-section-title">Passage Outline</div>';
+    outlineSection.innerHTML = '<div class="hc-sidebar-section-title">Outline</div>';
     var verseNav = el('nav', 'hc-verse-nav');
     verseNav.id = 'hcVerseNav';
     verseNav.setAttribute('aria-label', 'Verse navigation');
     outlineSection.appendChild(verseNav);
     scroll.appendChild(outlineSection);
+
+    /* Legend */
+    var legendSection = el('div', 'hc-sidebar-section');
+    legendSection.innerHTML = '<div class="hc-sidebar-section-title">Legend</div>';
+    var legendBtn = el('button', 'hc-sidebar-action');
+    legendBtn.type = 'button';
+    legendBtn.innerHTML = '<span>Show Legend / Key</span>';
+    legendBtn.addEventListener('click', function () {
+      var leg = document.getElementById('legendBelowEditor');
+      if (leg) {
+        leg.classList.remove('collapsed');
+        var head = document.getElementById('legendBelowHeader');
+        if (head) head.textContent = '▼ Legend / Key';
+        leg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
+    legendSection.appendChild(legendBtn);
+    var legendEmpty = el('div', 'hc-empty-placeholder');
+    legendEmpty.id = 'hcSidebarLegendHint';
+    legendEmpty.textContent = 'No legend entries yet.';
+    legendSection.appendChild(legendEmpty);
+    scroll.appendChild(legendSection);
+
+    /* Notes */
+    var notesSection = el('div', 'hc-sidebar-section');
+    notesSection.innerHTML = '<div class="hc-sidebar-section-title">Notes</div>';
+    var notesList = el('div', 'hc-sidebar-notes');
+    notesList.id = 'hcSidebarNotes';
+    notesSection.appendChild(notesList);
+    scroll.appendChild(notesSection);
+
+    /* Attachments placeholder */
+    var attachSection = el('div', 'hc-sidebar-section');
+    attachSection.innerHTML = '<div class="hc-sidebar-section-title">Attachments</div>';
+    var attachEmpty = el('div', 'hc-empty-placeholder');
+    attachEmpty.textContent = 'No attachments.';
+    attachSection.appendChild(attachEmpty);
+    scroll.appendChild(attachSection);
 
     sidebar.appendChild(scroll);
 
@@ -514,7 +589,7 @@
 
     var placeholder = el('div', 'hc-inspector-placeholder');
     placeholder.id = 'hcInspectorPlaceholder';
-    placeholder.textContent = 'Hover over a word in the contour editor to see word information.';
+    placeholder.textContent = 'Select a word to inspect its lemma, root, parsing, and notes.';
     dock.appendChild(placeholder);
 
     var inspectorWrap = el('div', 'hc-inspector-dock');
@@ -659,6 +734,64 @@
     });
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function hookRenderForSidebarNotes() {
+    function rebuildNotes() {
+      var box = $('#hcSidebarNotes');
+      if (!box) return;
+      var items = [];
+      try {
+        if (window.state && Array.isArray(window.state.verses)) {
+          window.state.verses.forEach(function (v, vi) {
+            v.clauses.forEach(function (c, ci) {
+              c.words.forEach(function (w, wi) {
+                if (w.note && String(w.note).trim()) {
+                  items.push({ ref: v.ref, text: w.text, note: w.note, vi: vi, ci: ci, wi: wi });
+                }
+              });
+            });
+          });
+        }
+      } catch (e) { /* ignore */ }
+
+      if (!items.length) {
+        box.innerHTML = '<div class="hc-empty-placeholder">No notes yet.</div>';
+        return;
+      }
+
+      box.innerHTML = '';
+      items.forEach(function (item) {
+        var btn = el('button', 'hc-sidebar-action');
+        btn.type = 'button';
+        btn.innerHTML = '<span><strong>' + item.text + '</strong> — ' + item.note.slice(0, 48) + (item.note.length > 48 ? '…' : '') + '</span>';
+        btn.addEventListener('click', function () {
+          if (typeof window.setWorkspaceTab === 'function') window.setWorkspaceTab('contour');
+          try {
+            window.state.selected = { v: item.vi, c: item.ci, w: item.wi };
+            if (typeof window.render === 'function') window.render();
+          } catch (e) { /* ignore */ }
+        });
+        box.appendChild(btn);
+      });
+    }
+
+    rebuildNotes();
+    window._hcRebuildSidebarNotes = rebuildNotes;
+
+    if (typeof window.render !== 'function') {
+      setTimeout(hookRenderForSidebarNotes, 500);
+      return;
+    }
+    var origRender = window.render;
+    if (!origRender._hcNotesHooked) {
+      window.render = function () {
+        var result = origRender.apply(this, arguments);
+        if (typeof window._hcRebuildSidebarNotes === 'function') window._hcRebuildSidebarNotes();
+        return result;
+      };
+      window.render._hcNotesHooked = true;
     }
   }
 
