@@ -55,8 +55,14 @@ function anchorDisplayLabel(anchor) {
   if (!anchor) return 'not set';
   const ord = anchorRangeOrdered(anchor);
   if (!ord) return 'not set';
-  const text = anchorTextFromLocRange(anchor.range ? anchor : { range: ord });
+  const startWord = state.verses[ord.start.v]?.clauses[ord.start.c]?.words[ord.start.w];
+  const endWord = state.verses[ord.end.v]?.clauses[ord.end.c]?.words[ord.end.w];
+  const text = anchor.normalizedText
+    || anchorTextFromLocRange(anchor.range ? anchor : { range: ord })
+    || (startWord && !isMaqafConnector(startWord) ? startWord.text : '')
+    || (endWord && !isMaqafConnector(endWord) ? endWord.text : '');
   const ref = state.verses[ord.start.v]?.ref || '';
+  if (!text) return ref ? `${ref}: (word)` : 'not set';
   if (ord.start.v === ord.end.v && ord.start.c === ord.end.c && ord.start.w === ord.end.w) {
     return ref ? `${ref}: ${text}` : text;
   }
@@ -181,17 +187,19 @@ function ensureInclusioFrameSvg(ed) {
 }
 
 function drawInclusioEnvelopeRail(svg, bounds, inc, level) {
-  const inset = 6 + (level || 0) * 5;
-  const strokeWidth = Math.max(1, 2.2 - (level || 0) * 0.35);
-  const opacity = Math.max(0.38, 0.82 - (level || 0) * 0.1);
+  const inset = 8 + (level || 0) * 6;
+  const strokeWidth = Math.max(1.5, 3 - (level || 0) * 0.45);
+  const opacity = Math.max(0.55, 1 - (level || 0) * 0.12);
   const color = inc.color || '#6B7280';
   const xL = Math.max(4, bounds.left - inset);
   const xR = Math.min(bounds.width - 4, bounds.right + inset);
-  const y1 = Math.max(0, bounds.top - 2);
-  const y2 = Math.min(bounds.height, bounds.bottom + 2);
+  const y1 = Math.max(0, bounds.top - 3);
+  const y2 = Math.min(bounds.height, bounds.bottom + 3);
+  const cap = 10 + (level || 0) * 2;
   const mkLine = (x1, y1v, x2, y2v) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('class', 'inclusio-frame-rail');
+    line.setAttribute('data-inc-id', inc.id || '');
     line.setAttribute('x1', String(x1));
     line.setAttribute('y1', String(y1v));
     line.setAttribute('x2', String(x2));
@@ -203,10 +211,10 @@ function drawInclusioEnvelopeRail(svg, bounds, inc, level) {
   };
   mkLine(xL, y1, xL, y2);
   mkLine(xR, y1, xR, y2);
-  mkLine(xL, y1, xL + 8, y1);
-  mkLine(xR - 8, y1, xR, y1);
-  mkLine(xL, y2, xL + 8, y2);
-  mkLine(xR - 8, y2, xR, y2);
+  mkLine(xL, y1, xL + cap, y1);
+  mkLine(xR - cap, y1, xR, y1);
+  mkLine(xL, y2, xL + cap, y2);
+  mkLine(xR - cap, y2, xR, y2);
 }
 
 function renderInclusioFrameOverlay(paneState, pane) {
@@ -246,11 +254,56 @@ function renderInclusioFrameOverlays() {
   } else {
     renderInclusioFrameOverlay(state, null);
   }
+  if (typeof updateInclusioWorkflowStatus === 'function') updateInclusioWorkflowStatus();
 }
+
+function scheduleInclusioFrameRedraw() {
+  if (window._inclusioFrameQueued) return;
+  window._inclusioFrameQueued = true;
+  requestAnimationFrame(() => {
+    window._inclusioFrameQueued = false;
+    if (typeof renderInclusioFrameOverlays === 'function') renderInclusioFrameOverlays();
+  });
+}
+window.scheduleInclusioFrameRedraw = scheduleInclusioFrameRedraw;
 if (typeof window !== 'undefined') {
   window.renderInclusioFrameOverlay = renderInclusioFrameOverlay;
   window.renderInclusioFrameOverlays = renderInclusioFrameOverlays;
 }
+
+function updateInclusioWorkflowStatus() {
+  const el = document.getElementById('inclusioWorkflowStatus');
+  if (!el) return;
+  ensureInclusios();
+  migrateAllInclusios();
+  const item = activeInclusio();
+  if (!item) {
+    el.textContent = 'No active inclusio. Click New Inclusio (or Set Opening Anchor to create one). Then select a Hebrew word.';
+    el.classList.remove('inclusio-status-warn');
+    return;
+  }
+  const open = anchorDisplayLabel(item.openingAnchor);
+  const close = anchorDisplayLabel(item.closingAnchor);
+  const span = deriveInclusioSpan(item);
+  let rails = 0;
+  const ed = inclusioEditorRoot(null);
+  if (ed) rails = ed.querySelectorAll('svg.inclusio-frame-svg line.inclusio-frame-rail').length;
+  const bracketN = document.querySelectorAll('#editor .word.inclusio-bracket.bracket-start, #editor .word.inclusio-bracket.bracket-end').length;
+  let msg = `Active: ${item.label || item.id}. Opening: ${open}. Closing: ${close}. Span: ${span}.`;
+  if (item.openingAnchor && item.closingAnchor) {
+    msg += rails >= 2 ? ` Frame rails: ${rails}.` : ' Frame pending — check margin envelope toggle.';
+    if (bracketN < 2) msg += ' Endpoint brackets pending.';
+  } else if (!locOK(state.selected)) {
+    msg += ' Select a Hebrew word first.';
+    el.classList.add('inclusio-status-warn');
+  } else {
+    msg += ' Select closing word, then Set Closing Anchor.';
+    el.classList.remove('inclusio-status-warn');
+  }
+  if (item.openingAnchor && item.closingAnchor) el.classList.remove('inclusio-status-warn');
+  el.textContent = msg;
+}
+window.updateInclusioWorkflowStatus = updateInclusioWorkflowStatus;
 
 function migrateInclusioItem(item) {
   if (!item || typeof item !== 'object') return null;
@@ -421,6 +474,7 @@ function addInclusio() {
   state.activeInclusioId = item.id;
   inclusioPhraseDraft = null;
   expandLegendInclusiosSection();
+  updateInclusioWorkflowStatus();
   render();
 }
 
@@ -462,7 +516,11 @@ function setInclusioAnchor(side) {
   markUndo();
   let item = activeInclusio();
   if (!item) { addInclusio(); item = activeInclusio(); }
-  if (!locOK(state.selected)) { alert('Select a word first.'); return; }
+  if (!locOK(state.selected)) {
+    updateInclusioWorkflowStatus();
+    alert('Select a Hebrew word first.');
+    return;
+  }
   let start = inclusioPhraseDraft && inclusioPhraseDraft.side === side
     ? cloneLoc(inclusioPhraseDraft.loc)
     : cloneLoc(state.selected);
@@ -481,8 +539,12 @@ function setInclusioAnchor(side) {
   if (typeof syncAllPaneInclusioWordMarkers === 'function') syncAllPaneInclusioWordMarkers();
   else syncInclusioWordMarkers();
   updateInclusioPhraseStatus();
+  expandLegendInclusiosSection();
   render();
-  if (typeof renderInclusioFrameOverlays === 'function') setTimeout(renderInclusioFrameOverlays, 0);
+  requestAnimationFrame(() => {
+    scheduleInclusioFrameRedraw();
+    updateInclusioWorkflowStatus();
+  });
 }
 
 function clearInclusioWordMarkersOnVerses(verses) {
@@ -773,9 +835,10 @@ function renderInclusioUI() {
   initLegendInclusiosSection();
   renderInclusioEditor();
   renderInclusioRegistry();
+  updateInclusioWorkflowStatus();
   setTimeout(() => {
     applyInclusioRegistryHighlight();
-    if (typeof renderInclusioFrameOverlays === 'function' && !isParallelActive()) renderInclusioFrameOverlays();
+    scheduleInclusioFrameRedraw();
   }, 0);
 }
 
@@ -795,3 +858,20 @@ if (document.readyState === 'loading') {
 } else {
   initLegendInclusiosSection();
 }
+
+(function bindInclusioRenderHook() {
+  function install() {
+    if (typeof renderEditor !== 'function' || window._inclusioRenderHookBound) return;
+    window._inclusioRenderHookBound = true;
+    const prev = renderEditor;
+    renderEditor = function inclusioRenderEditorHook() {
+      prev();
+      scheduleInclusioFrameRedraw();
+    };
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', install);
+  } else {
+    install();
+  }
+})();

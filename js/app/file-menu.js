@@ -18,6 +18,8 @@ document.getElementById('bracketToSelected').onclick=()=>bracketToSelected();
 document.getElementById('clearSelectedBrackets').onclick=()=>clearSelectedBrackets();
 document.getElementById('clearAllBrackets').onclick=()=>clearAllBrackets();
 document.getElementById('newInclusio').onclick=addInclusio;
+if(document.getElementById('setInclusioOpeningStatic'))document.getElementById('setInclusioOpeningStatic').onclick=()=>setInclusioAnchor('opening');
+if(document.getElementById('setInclusioClosingStatic'))document.getElementById('setInclusioClosingStatic').onclick=()=>setInclusioAnchor('closing');
 document.getElementById('deleteActiveInclusio').onclick=()=>deleteActiveInclusio();
 document.getElementById('clearInclusioMarkers').onclick=clearInclusioMarkers;
 document.getElementById('setCommentStart').onclick=setCommentAnchorStart;
