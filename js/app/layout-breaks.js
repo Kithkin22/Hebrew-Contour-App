@@ -403,9 +403,9 @@ window.buildVersesFromLayoutPaste = buildVersesFromLayoutPaste;
 
 function exportLayoutBreakCss() {
   return '.clause{display:block;border-radius:6px;padding:2px 8px;margin:2px 0}'
-    + '.clause.layout-break-sm{margin-bottom:14px!important}'
-    + '.clause.layout-break-md{margin-bottom:28px!important}'
-    + '.clause.layout-break-lg{margin-bottom:48px!important}'
+    + '.clause.layout-break-sm{margin-bottom:18px!important}'
+    + '.clause.layout-break-md{margin-bottom:40px!important}'
+    + '.clause.layout-break-lg{margin-bottom:72px!important}'
     + '.verse-block{margin-bottom:0}'
     + '.verse-block.verse-spacing-single{margin-bottom:2.1em!important}'
     + '.verse-block.verse-spacing-oneHalf{margin-bottom:3.15em!important}'
@@ -453,6 +453,16 @@ function verseRefHidden(verse) {
   return !!(verse && verse.hideRef);
 }
 window.verseRefHidden = verseRefHidden;
+
+function contourPassageTitleHtml(ref) {
+  if (!ref || !String(ref).trim()) return '';
+  let text = typeof normalizePassageRangeRef === 'function'
+    ? normalizePassageRangeRef(ref)
+    : String(ref).trim();
+  text = text.replace(/(\d)\s*-\s*(\d)/g, '$1\u2013$2');
+  return `<div class="contour-passage-title" dir="ltr">${esc(text)}</div>`;
+}
+window.contourPassageTitleHtml = contourPassageTitleHtml;
 
 function contourVerseRefHtml(verse, vi, opts) {
   opts = opts || {};

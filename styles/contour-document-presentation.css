@@ -1,0 +1,69 @@
+/* Contour document presentation — centered page, comfortable margins (editor only) */
+
+#editorWrap.contour-document-surface {
+  background: #e9edf2;
+  padding: 20px 12px 28px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+#editorWrap.contour-document-surface #editor.contour-document-page {
+  direction: ltr !important;
+  text-align: left !important;
+  flex: none !important;
+  width: 100%;
+  max-width: 680px;
+  min-height: 360px;
+  margin: 0 auto;
+  padding: 44px 76px 52px 44px !important;
+  background: #fff;
+  border: 1px solid var(--hc-border, #d5dbe3) !important;
+  border-radius: 2px !important;
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.06),
+    0 8px 24px rgba(15, 23, 42, 0.05) !important;
+  box-sizing: border-box;
+}
+
+.lang-hebrew#editor.contour-document-page,
+#editor.contour-document-page.lang-hebrew {
+  padding: 44px 84px 52px 36px !important;
+}
+
+.lang-greek#editor.contour-document-page,
+#editor.contour-document-page.lang-greek {
+  padding: 44px 44px 52px 76px !important;
+}
+
+.contour-passage-title,
+#editor .verse-ref {
+  unicode-bidi: isolate;
+  direction: ltr;
+  text-align: left;
+}
+
+.contour-passage-title {
+  font-family: var(--hc-font-ui, Inter, system-ui, sans-serif) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0;
+  color: var(--hc-text, #1e293b) !important;
+  margin: 0 0 22px 0 !important;
+}
+
+#editor .verse-ref {
+  margin-bottom: 8px !important;
+}
+
+body.dark-mode #editorWrap.contour-document-surface {
+  background: #1a2230;
+}
+
+body.dark-mode #editorWrap.contour-document-surface #editor.contour-document-page {
+  background: var(--hc-surface, #111827);
+  border-color: var(--hc-border, #334155) !important;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.35),
+    0 8px 24px rgba(0, 0, 0, 0.25) !important;
+}

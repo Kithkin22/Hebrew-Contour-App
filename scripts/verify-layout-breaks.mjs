@@ -167,7 +167,7 @@ async function main() {
       if (toggle2) toggle2.checked = false;
       state.selected = { v: 0, c: 0, w: 0 };
       render();
-      toggleSelectedVerseRefHidden();
+      if (!verseRefHidden(state.verses[0])) toggleSelectedVerseRefHidden();
       const hideRefEditor = !document.querySelector('#editor .verse-block[data-v="0"] .verse-ref');
       const hideRefExport = !buildContourEditorHtmlFromState(true).includes('Genesis 1:1');
       setAllVerseRefsHidden(false);

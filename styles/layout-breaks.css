@@ -2,33 +2,33 @@
 
 #editor .clause.layout-break-sm,
 .parallel-verse-body .clause.layout-break-sm {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 #editor .clause.layout-break-md,
 .parallel-verse-body .clause.layout-break-md {
-  margin-bottom: 28px;
+  margin-bottom: 40px;
 }
 
 #editor .clause.layout-break-lg,
 .parallel-verse-body .clause.layout-break-lg {
-  margin-bottom: 48px;
+  margin-bottom: 72px;
 }
 
 /* Single-density tightens default clauses; visual breaks must still show */
 body.contour-density-single #editor .clause.layout-break-sm,
 body.contour-density-single .parallel-verse-body .clause.layout-break-sm {
-  margin-bottom: 14px !important;
+  margin-bottom: 18px !important;
 }
 
 body.contour-density-single #editor .clause.layout-break-md,
 body.contour-density-single .parallel-verse-body .clause.layout-break-md {
-  margin-bottom: 28px !important;
+  margin-bottom: 40px !important;
 }
 
 body.contour-density-single #editor .clause.layout-break-lg,
 body.contour-density-single .parallel-verse-body .clause.layout-break-lg {
-  margin-bottom: 48px !important;
+  margin-bottom: 72px !important;
 }
 
 #editor .verse-block.verse-spacing-single,
