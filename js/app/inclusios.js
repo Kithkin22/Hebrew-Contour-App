@@ -259,38 +259,44 @@ function renderInclusioFrameOverlay(paneState, pane) {
   if (!svg) return;
   svg.innerHTML = '';
   const contentW = Math.max(ed.scrollWidth, ed.offsetWidth, 1);
-  const contentH = Math.max(ed.scrollHeight, ed.offsetHeight, 1);
-  svg.setAttribute('viewBox', `0 0 ${contentW} ${contentH}`);
-  svg.setAttribute('width', String(contentW));
-  svg.setAttribute('height', String(contentH));
-  svg.style.width = contentW + 'px';
-  svg.style.height = contentH + 'px';
+  let contentH = Math.max(ed.scrollHeight, ed.offsetHeight, 1);
+  let bracketEntries = [];
+  let bracketRails = [];
+  let maxNest = 0;
   if (hasInclusios) {
     const spans = computeInclusioNestLevels(paneState.inclusios, paneState.verses);
-    const maxNest = inclusioMaxNestLevel(spans);
+    maxNest = inclusioMaxNestLevel(spans);
     spans.sort((a, b) => (a.inc.nestLevel || 0) - (b.inc.nestLevel || 0));
-    const bracketEntries = [];
     spans.forEach(({ inc }) => {
       if (inc.showMarginEnvelope === false) return;
       if (!inc.openingAnchor || !inc.closingAnchor) return;
       const bounds = inclusioEnvelopeBounds(inc, paneState, pane);
       if (!bounds) return;
       bracketEntries.push({ inc, bounds, level: inc.nestLevel || 0 });
+      contentH = Math.max(contentH, bounds.bottom + 4);
     });
-    const bracketRails = typeof computeInclusioBracketRails === 'function'
+    bracketRails = typeof computeInclusioBracketRails === 'function'
       ? computeInclusioBracketRails(
         bracketEntries.map((e) => ({ bounds: e.bounds, level: e.level })),
         maxNest,
         contentW
       )
       : [];
-    if (bracketRails.length) {
-      const minRailX = bracketRails.reduce((m, r) => Math.min(m, r.xL), 0);
-      const maxRailX = bracketRails.reduce((m, r) => Math.max(m, r.xR), contentW);
-      const minX = Math.min(0, minRailX - 4);
-      const vbW = Math.max(contentW, maxRailX + 4) - minX;
-      svg.setAttribute('viewBox', `${minX} 0 ${vbW} ${contentH}`);
-    }
+  }
+  let viewBox = `0 0 ${contentW} ${contentH}`;
+  if (bracketRails.length) {
+    const minRailX = bracketRails.reduce((m, r) => Math.min(m, r.xL), 0);
+    const maxRailX = bracketRails.reduce((m, r) => Math.max(m, r.xR), contentW);
+    const minX = Math.min(0, minRailX - 4);
+    const vbW = Math.max(contentW, maxRailX + 4) - minX;
+    viewBox = `${minX} 0 ${vbW} ${contentH}`;
+  }
+  svg.setAttribute('viewBox', viewBox);
+  svg.setAttribute('width', String(contentW));
+  svg.setAttribute('height', String(contentH));
+  svg.style.width = contentW + 'px';
+  svg.style.height = contentH + 'px';
+  if (bracketEntries.length) {
     bracketEntries.forEach((entry, i) => {
       drawInclusioEnvelopeRail(
         svg,

@@ -543,6 +543,79 @@ async function main() {
       `leftPad=${horizontalBalance.leftPad?.toFixed?.(1)}, rightPad=${horizontalBalance.rightPad?.toFixed?.(1)}, frameW=${horizontalBalance.frameWidth?.toFixed?.(1)}, textW=${horizontalBalance.textWidth?.toFixed?.(1)}`
     );
 
+    const innerRailInset = await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      parseText(
+        'חָנֵּ֥נִי חָנֵּ֥נִי אַתֶּ֥ם רֵעָ֑י\n'
+        + 'כִּ֤י יַ֣ד אֱל֙וֹהַּ נָ֣גְעָ֔ה בִּ֔י\n'
+        + 'לָ֤מָּה אַתֶּ֨ם רֹדְפִ֥ים כְּאֵ֗ל\n'
+        + 'וּמִבְּשָׂרִ֥י לֹֽא־תִשְׂבָּֽעוּ׃\n'
+        + 'מִֽי־יִתֵּ֣ן וְאֵיכָ֣כָה וְגוֹ׃',
+        'Nested inset test',
+        false,
+        { preserveLayout: true, skipRender: true }
+      );
+      state.inclusios = [];
+      clearInclusioWordMarkers();
+      const lastC = state.verses[0].clauses.length - 1;
+      addInclusioFromLocs({ v: 0, c: 0, w: 0 }, { v: 0, c: lastC, w: 0 });
+      addInclusioFromLocs({ v: 0, c: 2, w: 0 }, { v: 0, c: Math.min(3, lastC), w: 0 });
+      render();
+      const ed = document.getElementById('editor');
+      const scale = typeof getArcOverlayScale === 'function' ? getArcOverlayScale() : 1;
+      const er = ed.getBoundingClientRect();
+      const byInc = {};
+      [...document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail:not(.inclusio-frame-rail-preview)')].forEach((line) => {
+        const id = line.getAttribute('data-inc-id') || '';
+        const x1 = +line.getAttribute('x1');
+        const x2 = +line.getAttribute('x2');
+        if (Math.abs(x2 - x1) >= 0.01) return;
+        if (!byInc[id]) byInc[id] = [];
+        byInc[id].push(x1);
+      });
+      const ids = Object.keys(byInc);
+      if (ids.length < 2) return { ok: false, reason: 'need two units' };
+      const nest = computeInclusioNestLevels(state.inclusios, state.verses);
+      const innerId = nest.find((s) => s.inc.nestLevel >= 1)?.inc?.id;
+      const outerId = nest.find((s) => s.inc.nestLevel === 0)?.inc?.id;
+      if (!innerId || !outerId) return { ok: false, reason: 'need nested pair' };
+      const innerXL = Math.min(...byInc[innerId]);
+      const innerXR = Math.max(...byInc[innerId]);
+      const outerXL = Math.min(...byInc[outerId]);
+      const outerXR = Math.max(...byInc[outerId]);
+      const minGap = (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.nestRailGap) || 20;
+      const insetL = innerXL - outerXL;
+      const insetR = outerXR - innerXR;
+      const innerInc = state.inclusios.find((x) => x.id === innerId);
+      const innerBounds = inclusioUnitBounds(innerInc, state, null);
+      const open = anchorRangeOrdered(innerInc.openingAnchor);
+      const close = anchorRangeOrdered(innerInc.closingAnchor);
+      const spanWords = inclusioWordsBoundsForRange(open.start, close.end, state, null);
+      const textL = spanWords ? er.left + spanWords.left * scale : 0;
+      const textR = spanWords ? er.left + spanWords.right * scale : 0;
+      const innerRailL = er.left + innerXL * scale;
+      const innerRailR = er.left + innerXR * scale;
+      const leftTextGap = textL - innerRailL;
+      const rightTextGap = innerRailR - textR;
+      const minPad = (window.INCLUSIO_FRAME_PADDING && window.INCLUSIO_FRAME_PADDING.left) || 30;
+      return {
+        ok: insetL >= minGap * 0.75 && insetR >= minGap * 0.75
+          && leftTextGap >= minPad * 0.5 && rightTextGap >= minPad * 0.5,
+        insetL,
+        insetR,
+        leftTextGap,
+        rightTextGap,
+        minGap,
+        minPad,
+      };
+    });
+    record(
+      'nested-inner-rail-inset',
+      innerRailInset.ok,
+      `insetL=${innerRailInset.insetL?.toFixed?.(1)}, insetR=${innerRailInset.insetR?.toFixed?.(1)}, textGapL=${innerRailInset.leftTextGap?.toFixed?.(1)}, textGapR=${innerRailInset.rightTextGap?.toFixed?.(1)}`
+    );
+
     const exportPdf = await page.evaluate(async () => {
       if (typeof openPdfPrintWindow !== 'function') {
         return { ok: false, reason: 'missing openPdfPrintWindow' };

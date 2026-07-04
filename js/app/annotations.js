@@ -57,7 +57,13 @@
     if(brackets) document.getElementById('ann-brackets').appendChild(brackets);
     if(arcs) document.getElementById('ann-arcs').appendChild(arcs);
     if(inclusio) document.getElementById('ann-inclusio').appendChild(inclusio);
-    if(exportRow) document.getElementById('ann-export').appendChild(exportRow);
+    if(exportRow) {
+      exportRow.classList.remove('visually-hidden', 'ann-export-source');
+      exportRow.removeAttribute('aria-hidden');
+      const exportPanel = document.getElementById('ann-export');
+      exportPanel.appendChild(exportRow);
+      exportPanel.classList.add('ann-export-panel');
+    }
 
     document.querySelectorAll('.annotation-tab-btn').forEach(btn=>{
       btn.onclick = ()=>{

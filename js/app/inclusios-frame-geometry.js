@@ -115,19 +115,25 @@ function inclusioEdgeLineBounds(rangeStart, rangeEnd, paneState, pane) {
   if (!ed || !clauses.length) return null;
   const first = clauses[0];
   const last = clauses[clauses.length - 1];
-  const firstWords = inclusioClauseWordsBoundsInRange(first.v, first.c, rangeStart, rangeEnd, paneState, pane);
-  const lastWords = inclusioClauseWordsBoundsInRange(last.v, last.c, rangeStart, rangeEnd, paneState, pane);
   const firstClauseEl = ed.querySelector(`:scope .clause[data-v="${first.v}"][data-c="${first.c}"]`);
   const lastClauseEl = ed.querySelector(`:scope .clause[data-v="${last.v}"][data-c="${last.c}"]`);
   const firstClause = firstClauseEl ? inclusioRectRelativeToEditor(firstClauseEl, ed) : null;
   const lastClause = lastClauseEl ? inclusioRectRelativeToEditor(lastClauseEl, ed) : null;
-  if (!firstWords && !firstClause) return null;
-  if (!lastWords && !lastClause) return null;
+  const firstLineWords = inclusioClauseWordsBounds(first.v, first.c, paneState, pane)
+    || inclusioClauseWordsBoundsInRange(first.v, first.c, rangeStart, rangeEnd, paneState, pane);
+  const lastLineWords = inclusioClauseWordsBounds(last.v, last.c, paneState, pane)
+    || inclusioClauseWordsBoundsInRange(last.v, last.c, rangeStart, rangeEnd, paneState, pane);
+  if (!firstLineWords && !firstClause) return null;
+  if (!lastLineWords && !lastClause) return null;
+  const niqqudClearance = 4;
   const firstLineTop = Math.min(
-    firstWords?.top ?? Infinity,
-    firstClause?.top ?? Infinity
+    firstClause?.top ?? Infinity,
+    firstLineWords?.top ?? Infinity
+  ) - niqqudClearance;
+  const lastLineBottom = Math.max(
+    lastClause?.bottom ?? -Infinity,
+    lastLineWords?.bottom ?? -Infinity
   );
-  const lastLineBottom = lastWords?.bottom ?? lastClause?.bottom ?? -Infinity;
   if (!Number.isFinite(firstLineTop) || !Number.isFinite(lastLineBottom)) return null;
   return { firstLineTop, lastLineBottom, lastClause: last };
 }
@@ -240,18 +246,35 @@ function inclusioUnitBounds(inc, paneState, pane) {
     if (nextTop != null) bottom = Math.min(bottom, nextTop - 2);
   }
   bottom = Math.max(bottom, textBottom);
+  const contentH = Math.max(ed.scrollHeight, ed.offsetHeight, bottom + pad.bottom, 1);
   return {
     top: textTop - pad.top,
     bottom,
     left: spanWords.left - pad.left,
     right: spanWords.right + pad.right,
     width: Math.max(ed.scrollWidth, ed.offsetWidth, 1),
-    height: Math.max(ed.scrollHeight, ed.offsetHeight, 1),
+    height: contentH,
   };
 }
 window.inclusioUnitBounds = inclusioUnitBounds;
 
-/** Independent bracket rails per inclusio; nested frames stay inside parents with a clear gap. */
+function inclusioRailsOverlapVertically(a, b) {
+  return a.y1 < b.y2 && a.y2 > b.y1;
+}
+
+function inclusioBoundsNestWithin(outer, inner) {
+  if (!outer || !inner) return false;
+  return inner.top >= outer.top - 1
+    && inner.bottom <= outer.bottom + 1
+    && inner.left >= outer.left - 1
+    && inner.right <= outer.right + 1
+    && !(Math.abs(inner.top - outer.top) < 1
+      && Math.abs(inner.bottom - outer.bottom) < 1
+      && Math.abs(inner.left - outer.left) < 1
+      && Math.abs(inner.right - outer.right) < 1);
+}
+
+/** Bracket rails per unit; nested frames inset inside parents, siblings stay independent. */
 function computeInclusioBracketRails(entries, maxNest, contentW) {
   const gap = INCLUSIO_UNIT_FRAME.nestRailGap;
   const placed = [];
@@ -260,25 +283,24 @@ function computeInclusioBracketRails(entries, maxNest, contentW) {
   entries.forEach((entry) => {
     const bounds = entry.bounds;
     const level = entry.level || 0;
-    const layerOut = Math.max(0, (maxNest || 0) - level) * gap;
-    let xL = bounds.left - layerOut;
-    let xR = bounds.right + layerOut;
+    let xL = bounds.left;
+    let xR = bounds.right;
     const y1 = Math.max(0, bounds.top);
-    const y2 = Math.min(bounds.height, bounds.bottom);
-    const textFloorL = bounds.left;
-    const textCeilR = bounds.right;
+    const y2 = bounds.bottom;
 
     placed.forEach((parent) => {
-      const needL = parent.xL + gap;
-      const needR = parent.xR - gap;
-      if (needL <= textFloorL) xL = Math.max(xL, needL);
-      if (needR >= textCeilR) xR = Math.min(xR, needR);
+      if (!inclusioRailsOverlapVertically(parent, { y1, y2 })) return;
+      if (!inclusioBoundsNestWithin(parent.bounds, bounds)) return;
+      xL = Math.max(xL, parent.xL + gap);
+      xR = Math.min(xR, parent.xR - gap);
     });
 
-    xL = Math.min(xL, textFloorL);
-    xR = Math.max(xR, textCeilR);
+    if (xR - xL < 12) {
+      xL = bounds.left;
+      xR = bounds.right;
+    }
 
-    const rail = { xL, xR, y1, y2, level };
+    const rail = { xL, xR, y1, y2, level, bounds };
     placed.push(rail);
     out.push(rail);
   });

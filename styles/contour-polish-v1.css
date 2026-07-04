@@ -172,9 +172,9 @@ body.dark-mode .parallel-align-status {
   font-size: 12px !important;
 }
 
-/* Duplicate contour export row — buttons live in ann-export panel */
-.visually-hidden,
-.ann-export-source {
+/* Duplicate contour export row — hidden until moved into ann-export panel */
+.visually-hidden:not(#ann-export .row),
+.ann-export-source:not(#ann-export .row) {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -320,6 +320,22 @@ body.dark-mode .annotation-tab-btn.active {
 
 .annotation-tab-panel .row {
   gap: 5px !important;
+}
+
+#ann-export.ann-export-panel .row {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 4px 0 !important;
+  overflow: visible !important;
+  clip: auto !important;
+  white-space: normal !important;
+  gap: 10px !important;
+}
+
+#ann-export.ann-export-panel .btn.good {
+  min-width: 10em;
 }
 
 #annotationShortcutsBar {
