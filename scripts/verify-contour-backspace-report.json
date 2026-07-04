@@ -1,18 +1,38 @@
 {
-  "feature": "contour-backspace-merge",
+  "feature": "contour-enter-backspace-wordlike",
   "url": "http://127.0.0.1:8765",
-  "at": "2026-07-04T03:52:09.379Z",
+  "at": "2026-07-04T13:51:10.372Z",
   "pass": true,
   "results": [
     {
-      "id": "layout-gap-cleared",
+      "id": "enter-adds-gap",
       "pass": true,
-      "detail": "before sp=40 clauses=2, after sp=0 clauses=1"
+      "detail": "clauses=2, sp=40"
     },
     {
-      "id": "keyboard-merge",
+      "id": "backspace-removes-gap",
       "pass": true,
-      "detail": "clauses=1, focus=editorWrap"
+      "detail": "clauses=2, sp=0"
+    },
+    {
+      "id": "backspace-merge-after-gap",
+      "pass": true,
+      "detail": "clauses=1"
+    },
+    {
+      "id": "layout-paste-gap-then-merge",
+      "pass": true,
+      "detail": "paste sp=40→0, clauses 2→1"
+    },
+    {
+      "id": "undo-gap-steps",
+      "pass": true,
+      "detail": "large=72, undo medium=40, undo clear=0"
+    },
+    {
+      "id": "keyboard-word-like-flow",
+      "pass": true,
+      "detail": "enter sp=40, back1 sp=0, back2 clauses=1"
     },
     {
       "id": "focus-blocks-then-recovers",

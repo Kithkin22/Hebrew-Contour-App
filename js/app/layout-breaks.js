@@ -118,6 +118,49 @@ function setClauseSpacingAfterPx(clause, px) {
 }
 window.setClauseSpacingAfterPx = setClauseSpacingAfterPx;
 
+/** Word-like Enter: default/small → medium → large → large */
+function stepClauseSpacingAfterUp(clause) {
+  if (!clause) return;
+  const px = clauseSpacingAfterPx(clause);
+  if (px >= 72) setClauseSpacingAfterPx(clause, 72);
+  else if (px >= 40) setClauseSpacingAfterPx(clause, 72);
+  else setClauseSpacingAfterPx(clause, 40);
+}
+window.stepClauseSpacingAfterUp = stepClauseSpacingAfterUp;
+
+/** Word-like Backspace: large → medium → default; small/custom → default */
+function stepClauseSpacingAfterDown(clause) {
+  if (!clause) return false;
+  const px = clauseSpacingAfterPx(clause);
+  if (px <= 0) return false;
+  if (px >= 72) setClauseSpacingAfterPx(clause, 40);
+  else setClauseSpacingAfterPx(clause, 0);
+  return true;
+}
+window.stepClauseSpacingAfterDown = stepClauseSpacingAfterDown;
+
+function stepVerseSpacingAfterUp(verse) {
+  if (!verse) return;
+  const norm = normalizeVerseSpacingAfter(verse.spacingAfter);
+  const idx = VERSE_SPACING_LEVELS.indexOf(norm);
+  const next = VERSE_SPACING_LEVELS[Math.min(idx + 1, VERSE_SPACING_LEVELS.length - 1)];
+  if (next === 'default') delete verse.spacingAfter;
+  else verse.spacingAfter = next;
+}
+window.stepVerseSpacingAfterUp = stepVerseSpacingAfterUp;
+
+function stepVerseSpacingAfterDown(verse) {
+  if (!verse) return false;
+  const norm = normalizeVerseSpacingAfter(verse.spacingAfter);
+  const idx = VERSE_SPACING_LEVELS.indexOf(norm);
+  if (idx <= 0) return false;
+  const prev = VERSE_SPACING_LEVELS[idx - 1];
+  if (prev === 'default') delete verse.spacingAfter;
+  else verse.spacingAfter = prev;
+  return true;
+}
+window.stepVerseSpacingAfterDown = stepVerseSpacingAfterDown;
+
 function clauseLayoutDir(clause, layout) {
   if (clause && clause.alignment === 'rtl') return 'rtl';
   if (clause && clause.alignment === 'ltr') return 'ltr';

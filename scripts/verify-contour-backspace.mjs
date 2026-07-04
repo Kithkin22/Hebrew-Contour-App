@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Backspace clause-merge verification (reverse of Enter).
+ * Contour Enter/Backspace verification (Word-like gaps + clause merge).
  * Run: HC_VERIFY_URL=http://127.0.0.1:8765 node scripts/verify-contour-backspace.mjs
  */
 import { chromium } from 'playwright';
@@ -25,6 +25,7 @@ async function unlock(page) {
     () =>
       typeof mergeClauseWithPrevious === 'function' &&
       typeof handleContourBackspace === 'function' &&
+      typeof handleContourEnter === 'function' &&
       typeof insertBreak === 'function',
     { timeout: 25000 }
   );
@@ -127,9 +128,6 @@ async function main() {
       const exportHtml = buildContourEditorHtmlFromState(true);
       const exportOneClause = (exportHtml.match(/class="clause/g) || []).length === 1;
 
-      const payload = projectPayload();
-      const savedClauses = payload.state.panes[0].verses[0].clauses.length;
-
       ensureStateBundle();
       state = stateBundle.panes[0];
       parseText('אֶ֣לֶף\n\nבֵּ֑ית', 'Gap test', false, {
@@ -142,7 +140,12 @@ async function main() {
         spacingAfterPx: state.verses[0].clauses[0].spacingAfterPx || 0,
       };
       state.selected = { v: 0, c: 1, w: 0 };
-      mergeClauseWithPrevious(state.selected);
+      handleContourBackspace();
+      const gapMid = {
+        clauses: state.verses[0].clauses.length,
+        spacingAfterPx: state.verses[0].clauses[0].spacingAfterPx || 0,
+      };
+      handleContourBackspace();
       const gapAfter = {
         clauses: state.verses[0].clauses.length,
         spacingAfterPx: state.verses[0].clauses[0].spacingAfterPx || 0,
@@ -152,8 +155,33 @@ async function main() {
       state.selected = { v: 0, c: 0, w: 1 };
       insertBreak();
       state.selected = { v: 0, c: 1, w: 0 };
-      render();
-      focusContourEditor();
+      handleContourEnter();
+      const enterGap = {
+        clauses: state.verses[0].clauses.length,
+        spacingAfterPx: state.verses[0].clauses[0].spacingAfterPx || 0,
+      };
+      handleContourBackspace();
+      const enterGapRemoved = {
+        clauses: state.verses[0].clauses.length,
+        spacingAfterPx: state.verses[0].clauses[0].spacingAfterPx || 0,
+      };
+      handleContourBackspace();
+      const enterMerged = {
+        clauses: state.verses[0].clauses.length,
+      };
+
+      loadTwoWords();
+      state.selected = { v: 0, c: 0, w: 1 };
+      insertBreak();
+      state.selected = { v: 0, c: 1, w: 0 };
+      handleContourEnter();
+      handleContourEnter();
+      const gapLarge = state.verses[0].clauses[0].spacingAfterPx || 0;
+      undoLastChange();
+      const undoGapStep = state.verses[0].clauses[0].spacingAfterPx || 0;
+      undoLastChange();
+      const undoGapGone = state.verses[0].clauses[0].spacingAfterPx || 0;
+
       return {
         afterSplit,
         afterMerge,
@@ -163,19 +191,46 @@ async function main() {
         undoRestored,
         inclusioRemapped,
         exportOneClause,
-        savedClauses,
         gapBefore,
+        gapMid,
         gapAfter,
+        enterGap,
+        enterGapRemoved,
+        enterMerged,
+        gapLarge,
+        undoGapStep,
+        undoGapGone,
       };
     });
 
     record(
-      'layout-gap-cleared',
+      'enter-adds-gap',
+      unit.enterGap.clauses === 2 && unit.enterGap.spacingAfterPx === 40,
+      `clauses=${unit.enterGap.clauses}, sp=${unit.enterGap.spacingAfterPx}`
+    );
+    record(
+      'backspace-removes-gap',
+      unit.enterGapRemoved.clauses === 2 && unit.enterGapRemoved.spacingAfterPx === 0,
+      `clauses=${unit.enterGapRemoved.clauses}, sp=${unit.enterGapRemoved.spacingAfterPx}`
+    );
+    record(
+      'backspace-merge-after-gap',
+      unit.enterMerged.clauses === 1,
+      `clauses=${unit.enterMerged.clauses}`
+    );
+    record(
+      'layout-paste-gap-then-merge',
       unit.gapBefore.clauses === 2 &&
         unit.gapBefore.spacingAfterPx > 0 &&
-        unit.gapAfter.clauses === 1 &&
-        unit.gapAfter.spacingAfterPx === 0,
-      `before sp=${unit.gapBefore.spacingAfterPx} clauses=${unit.gapBefore.clauses}, after sp=${unit.gapAfter.spacingAfterPx} clauses=${unit.gapAfter.clauses}`
+        unit.gapMid.clauses === 2 &&
+        unit.gapMid.spacingAfterPx === 0 &&
+        unit.gapAfter.clauses === 1,
+      `paste sp=${unit.gapBefore.spacingAfterPx}→${unit.gapMid.spacingAfterPx}, clauses ${unit.gapBefore.clauses}→${unit.gapAfter.clauses}`
+    );
+    record(
+      'undo-gap-steps',
+      unit.gapLarge === 72 && unit.undoGapStep === 40 && unit.undoGapGone === 0,
+      `large=${unit.gapLarge}, undo medium=${unit.undoGapStep}, undo clear=${unit.undoGapGone}`
     );
 
     await page.evaluate(() => {
@@ -188,15 +243,30 @@ async function main() {
       render();
     });
     await page.click('.word[data-v="0"][data-c="1"][data-w="0"]');
-    await page.keyboard.press('Backspace');
-    const keyboardMerge = await page.evaluate(() => ({
+    await page.keyboard.press('Enter');
+    const kbEnter = await page.evaluate(() => ({
       clauses: state.verses[0].clauses.length,
-      focused: document.activeElement?.id || document.activeElement?.tagName,
+      sp: state.verses[0].clauses[0].spacingAfterPx || 0,
+      focus: document.activeElement?.id || document.activeElement?.tagName,
+    }));
+    await page.keyboard.press('Backspace');
+    const kbBack1 = await page.evaluate(() => ({
+      clauses: state.verses[0].clauses.length,
+      sp: state.verses[0].clauses[0].spacingAfterPx || 0,
+    }));
+    await page.keyboard.press('Backspace');
+    const kbBack2 = await page.evaluate(() => ({
+      clauses: state.verses[0].clauses.length,
     }));
     record(
-      'keyboard-merge',
-      keyboardMerge.clauses === 1 && keyboardMerge.focused === 'editorWrap',
-      `clauses=${keyboardMerge.clauses}, focus=${keyboardMerge.focused}`
+      'keyboard-word-like-flow',
+      kbEnter.clauses === 2 &&
+        kbEnter.sp === 40 &&
+        kbEnter.focus === 'editorWrap' &&
+        kbBack1.clauses === 2 &&
+        kbBack1.sp === 0 &&
+        kbBack2.clauses === 1,
+      `enter sp=${kbEnter.sp}, back1 sp=${kbBack1.sp}, back2 clauses=${kbBack2.clauses}`
     );
 
     await page.evaluate(() => {
@@ -209,10 +279,6 @@ async function main() {
       render();
     });
     await page.click('.word[data-v="0"][data-c="1"][data-w="0"]');
-    const input = page.locator('#modalInput');
-    if (await input.count()) {
-      await page.keyboard.press('Escape');
-    }
     await page.evaluate(() => {
       const inp = document.querySelector('#inclusioThemeInput') || document.createElement('input');
       if (!inp.id) {
@@ -232,26 +298,26 @@ async function main() {
       `input-focus kept=${blocked}, after word click=${afterRefocus}`
     );
 
-    const unitRest = unit;
-
     record(
       'enter-split',
-      unitRest.afterSplit.clauses === 2,
-      `clauses=${unitRest.afterSplit.clauses}, a="${unitRest.afterSplit.w0}", b="${unitRest.afterSplit.w1}"`
+      unit.afterSplit.clauses === 2,
+      `clauses=${unit.afterSplit.clauses}, a="${unit.afterSplit.w0}", b="${unit.afterSplit.w1}"`
     );
     record(
       'backspace-merge',
-      unitRest.afterMerge.clauses === 1 && unitRest.afterMerge.allWords.includes('אֶ֣לֶף') && unitRest.afterMerge.allWords.includes('בֵּ֑ית'),
-      `clauses=${unitRest.afterMerge.clauses}, words="${unitRest.afterMerge.allWords}"`
+      unit.afterMerge.clauses === 1 &&
+        unit.afterMerge.allWords.includes('אֶ֣לֶף') &&
+        unit.afterMerge.allWords.includes('בֵּ֑ית'),
+      `clauses=${unit.afterMerge.clauses}, words="${unit.afterMerge.allWords}"`
     );
-    record('metadata-preserved', unitRest.metaPreserved, `bold+note kept=${unitRest.metaPreserved}`);
-    record('inside-no-merge', unitRest.insideNoMerge, `mid-clause backspace did not merge=${unitRest.insideNoMerge}`);
-    record('undo-restore', unitRest.clausesMerged && unitRest.undoRestored, `merged then undo restored=${unitRest.undoRestored}`);
-    record('inclusio-remap', unitRest.inclusioRemapped, `closing anchor remapped=${unitRest.inclusioRemapped}`);
-    record('export-single-line', unitRest.exportOneClause, `export has one clause=${unitRest.exportOneClause}`);
+    record('metadata-preserved', unit.metaPreserved, `bold+note kept=${unit.metaPreserved}`);
+    record('inside-no-merge', unit.insideNoMerge, `mid-clause backspace did not merge=${unit.insideNoMerge}`);
+    record('undo-restore', unit.clausesMerged && unit.undoRestored, `merged then undo restored=${unit.undoRestored}`);
+    record('inclusio-remap', unit.inclusioRemapped, `closing anchor remapped=${unit.inclusioRemapped}`);
+    record('export-single-line', unit.exportOneClause, `export has one clause=${unit.exportOneClause}`);
 
     const report = {
-      feature: 'contour-backspace-merge',
+      feature: 'contour-enter-backspace-wordlike',
       url: BASE,
       at: new Date().toISOString(),
       pass: results.every((r) => r.pass),
