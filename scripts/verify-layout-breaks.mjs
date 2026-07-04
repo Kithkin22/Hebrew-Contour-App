@@ -64,6 +64,46 @@ async function main() {
       }
 
       loadSingleVerse();
+      setSelectedClauseSpacingAfter('compact');
+      const afterCompact = {
+        data: clauseSpacing(0, 0),
+        px: state.verses[0].clauses[0].spacingAfterPx,
+        cls: editorClauseClass(0, 0),
+        margin: (() => {
+          const el = document.querySelector('#editor .clause[data-v="0"][data-c="0"]');
+          return el ? parseFloat(getComputedStyle(el).marginBottom) : null;
+        })(),
+      };
+
+      parseText('בְּרֵאשִׁית\nאֱלֹהִים', 'Gap test', false, { skipRender: true });
+      state.selected = { v: 0, c: 0, w: 0 };
+      render();
+      setSelectedClauseSpacingAfter('default');
+      const defaultMargin = (() => {
+        const el = document.querySelector('#editor .clause[data-v="0"][data-c="0"]');
+        return el ? parseFloat(getComputedStyle(el).marginBottom) : 0;
+      })();
+      setSelectedClauseSpacingAfter('compact');
+      const compactMargin = (() => {
+        const el = document.querySelector('#editor .clause[data-v="0"][data-c="0"]');
+        return el ? parseFloat(getComputedStyle(el).marginBottom) : 0;
+      })();
+      const compactPayload = projectPayload();
+      const compactJson =
+        compactPayload.state.panes[0].verses[0].clauses[0].spacingAfter || 'default';
+      const compactJsonPx =
+        compactPayload.state.panes[0].verses[0].clauses[0].spacingAfterPx;
+      const compactExportHtml = buildContourEditorHtmlFromState(true);
+      const compactDocx = contourDocxXml();
+      const compactReloaded = JSON.parse(JSON.stringify(compactPayload));
+      stateBundle.panes[0] = extractPaneFromPayload(compactReloaded, 0).pane;
+      state = stateBundle.panes[0];
+      state.selected = { v: 0, c: 0, w: 0 };
+      render();
+      const compactAfterReload = clauseSpacing(0, 0);
+      const compactReloadPx = state.verses[0].clauses[0].spacingAfterPx;
+
+      loadSingleVerse();
       setSelectedClauseSpacingAfter('medium');
       const afterMedium = {
         data: clauseSpacing(0, 0),
@@ -132,8 +172,7 @@ async function main() {
       const pane1 = stateBundle.panes[1].verses[0].clauses[0].spacingAfter || 'default';
 
       bindActivePane(0);
-      state.selected = { v: 0, c: 0, w: 0 };
-      setSelectedClauseSpacingAfter('medium');
+      state.selected = { v: 0, c: 0, w: 0 };      setSelectedClauseSpacingAfter('medium');
       const exportHtml = buildContourEditorHtmlFromState(true);
       const docx = contourDocxXml();
 
@@ -182,6 +221,15 @@ async function main() {
       mergeVerseData(oldVerseHide, newVerseHide);
 
       return {
+        afterCompact,
+        compactMargin,
+        defaultMargin,
+        compactJson,
+        compactJsonPx,
+        compactAfterReload,
+        compactReloadPx,
+        compactExportHtml: compactExportHtml.includes('layout-break-compact'),
+        compactDocx: compactDocx.includes('w:spacing w:after="-120"'),
         afterMedium,
         afterDefault,
         savedSpacing,
@@ -205,6 +253,39 @@ async function main() {
       };
     });
 
+    record(
+      'set-compact',
+      unit.afterCompact.data === 'compact'
+        && unit.afterCompact.px === -8
+        && unit.afterCompact.cls.includes('layout-break-compact')
+        && unit.afterCompact.margin < 0,
+      `spacingAfter=${unit.afterCompact.data}, px=${unit.afterCompact.px}, margin=${unit.afterCompact.margin}`
+    );
+    record(
+      'compact-tighter-gap',
+      unit.compactMargin < unit.defaultMargin,
+      `compact=${unit.compactMargin}, default=${unit.defaultMargin}`
+    );
+    record(
+      'compact-json',
+      unit.compactJson === 'compact' && unit.compactJsonPx === -8,
+      `json spacingAfter=${unit.compactJson}, px=${unit.compactJsonPx}`
+    );
+    record(
+      'compact-reload',
+      unit.compactAfterReload === 'compact' && unit.compactReloadPx === -8,
+      `reloaded=${unit.compactAfterReload}, px=${unit.compactReloadPx}`
+    );
+    record(
+      'compact-export-html',
+      unit.compactExportHtml,
+      `export has layout-break-compact=${unit.compactExportHtml}`
+    );
+    record(
+      'compact-export-docx',
+      unit.compactDocx,
+      `DOCX has negative spacing=${unit.compactDocx}`
+    );
     record(
       'set-medium',
       unit.afterMedium.data === 'medium' && unit.afterMedium.cls.includes('layout-break-md'),

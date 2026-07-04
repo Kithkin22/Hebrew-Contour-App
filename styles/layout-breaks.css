@@ -1,5 +1,10 @@
 /* Visual discourse breaks — extra vertical space after a contour line (layout only) */
 
+#editor .clause.layout-break-compact,
+.parallel-verse-body .clause.layout-break-compact {
+  margin-bottom: -8px;
+}
+
 #editor .clause.layout-break-sm,
 .parallel-verse-body .clause.layout-break-sm {
   margin-bottom: 18px;
@@ -16,6 +21,11 @@
 }
 
 /* Single-density tightens default clauses; visual breaks must still show */
+body.contour-density-single #editor .clause.layout-break-compact,
+body.contour-density-single .parallel-verse-body .clause.layout-break-compact {
+  margin-bottom: -8px !important;
+}
+
 body.contour-density-single #editor .clause.layout-break-sm,
 body.contour-density-single .parallel-verse-body .clause.layout-break-sm {
   margin-bottom: 18px !important;

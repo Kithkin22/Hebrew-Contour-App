@@ -10,7 +10,7 @@ const CONTOUR_PAGE = {
   bodyLineHeight: 2.1,
   passageTitleFontSizePx: 14,
   verseRefFontSizePx: 13,
-  breakPx: { small: 18, medium: 40, large: 72 },
+  breakPx: { compact: -8, small: 18, medium: 40, large: 72 },
   verseSpacingEm: { single: 2.1, oneHalf: 3.15, double: 4.2 },
   docxFontHalfPoints: 32,
 };
@@ -56,6 +56,7 @@ function contourPageCssVarsBlock() {
     + `--contour-body-line-height:${t.bodyLineHeight};`
     + `--contour-passage-title-size:${t.passageTitleFontSizePx}px;`
     + `--contour-verse-ref-size:${t.verseRefFontSizePx}px;`
+    + `--contour-break-compact:${t.breakPx.compact}px;`
     + `--contour-break-sm:${t.breakPx.small}px;`
     + `--contour-break-md:${t.breakPx.medium}px;`
     + `--contour-break-lg:${t.breakPx.large}px;`
@@ -111,6 +112,7 @@ function contourPageExportCss(opts) {
     + 'width:100%;padding-right:var(--contour-hebrew-anchor-inset);box-sizing:border-box}'
     + `${bodySel} .clause{display:block;direction:${textDir};text-align:${textAlign};unicode-bidi:isolate;`
     + 'border-radius:6px;padding:2px 8px;margin:2px 0;font-family:' + textFont + '}'
+    + `${bodySel} .clause.layout-break-compact{margin-bottom:var(--contour-break-compact)!important}`
     + `${bodySel} .clause.layout-break-sm{margin-bottom:var(--contour-break-sm)!important}`
     + `${bodySel} .clause.layout-break-md{margin-bottom:var(--contour-break-md)!important}`
     + `${bodySel} .clause.layout-break-lg{margin-bottom:var(--contour-break-lg)!important}`
@@ -145,6 +147,7 @@ window.contourPageExportCss = contourPageExportCss;
 function exportLayoutBreakCss() {
   const sel = '.contour-page-body';
   return `${sel} .clause{display:block;border-radius:6px;padding:2px 8px;margin:2px 0}`
+    + `${sel} .clause.layout-break-compact{margin-bottom:var(--contour-break-compact)!important}`
     + `${sel} .clause.layout-break-sm{margin-bottom:var(--contour-break-sm)!important}`
     + `${sel} .clause.layout-break-md{margin-bottom:var(--contour-break-md)!important}`
     + `${sel} .clause.layout-break-lg{margin-bottom:var(--contour-break-lg)!important}`

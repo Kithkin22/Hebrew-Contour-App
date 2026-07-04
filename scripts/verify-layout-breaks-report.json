@@ -1,9 +1,39 @@
 {
   "feature": "layout-breaks",
   "url": "http://127.0.0.1:8765",
-  "at": "2026-07-04T02:17:07.691Z",
+  "at": "2026-07-04T03:07:19.399Z",
   "pass": true,
   "results": [
+    {
+      "id": "set-compact",
+      "pass": true,
+      "detail": "spacingAfter=compact, px=-8, margin=-8"
+    },
+    {
+      "id": "compact-tighter-gap",
+      "pass": true,
+      "detail": "compact=-8, default=0"
+    },
+    {
+      "id": "compact-json",
+      "pass": true,
+      "detail": "json spacingAfter=compact, px=-8"
+    },
+    {
+      "id": "compact-reload",
+      "pass": true,
+      "detail": "reloaded=compact, px=-8"
+    },
+    {
+      "id": "compact-export-html",
+      "pass": true,
+      "detail": "export has layout-break-compact=true"
+    },
+    {
+      "id": "compact-export-docx",
+      "pass": true,
+      "detail": "DOCX has negative spacing=true"
+    },
     {
       "id": "set-medium",
       "pass": true,

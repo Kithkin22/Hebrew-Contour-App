@@ -14,6 +14,11 @@
   margin: 2px 0;
 }
 
+#editor.contour-document-page .clause.layout-break-compact,
+.contour-page-body .clause.layout-break-compact {
+  margin-bottom: var(--contour-break-compact, -8px);
+}
+
 #editor.contour-document-page .clause.layout-break-sm,
 .contour-page-body .clause.layout-break-sm {
   margin-bottom: var(--contour-break-sm, 18px);
@@ -44,9 +49,14 @@
   margin-bottom: var(--contour-verse-spacing-double, 4.2em);
 }
 
-body.contour-density-single #editor.contour-document-page .clause:not(.layout-break-sm):not(.layout-break-md):not(.layout-break-lg),
-body.contour-density-single .contour-page-body .clause:not(.layout-break-sm):not(.layout-break-md):not(.layout-break-lg) {
+body.contour-density-single #editor.contour-document-page .clause:not(.layout-break-compact):not(.layout-break-sm):not(.layout-break-md):not(.layout-break-lg),
+body.contour-density-single .contour-page-body .clause:not(.layout-break-compact):not(.layout-break-sm):not(.layout-break-md):not(.layout-break-lg) {
   /* density handled in project-view-prefs.css */
+}
+
+body.contour-density-single #editor.contour-document-page .clause.layout-break-compact,
+body.contour-density-single .contour-page-body .clause.layout-break-compact {
+  margin-bottom: var(--contour-break-compact, -8px) !important;
 }
 
 body.contour-density-single #editor.contour-document-page .clause.layout-break-sm,

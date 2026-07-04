@@ -1,5 +1,5 @@
 /* Visual discourse breaks — clause/verse layout metadata (spacingAfter) */
-const SPACING_AFTER_LEVELS = ['default', 'small', 'medium', 'large'];
+const SPACING_AFTER_LEVELS = ['compact', 'default', 'small', 'medium', 'large'];
 const VERSE_SPACING_LEVELS = ['default', 'single', 'oneHalf', 'double'];
 
 function normalizeSpacingAfter(value) {
@@ -17,6 +17,7 @@ window.normalizeVerseSpacingAfter = normalizeVerseSpacingAfter;
 
 function clauseSpacingAfterClass(clause) {
   const level = normalizeSpacingAfter(clause && clause.spacingAfter);
+  if (level === 'compact') return 'layout-break-compact';
   if (level === 'small') return 'layout-break-sm';
   if (level === 'medium') return 'layout-break-md';
   if (level === 'large') return 'layout-break-lg';
@@ -28,11 +29,19 @@ function clauseLayoutClassNames(clause, selected) {
   let cls = 'clause';
   if (selected) cls += ' selected';
   const px = clauseSpacingAfterPx(clause);
-  if (px <= 0) return cls;
-  if (px === 18) cls += ' layout-break-sm';
-  else if (px === 40) cls += ' layout-break-md';
-  else if (px === 72) cls += ' layout-break-lg';
-  else if (typeof (clause && clause.spacingAfterPx) !== 'number') {
+  if (typeof (clause && clause.spacingAfterPx) === 'number'
+    && px !== -8 && px !== 18 && px !== 40 && px !== 72 && px !== 0) {
+    return cls;
+  }
+  if (px < 0 || normalizeSpacingAfter(clause && clause.spacingAfter) === 'compact') {
+    cls += ' layout-break-compact';
+  } else if (px === 18 || normalizeSpacingAfter(clause && clause.spacingAfter) === 'small') {
+    cls += ' layout-break-sm';
+  } else if (px === 40 || normalizeSpacingAfter(clause && clause.spacingAfter) === 'medium') {
+    cls += ' layout-break-md';
+  } else if (px === 72 || normalizeSpacingAfter(clause && clause.spacingAfter) === 'large') {
+    cls += ' layout-break-lg';
+  } else {
     const br = clauseSpacingAfterClass(clause);
     if (br) cls += ' ' + br;
   }
@@ -81,7 +90,7 @@ window.setClauseIndentPx = setClauseIndentPx;
 
 function clauseSpacingAfterPx(clause) {
   if (!clause) return 0;
-  if (typeof clause.spacingAfterPx === 'number' && clause.spacingAfterPx > 0) {
+  if (typeof clause.spacingAfterPx === 'number') {
     return Math.round(clause.spacingAfterPx);
   }
   return spacingAfterPxFromLevel(clause && clause.spacingAfter);
@@ -90,14 +99,15 @@ window.clauseSpacingAfterPx = clauseSpacingAfterPx;
 
 function setClauseSpacingAfterPx(clause, px) {
   if (!clause) return;
-  const rounded = Math.max(0, Math.round(px));
-  if (rounded <= 0) {
+  const rounded = Math.round(px);
+  if (rounded === 0) {
     delete clause.spacingAfterPx;
     delete clause.spacingAfter;
     return;
   }
   clause.spacingAfterPx = rounded;
   const presets = [
+    ['compact', -8],
     ['small', 18],
     ['medium', 40],
     ['large', 72],
@@ -121,9 +131,10 @@ function clauseLayoutStyle(clause, layout) {
   const side = layout.indentSide === 'left' ? 'margin-left' : 'margin-right';
   let style = `${side}:${clauseIndentPx(clause)}px`;
   const spPx = clauseSpacingAfterPx(clause);
+  const presetPx = [-8, 18, 40, 72];
   const useClass = typeof clause.spacingAfterPx !== 'number'
-    || spPx === 18 || spPx === 40 || spPx === 72;
-  if (spPx > 0 && !useClass) style += `;margin-bottom:${spPx}px`;
+    || presetPx.includes(spPx);
+  if (spPx !== 0 && !useClass) style += `;margin-bottom:${spPx}px`;
   style += `;direction:${dir};text-align:${align};font-family:${layout.fontFamily}`;
   return style;
 }
@@ -131,7 +142,7 @@ window.clauseLayoutStyle = clauseLayoutStyle;
 
 function spacingAfterDocxTwips(clause) {
   const px = clauseSpacingAfterPx(clause);
-  if (px <= 0) return 0;
+  if (px === 0) return 0;
   if (typeof contourPxToDocxTwips === 'function') return contourPxToDocxTwips(px);
   return Math.round(px * 15);
 }
@@ -700,7 +711,7 @@ function buildVersesFromLayoutPaste(text, ref, language, refs, layoutLines) {
     } else {
       clause.indent = Math.max(0, Math.round(line.indent || 0));
     }
-    if (typeof line.spacingAfterPx === 'number' && line.spacingAfterPx > 0) {
+    if (typeof line.spacingAfterPx === 'number' && line.spacingAfterPx !== 0) {
       setClauseSpacingAfterPx(clause, line.spacingAfterPx);
     } else {
       const level = normalizeSpacingAfter(line.spacingAfter);

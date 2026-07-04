@@ -98,6 +98,23 @@
     }
   }
 
+  function resetWordInspector(){
+    hideInspector();
+    ['wiWord','wiRoot','wiParsing'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.textContent='—';
+    });
+    const wiBdbGloss=document.getElementById('wiBdbGloss')||document.getElementById('wiLexiconGloss');
+    const wiBdbLink=document.getElementById('wiBdbLink')||document.getElementById('wiLexiconLink');
+    if(wiBdbGloss) wiBdbGloss.textContent='—';
+    if(wiBdbLink) wiBdbLink.style.display='none';
+    const placeholder=document.getElementById('hcInspectorPlaceholder');
+    const content=document.getElementById('hcInspectorContent');
+    if(placeholder) placeholder.classList.remove('hidden');
+    if(content) content.classList.add('hidden');
+  }
+  window.resetWordInspector=resetWordInspector;
+
   function scheduleHideInspector(){
     clearTimeout(hideInspectorTimer);
     hideInspectorTimer=setTimeout(hideInspector, 250);
