@@ -1,0 +1,2019 @@
+{
+  "app": "Hebrew Contour Table App",
+  "version": "1.3.9",
+  "savedAt": "2026-06-30T03:04:59.439Z",
+  "state": {
+    "parallelEnabled": false,
+    "activePane": 1,
+    "crossArcs": [],
+    "verseAlignPairs": [
+      {
+        "leftVi": 0,
+        "rightVi": 0
+      },
+      {
+        "leftVi": 1,
+        "rightVi": null
+      },
+      {
+        "leftVi": 2,
+        "rightVi": 1
+      },
+      {
+        "leftVi": 3,
+        "rightVi": 2
+      },
+      {
+        "leftVi": 4,
+        "rightVi": 3
+      },
+      {
+        "leftVi": 5,
+        "rightVi": 4
+      },
+      {
+        "leftVi": 6,
+        "rightVi": 5
+      },
+      {
+        "leftVi": 7,
+        "rightVi": 6
+      },
+      {
+        "leftVi": null,
+        "rightVi": null
+      }
+    ],
+    "panes": [
+      {
+        "ref": "Job 19:21-29",
+        "verses": [
+          {
+            "ref": "Job 19:21",
+            "clauses": [
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "חָנֻּ֬נִי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "חָנֻּ֣נִי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "אַתֶּ֣ם",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "רֵעָ֑י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "Be Gracious to me, Be Gracious to me my friends"
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:22",
+            "clauses": [
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "כִּ֥י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "יַד",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "אֱ֝לֹ֗והַּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "נָ֣גְעָה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "בִּֽי׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "For the hand of God has struck me"
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "לָ֭מָּה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "תִּרְדְּפֻ֣נִי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "כְמֹו",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "אֵ֑ל",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "Why do you pursue me like God"
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:23",
+            "clauses": [
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "וּ֝מִבְּשָׂרִ֗י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "לֹ֣א",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "תִשְׂבָּֽעוּ׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "not satisfied with my flesh"
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "מִֽי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "יִתֵּ֣ן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "אֵ֭פֹו",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "וְיִכָּתְב֣וּן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "מִלָּ֑י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "Then who will write down my words"
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:24",
+            "clauses": [
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "מִֽי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "יִתֵּ֖ן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "בַּסֵּ֣פֶר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "וְיֻחָֽקוּ׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "who will enscribe them in a book"
+                }
+              },
+              {
+                "indent": 2,
+                "words": [
+                  {
+                    "text": "בְּעֵט",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "בַּרְזֶ֥ל",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "with an iron pen "
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:25",
+            "clauses": [
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "וְעֹפָ֑רֶת",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "לָ֝עַ֗ד",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "בַּצּ֥וּר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "יֵחָצְבֽוּן׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "and be engraved in lead on a rock "
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "וַאֲנִ֣י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "יָ֭דַעְתִּי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "גֹּ֣אֲלִי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "חָ֑י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "I, I know "
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:26",
+            "clauses": [
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "וְ֝אַחֲרֹ֗ון",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "עַל",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "עָפָ֥ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "יָקֽוּם׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "and he will stand upon the dust of the earth\n"
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "וְאַחַ֣ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "עֹ֖ורִֽי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "נִקְּפוּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "זֹ֑את",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "And after my sin has been destroyed "
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:27",
+            "clauses": [
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "וּ֝מִבְּשָׂרִ֗י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "אֶֽחֱזֶ֥ה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "אֱלֹֽוהַּ׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "and I am without flesh, I will see God "
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "אֲשֶׁ֤ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "אֲנִ֨י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "׀",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "אֶֽחֱזֶה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "לִּ֗י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "That I will see for myself"
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:28",
+            "clauses": [
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "וְעֵינַ֣י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "רָא֣וּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "וְלֹא",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "זָ֑ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "and my eyes will see and not a stranger (outsider) "
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "כָּל֖וּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "כִלְיֹתַ֣י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "בְּחֵקִֽי׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "my kidneys fail in my lap (my heart faints within me?)"
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "כִּ֣י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "תֹ֖אמְרוּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "מַה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "נִּרְדָּף",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "לֹ֑ו",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "if you say, How we will persue him! "
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:29",
+            "clauses": [
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "וְשֹׁ֥רֶשׁ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "דָּ֝בָ֗ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "נִמְצָא",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "בִֽי׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "And the root of the matter is found in him"
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "גּ֤וּרוּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "לָכֶ֨ם",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "׀",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "מִפְּנֵי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "חֶ֗רֶב",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "Be afraid of the sword "
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "כִּֽי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "חֵ֭מָה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "עֲוֹנֹ֣ות",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "חָ֑רֶב",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "for wrath (brings) punishment of the sword"
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "לְמַ֖עַן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "תֵּדְע֣וּן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "[שַׁדִּין",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "כ]",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "(שַׁדּֽוּן׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "ק)",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "ס",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "so that, you may know (there) is a judgement "
+                }
+              }
+            ]
+          }
+        ],
+        "selected": {
+          "v": 8,
+          "c": 3,
+          "w": 4
+        },
+        "columns": [],
+        "language": "hebrew",
+        "legend": [],
+        "inclusios": [],
+        "comments": [],
+        "activeCommentId": null,
+        "arcs": [],
+        "activeArcId": null
+      },
+      {
+        "ref": "Job 19:21-29",
+        "verses": [
+          {
+            "ref": "Job 19:21",
+            "clauses": [
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "חָנֻּ֬נִי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  }
+                ],
+                "ann": {
+                  "Translation": "Be Gracious to me",
+                  "Parsing": "asyndetic, independent"
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:22",
+            "clauses": [
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "חָנֻּ֣נִי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  },
+                  {
+                    "text": "אַתֶּ֣ם",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "רֵעָ֑י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "Be Gracious to me my friends",
+                  "Parsing": "asyndetic, independent "
+                }
+              },
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "כִּ֥י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "יַד",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "אֱ֝לֹ֗והַּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "נָ֣גְעָה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "בִּֽי׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "For the hand of God has struck me",
+                  "Parsing": "Asyndetic, Independent"
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "לָ֭מָּה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "תִּרְדְּפֻ֣נִי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "כְמֹו",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "אֵ֑ל",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "Why do you pursue me like God",
+                  "Parsing": "Asyndetic, independent? "
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:23",
+            "clauses": [
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "וּ֝מִבְּשָׂרִ֗י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "לֹ֣א",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "תִשְׂבָּֽעוּ׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "not satisfied with my flesh",
+                  "Parsing": "Syndetic, dependent "
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "מִֽי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "יִתֵּ֣ן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  },
+                  {
+                    "text": "אֵ֭פֹו",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "וְיִכָּתְב֣וּן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "מִלָּ֑י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "Then who will write down my words",
+                  "Parsing": "asyndetic, independent"
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:24",
+            "clauses": [
+              {
+                "indent": 2,
+                "words": [
+                  {
+                    "text": "מִֽי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "יִתֵּ֖ן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  },
+                  {
+                    "text": "בַּסֵּ֣פֶר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "וְיֻחָֽקוּ׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "בְּעֵט",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "בַּרְזֶ֥ל",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "וְעֹפָ֑רֶת",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "who will enscribe them in a book with an iron pen and lead",
+                  "Parsing": "asyndetic, independent "
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:25",
+            "clauses": [
+              {
+                "indent": 2,
+                "words": [
+                  {
+                    "text": "לָ֝עַ֗ד",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "בַּצּ֥וּר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "יֵחָצְבֽוּן׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "(and) be engraved on a rock forever ",
+                  "Parsing": "asyndetic, dependent "
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "וַאֲנִ֣י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "יָ֭דַעְתִּי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "גֹּ֣אֲלִי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "חָ֑י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "I, I know that my blood avenger lives",
+                  "Parsing": "syndetic, independent"
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:26",
+            "clauses": [
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "וְ֝אַחֲרֹ֗ון",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "עַל",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "עָפָ֥ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "יָקֽוּם׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "and he will stand upon the dust of the earth\n",
+                  "Parsing": "syndetic,independent "
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:27",
+            "clauses": [
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "וְאַחַ֣ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "עֹ֖ורִֽי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "NRSVUE- then in my skin I will see God ",
+                    "color": ""
+                  },
+                  {
+                    "text": "נִקְּפוּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "זֹ֑את",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "After my skin has been destroyed ",
+                  "Parsing": "syndetic, dependent "
+                }
+              },
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "וּ֝מִבְּשָׂרִ֗י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "NRSVUE- then in my skin I will see God ",
+                    "translation": "from+my flesh usually means without my flesh",
+                    "color": ""
+                  },
+                  {
+                    "text": "אֶֽחֱזֶ֥ה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "אֱלֹֽוהַּ׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "and I am without flesh, I will see God ",
+                  "Parsing": "syndetic dependent "
+                }
+              },
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "אֲשֶׁ֤ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "אֲנִ֨י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "This \"I\" is unnecessary but seems to function to emphasize the statement. ",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "׀",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "אֶֽחֱזֶה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "לִּ֗י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "That I will see for myself",
+                  "Parsing": "asyndetic, independent "
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:28",
+            "clauses": [
+              {
+                "indent": 2,
+                "words": [
+                  {
+                    "text": "וְעֵינַ֣י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "רָא֣וּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "וְלֹא",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "זָ֑ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "NRSVUE- translates this as \"another\" ",
+                    "translation": "this word is refering to an outsider or foreigner, someone who is a non-israelite. ",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "and my eyes will see and not a stranger (outsider) ",
+                  "Parsing": "syndetic, independent "
+                }
+              },
+              {
+                "indent": 7,
+                "words": [
+                  {
+                    "text": "כָּל֖וּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "This phrase can also mean, \"my heart faints within me\" ",
+                    "color": ""
+                  },
+                  {
+                    "text": "כִלְיֹתַ֣י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "בְּחֵקִֽי׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "my kidneys fail in my lap (my heart faints within me?)",
+                  "Parsing": "asyndetic, independent "
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "כִּ֣י",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "תֹ֖אמְרוּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "מַה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "נִּרְדָּף",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "לֹ֑ו",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "ann": {
+                  "Translation": "if you say, How we will persue him! ",
+                  "Parsing": "asyndetic independent "
+                }
+              }
+            ]
+          },
+          {
+            "ref": "Job 19:29",
+            "clauses": [
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "וְשֹׁ֥רֶשׁ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "דָּ֝בָ֗ר",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "נִמְצָא",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "בִֽי׃",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "And the root of the matter is found in him",
+                  "Parsing": "syndetic, dependent "
+                }
+              },
+              {
+                "indent": 0,
+                "words": [
+                  {
+                    "text": "גּ֤וּרוּ",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "לָכֶ֨ם",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "׀",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "מִפְּנֵי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "חֶ֗רֶב",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  }
+                ],
+                "ann": {
+                  "Translation": "Be afraid of the sword ",
+                  "Parsing": "asyndetic, independent "
+                }
+              },
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "כִּֽי",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "connector": "maqaf",
+                    "text": "־"
+                  },
+                  {
+                    "text": "חֵ֭מָה",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "עֲוֹנֹ֣ות",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "חָ֑רֶב",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": "#b02a2a"
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "for wrath (brings) punishment of the sword",
+                  "Parsing": "asyndetic, dependent"
+                }
+              },
+              {
+                "indent": 1,
+                "words": [
+                  {
+                    "text": "לְמַ֖עַן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "תֵּדְע֣וּן",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  },
+                  {
+                    "text": "שַׁדִּין",
+                    "deleted": false,
+                    "specials": [],
+                    "note": "",
+                    "translation": "",
+                    "color": ""
+                  }
+                ],
+                "specials": [],
+                "ann": {
+                  "Translation": "so that, you may know (there) is a judgement ",
+                  "Parsing": "asyndetic, independent "
+                }
+              }
+            ]
+          }
+        ],
+        "selected": {
+          "v": 7,
+          "c": 2,
+          "w": 6
+        },
+        "columns": [],
+        "language": "hebrew",
+        "legend": [
+          {
+            "type": "bracket",
+            "color": "#315efb",
+            "label": "Parallelism "
+          },
+          {
+            "type": "textColor",
+            "color": "#b02a2a",
+            "label": "Repetitin of Words"
+          }
+        ],
+        "inclusios": [
+          {
+            "id": "inc1782788427568",
+            "label": "Inclusio A",
+            "color": "#315efb",
+            "start": null,
+            "end": null
+          }
+        ],
+        "comments": [],
+        "activeCommentId": null,
+        "arcs": [
+          {
+            "id": "arc-1",
+            "start": {
+              "v": 7,
+              "c": 2,
+              "w": 0
+            },
+            "end": {
+              "v": 8,
+              "c": 2,
+              "w": 0
+            },
+            "color": "#0b61d8",
+            "label": ""
+          }
+        ],
+        "activeArcId": "arc-1"
+      }
+    ]
+  },
+  "generatedRefsByPane": [
+    [
+      "Job 19:21",
+      "Job 19:22",
+      "Job 19:23",
+      "Job 19:24",
+      "Job 19:25",
+      "Job 19:26",
+      "Job 19:27",
+      "Job 19:28",
+      "Job 19:29"
+    ],
+    [
+      "Job 19:21",
+      "Job 19:22",
+      "Job 19:23",
+      "Job 19:24",
+      "Job 19:25",
+      "Job 19:26",
+      "Job 19:27",
+      "Job 19:28",
+      "Job 19:29"
+    ]
+  ],
+  "generatedRefs": [
+    "Job 19:21",
+    "Job 19:22",
+    "Job 19:23",
+    "Job 19:24",
+    "Job 19:25",
+    "Job 19:26",
+    "Job 19:27",
+    "Job 19:28",
+    "Job 19:29"
+  ],
+  "projectName": "Job Exegesis Draft"
+}

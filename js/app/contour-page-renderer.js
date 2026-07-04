@@ -104,11 +104,13 @@ function contourPageExportCss(opts) {
   const pageRule = isWorksheetExport
     ? `@page{size:${paperSpec.cssSize};margin:0}`
     : '@page{margin:0.6in}';
+  const bodyPad = isWorksheetExport ? 'padding:0' : 'padding:24px';
+  const sheetMinH = isWorksheetExport ? 'min-height:0;height:auto' : 'min-height:var(--contour-letter-min-height)';
 
   return contourPageCssVarsBlock()
-    + 'body{margin:0;padding:24px;background:#fff;color:#222;font-family:Arial,Helvetica,sans-serif}'
+    + `body{margin:0;${bodyPad};background:#fff;color:#222;font-family:Arial,Helvetica,sans-serif}`
     + pageRule
-    + `${sheetSel}{direction:ltr;text-align:left;width:var(--contour-letter-width);min-height:var(--contour-letter-min-height);`
+    + `${sheetSel}{direction:ltr;text-align:left;width:var(--contour-letter-width);${sheetMinH};`
     + 'margin:0;padding:var(--contour-letter-margin);box-sizing:border-box;background:#fff;overflow:visible;position:relative}'
     + `${sheetSel} .contour-passage-title{display:block;unicode-bidi:isolate;direction:ltr;text-align:left;`
     + 'font-family:Arial,Helvetica,sans-serif;font-size:var(--contour-passage-title-size);font-weight:700;'
@@ -194,6 +196,12 @@ function buildWorksheetTitleExportHtml(wsOpts) {
     const d = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     html += `<div class="contour-worksheet-meta">${typeof esc === 'function' ? esc(d) : d}</div>`;
   }
+  if (wsOpts.includeExportTimestamp) {
+    const ts = new Date().toLocaleString(undefined, {
+      year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+    html += `<div class="contour-worksheet-meta contour-worksheet-meta--timestamp">${typeof esc === 'function' ? esc(ts) : ts}</div>`;
+  }
   if (wsOpts.includeProjectName) {
     let name = 'Untitled Project';
     if (typeof getCurrentProjectRecord === 'function') {
@@ -265,12 +273,17 @@ function buildContourExportDocument(opts) {
   const worksheetFitOnePage = wsOpts ? wsOpts.fitOnePage : (opts.worksheet === true);
   const includeSupplementLegacy = !!opts.includeSupplement;
   let bodyHtml = opts.bodyHtml != null ? opts.bodyHtml : buildContourPageBodyHtml(true);
-  if (!bodyHtml) return null;
+  const canWorksheetClone = isWorksheetExport
+    && typeof cloneLiveEditorForExport === 'function'
+    && document.querySelector('#contourPageZoomStage .contour-document-sheet');
+  if (!bodyHtml && !canWorksheetClone) return null;
   if (wsOpts && !wsOpts.includeTextColors && typeof stripExportTextColors === 'function') {
     bodyHtml = stripExportTextColors(bodyHtml);
   }
   const titleText = contourPassageTitleForExport() || (state && state.ref) || 'Contour Export';
-  const pageTitle = typeof xmlEscape === 'function' ? xmlEscape(opts.docTitle || titleText) : (opts.docTitle || titleText);
+  const pageTitle = isWorksheetExport
+    ? (typeof xmlEscape === 'function' ? xmlEscape(opts.docTitle != null ? opts.docTitle : '\u200B') : (opts.docTitle != null ? opts.docTitle : '\u200B'))
+    : (typeof xmlEscape === 'function' ? xmlEscape(opts.docTitle || titleText) : (opts.docTitle || titleText));
 
   let legendHtml = '';
   let inclusiosHtml = '';
@@ -323,7 +336,7 @@ function buildContourExportDocument(opts) {
     };
     if (wsOpts) {
       shellOpts.worksheetTitle = wsOpts;
-      shellOpts.includeTitle = wsOpts.includePassageTitle || wsOpts.includeDate || wsOpts.includeProjectName;
+      shellOpts.includeTitle = wsOpts.includePassageTitle || wsOpts.includeDate || wsOpts.includeProjectName || wsOpts.includeExportTimestamp;
     }
     pageShell = buildContourPageShellHtml(bodyHtml, shellOpts);
     if (isWorksheetExport && typeof wrapWorksheetExportShell === 'function') {
@@ -342,15 +355,19 @@ function buildContourExportDocument(opts) {
   if (worksheetLayout && typeof buildWorksheetLayoutCss === 'function') {
     css += buildWorksheetLayoutCss(worksheetLayout);
   }
+  const printHint = isWorksheetExport && opts.includePrintButton
+    ? '<p class="contour-export-print-hint">Tip: In the print dialog, turn off <strong>Headers and footers</strong> for a clean worksheet with no browser title or date.</p>'
+    : '';
   const printBtn = opts.includePrintButton
-    ? '<button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button>'
+    ? printHint + '<button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button>'
     : '';
   const layoutScript = isWorksheetExport && typeof buildContourWorksheetScript === 'function'
     ? buildContourWorksheetScript()
     : '';
   const printScript = opts.printScript || '';
   const legendBlock = legendHtml + inclusiosHtml + commentsHtml + notesHtml + arcsHtml;
-  return '<!doctype html><html><head><meta charset="utf-8"><title>' + pageTitle + '</title><style>' + css + '</style></head><body>'
+  const bodyCls = isWorksheetExport ? ' class="contour-export-worksheet"' : '';
+  return '<!doctype html><html><head><meta charset="utf-8"><title>' + pageTitle + '</title><style>' + css + '</style></head><body' + bodyCls + '>'
     + printBtn
     + pageShell
     + (legendBlock ? `<div class="contour-export-supplement-page">${legendBlock}</div>` : '')

@@ -1,0 +1,27 @@
+{
+  "at": "2026-07-04T18:50:56.895Z",
+  "projectJson": "/Users/joekindon/Downloads/Job-Exegesis-Draft.json",
+  "meta": {
+    "ref": "Job 19:21-29",
+    "inclusios": 2,
+    "arcs": 1,
+    "colored": 6,
+    "rails": 12,
+    "arcPaths": 1
+  },
+  "ws": {
+    "scaleMode": "100",
+    "paper": "letter",
+    "margins": "normal",
+    "includeUnitFrames": true,
+    "includeArcs": true,
+    "includeTextColors": true,
+    "includePassageTitle": true,
+    "includeDate": false,
+    "includeProjectName": false,
+    "includeExportTimestamp": false,
+    "includeLegend": false,
+    "includeComments": false,
+    "includeNotes": false
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "at": "2026-07-04T19:03:38.196Z",
+  "results": [
+    {
+      "id": "docx-generated",
+      "pass": true,
+      "detail": "docs/assets/export-verify-v80-docx/job19-contour-export.docx"
+    },
+    {
+      "id": "hebrew-paragraphs",
+      "pass": true,
+      "detail": "count=20"
+    },
+    {
+      "id": "rtl-bidi",
+      "pass": true,
+      "detail": "bidi+right on 20 paras"
+    },
+    {
+      "id": "rtl-runs",
+      "pass": true,
+      "detail": "w:rtl on Hebrew runs"
+    },
+    {
+      "id": "editor-rtl",
+      "pass": true,
+      "detail": "clauses=20"
+    },
+    {
+      "id": "indent-parity",
+      "pass": true,
+      "detail": "matched 20/20"
+    },
+    {
+      "id": "indent-variation",
+      "pass": true,
+      "detail": "unique indents=0,450,900"
+    },
+    {
+      "id": "colors-export",
+      "pass": true,
+      "detail": "colored paras=4"
+    },
+    {
+      "id": "no-left-indent-hebrew",
+      "pass": true,
+      "detail": "Hebrew uses w:ind w:right not w:left"
+    },
+    {
+      "id": "word-open-export",
+      "pass": true,
+      "detail": "skipped — OOXML parity verified; open .docx in Word manually"
+    },
+    {
+      "id": "docx-visual-preview",
+      "pass": true,
+      "detail": "HTML render from document.xml"
+    }
+  ],
+  "hebrewParaSample": [
+    {
+      "bidi": true,
+      "jcRight": true,
+      "rtlRun": true,
+      "indRight": 0,
+      "spacingAfter": 0,
+      "colors": [
+        "B02A2A"
+      ],
+      "text": "חָנֻּ֬נִי חָנֻּ֣נִי אַתֶּ֣ם רֵעָ֑י"
+    },
+    {
+      "bidi": true,
+      "jcRight": true,
+      "rtlRun": true,
+      "indRight": 450,
+      "spacingAfter": 0,
+      "colors": [
+        "0B61A4"
+      ],
+      "text": "כִּ֥י יַד ־אֱ֝לֹ֗והַּ נָ֣גְעָה בִּֽי׃"
+    },
+    {
+      "bidi": true,
+      "jcRight": true,
+      "rtlRun": true,
+      "indRight": 0,
+      "spacingAfter": 0,
+      "colors": [],
+      "text": "לָ֭מָּה תִּרְדְּפֻ֣נִי כְמֹו ־אֵ֑ל"
+    },
+    {
+      "bidi": true,
+      "jcRight": true,
+      "rtlRun": true,
+      "indRight": 450,
+      "spacingAfter": 0,
+      "colors": [],
+      "text": "וּ֝מִבְּשָׂרִ֗י לֹ֣א תִשְׂבָּֽעוּ׃"
+    },
+    {
+      "bidi": true,
+      "jcRight": true,
+      "rtlRun": true,
+      "indRight": 0,
+      "spacingAfter": 0,
+      "colors": [
+        "6B7355"
+      ],
+      "text": "מִֽי ־יִתֵּ֣ן אֵ֭פֹו וְיִכָּתְב֣וּן מִלּ"
+    },
+    {
+      "bidi": true,
+      "jcRight": true,
+      "rtlRun": true,
+      "indRight": 0,
+      "spacingAfter": 0,
+      "colors": [
+        "B02A2A"
+      ],
+      "text": "מִֽי ־יִתֵּ֖ן בַּסֵּ֣פֶר וְיֻחָֽקוּ׃"
+    },
+    {
+      "bidi": true,
+      "jcRight": true,
+      "rtlRun": true,
+      "indRight": 900,
+      "spacingAfter": 0,
+      "colors": [],
+      "text": "בְּעֵט ־בַּרְזֶ֥ל"
+    },
+    {
+      "bidi": true,
+      "jcRight": true,
+      "rtlRun": true,
+      "indRight": 0,
+      "spacingAfter": 0,
+      "colors": [],
+      "text": "וְעֹפָ֑רֶת לָ֝עַ֗ד בַּצּ֥וּר יֵחָצְבֽוּן"
+    }
+  ],
+  "editorSample": [
+    {
+      "dir": "rtl",
+      "align": "right",
+      "marginRight": 0,
+      "marginBottom": 2,
+      "expectedTwips": 0,
+      "text": "חָנֻּ֬נִי חָנֻּ֣נִי אַתֶּ֣ם רֵ"
+    },
+    {
+      "dir": "rtl",
+      "align": "right",
+      "marginRight": 30,
+      "marginBottom": 2,
+      "expectedTwips": 450,
+      "text": "כִּ֥י יַד־אֱ֝לֹ֗והַּ נָ֣גְעָה "
+    },
+    {
+      "dir": "rtl",
+      "align": "right",
+      "marginRight": 0,
+      "marginBottom": 2,
+      "expectedTwips": 0,
+      "text": "לָ֭מָּה תִּרְדְּפֻ֣נִי כְמֹו־א"
+    },
+    {
+      "dir": "rtl",
+      "align": "right",
+      "marginRight": 30,
+      "marginBottom": 2,
+      "expectedTwips": 450,
+      "text": "וּ֝מִבְּשָׂרִ֗י לֹ֣א תִשְׂבָּֽ"
+    },
+    {
+      "dir": "rtl",
+      "align": "right",
+      "marginRight": 0,
+      "marginBottom": 2,
+      "expectedTwips": 0,
+      "text": "מִֽי־יִתֵּ֣ן אֵ֭פֹו וְיִכָּתְב"
+    },
+    {
+      "dir": "rtl",
+      "align": "right",
+      "marginRight": 0,
+      "marginBottom": 2,
+      "expectedTwips": 0,
+      "text": "מִֽי־יִתֵּ֖ן בַּסֵּ֣פֶר וְיֻחָ"
+    },
+    {
+      "dir": "rtl",
+      "align": "right",
+      "marginRight": 60,
+      "marginBottom": 2,
+      "expectedTwips": 900,
+      "text": "בְּעֵט־בַּרְזֶ֥ל"
+    },
+    {
+      "dir": "rtl",
+      "align": "right",
+      "marginRight": 0,
+      "marginBottom": 2,
+      "expectedTwips": 0,
+      "text": "וְעֹפָ֑רֶת לָ֝עַ֗ד בַּצּ֥וּר י"
+    }
+  ]
+}

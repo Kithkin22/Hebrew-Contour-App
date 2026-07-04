@@ -1,4 +1,4 @@
-/* Worksheet PDF export — paper, margin, and include presets */
+/* Worksheet PDF export — paper, margin, scale, and include presets */
 
 const WORKSHEET_PAPER = {
   letter: { widthIn: 8.5, heightIn: 11, cssSize: 'letter' },
@@ -11,8 +11,12 @@ const WORKSHEET_MARGIN_IN = {
   wide: 1.5,
 };
 
+const WORKSHEET_SCALE_PRESETS = ['fit', '100', '90', '80', '70', 'custom'];
+
 const WORKSHEET_EXPORT_DEFAULTS = {
-  fitOnePage: true,
+  scaleMode: '100',
+  scalePercent: 100,
+  fitOnePage: false,
   paper: 'letter',
   margins: 'normal',
   includeUnitFrames: true,
@@ -24,14 +28,25 @@ const WORKSHEET_EXPORT_DEFAULTS = {
   includePassageTitle: true,
   includeDate: false,
   includeProjectName: false,
+  includeExportTimestamp: false,
 };
 
 function normalizeWorksheetExportOptions(raw) {
   raw = raw || {};
   const paper = WORKSHEET_PAPER[raw.paper] ? raw.paper : WORKSHEET_EXPORT_DEFAULTS.paper;
   const margins = WORKSHEET_MARGIN_IN[raw.margins] != null ? raw.margins : WORKSHEET_EXPORT_DEFAULTS.margins;
+  let scaleMode = raw.scaleMode;
+  if (!scaleMode && raw.fitOnePage) scaleMode = 'fit';
+  if (!scaleMode || !WORKSHEET_SCALE_PRESETS.includes(scaleMode)) {
+    scaleMode = WORKSHEET_EXPORT_DEFAULTS.scaleMode;
+  }
+  let scalePercent = parseInt(raw.scalePercent, 10);
+  if (isNaN(scalePercent)) scalePercent = WORKSHEET_EXPORT_DEFAULTS.scalePercent;
+  scalePercent = Math.min(200, Math.max(25, scalePercent));
   return {
-    fitOnePage: raw.fitOnePage != null ? !!raw.fitOnePage : WORKSHEET_EXPORT_DEFAULTS.fitOnePage,
+    scaleMode,
+    scalePercent,
+    fitOnePage: scaleMode === 'fit',
     paper,
     margins,
     includeUnitFrames: raw.includeUnitFrames != null ? !!raw.includeUnitFrames : WORKSHEET_EXPORT_DEFAULTS.includeUnitFrames,
@@ -43,15 +58,12 @@ function normalizeWorksheetExportOptions(raw) {
     includePassageTitle: raw.includePassageTitle != null ? !!raw.includePassageTitle : WORKSHEET_EXPORT_DEFAULTS.includePassageTitle,
     includeDate: !!raw.includeDate,
     includeProjectName: !!raw.includeProjectName,
+    includeExportTimestamp: !!raw.includeExportTimestamp,
   };
 }
 
 function worksheetPaperSpec(paperKey) {
   return WORKSHEET_PAPER[paperKey] || WORKSHEET_PAPER.letter;
-}
-
-function worksheetMarginIn(marginKey) {
-  return WORKSHEET_MARGIN_IN[marginKey] != null ? WORKSHEET_MARGIN_IN[marginKey] : WORKSHEET_MARGIN_IN.normal;
 }
 
 function worksheetMarginIn(marginKey) {
@@ -77,14 +89,35 @@ function worksheetPrintableAreaPx(paperKey, marginKey) {
   };
 }
 
-/** Live editor sheet size — matches Contour workspace letter page geometry. */
+/** Live editor sheet — use actual content height, not empty letter min-height. */
 function getLiveEditorSheetMetrics() {
   const sheet = document.querySelector('#contourPageZoomStage .contour-document-sheet');
+  const ed = document.getElementById('editor');
   if (!sheet) return null;
   const cp = window.CONTOUR_PAGE || {};
   const sheetW = cp.letterWidthPx || 816;
-  const sheetH = Math.max(sheet.offsetHeight, sheet.scrollHeight, cp.letterHeightPx || 1056);
-  return { sheetW, sheetH };
+  const marginPx = cp.marginPx || 96;
+  const titleEl = sheet.querySelector('#contourPassageTitle, .contour-passage-title');
+  const titleVisible = titleEl && !titleEl.hidden && titleEl.textContent.trim();
+  const titleBlock = titleVisible ? (titleEl.offsetHeight + 24) : 0;
+  const edH = ed ? Math.max(ed.offsetHeight, ed.scrollHeight, 1) : 1;
+  const contentH = Math.ceil(titleBlock + edH + marginPx * 2);
+  const sheetH = Math.max(contentH, sheet.scrollHeight || 0, 1);
+  return { sheetW, sheetH, contentH, marginPx };
+}
+
+function resolveWorksheetScale(wsOpts, metrics, area) {
+  const mode = wsOpts.scaleMode || '100';
+  if (mode === 'fit') {
+    const s = Math.min(1, area.areaW / metrics.sheetW, area.areaH / metrics.sheetH);
+    return Math.round(s * 10000) / 10000;
+  }
+  if (mode === 'custom') {
+    return Math.round((wsOpts.scalePercent / 100) * 10000) / 10000;
+  }
+  const preset = parseInt(mode, 10);
+  if (!isNaN(preset)) return Math.round((preset / 100) * 10000) / 10000;
+  return 1;
 }
 
 function computeWorksheetLayoutForExport(wsOpts) {
@@ -92,28 +125,45 @@ function computeWorksheetLayoutForExport(wsOpts) {
   const metrics = getLiveEditorSheetMetrics();
   if (!metrics) return null;
   const area = worksheetPrintableAreaPx(wsOpts.paper, wsOpts.margins);
-  let scale = 1;
-  if (wsOpts.fitOnePage) {
-    scale = Math.min(1, area.areaW / metrics.sheetW, area.areaH / metrics.sheetH);
-    scale = Math.round(scale * 10000) / 10000;
-  }
-  return Object.assign({ fitOnePage: wsOpts.fitOnePage, scale }, area, metrics);
+  const scale = resolveWorksheetScale(wsOpts, metrics, area);
+  return Object.assign({
+    scaleMode: wsOpts.scaleMode,
+    scalePercent: wsOpts.scalePercent,
+    fitOnePage: wsOpts.scaleMode === 'fit',
+    scale,
+  }, area, metrics);
 }
 
 function buildWorksheetLayoutCss(layout) {
   if (!layout) return '';
-  if (!layout.fitOnePage) {
-    return `@page{size:${layout.cssSize};margin:${layout.marginIn}in}`
-      + 'body.contour-export-worksheet{margin:0;padding:0;background:#fff}';
+  const scaled = layout.scale !== 1 || layout.scaleMode === 'fit';
+  let css = `@page{size:${layout.cssSize};margin:0}`
+    + 'body.contour-export-worksheet{margin:0!important;padding:0!important;background:#fff}'
+    + '.contour-export-print-hint{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#64748b;margin:0 0 12px 0;max-width:720px}'
+    + '.contour-document-sheet.contour-document-sheet--export{min-height:0!important;height:auto!important;box-shadow:none!important;border:none!important}'
+    + '.contour-document-sheet--export.contour-export-no-meta{padding-top:var(--contour-letter-margin)}'
+    + '.contour-document-sheet--export .contour-passage-title{margin-top:0}'
+    + '.contour-document-sheet--export .contour-worksheet-meta{margin:0 0 8px 0;font-size:12px;color:#64748b}'
+    + '.contour-document-sheet--export .contour-page-body{position:relative;overflow:visible}'
+    + '.contour-document-sheet--export .contour-page-body.lang-hebrew .verse-block,'
+    + '.contour-document-sheet--export .contour-page-body.lang-hebrew .clause{direction:rtl;text-align:right}'
+    + '.contour-document-sheet--export .contour-page-body.lang-greek .verse-block,'
+    + '.contour-document-sheet--export .contour-page-body.lang-greek .clause{direction:ltr;text-align:left}';
+
+  if (scaled) {
+    css += `.contour-export-worksheet-print-root{width:${layout.pageW}px;min-height:${layout.pageH}px;margin:0 auto;overflow:hidden;position:relative;box-sizing:border-box;page-break-after:always}`
+      + `.contour-export-worksheet-stage{transform:scale(${layout.scale});transform-origin:top left;position:absolute;left:${layout.marginPx}px;top:${layout.marginPx}px;width:${layout.sheetW}px;height:auto}`
+      + '@media print{.contour-export-worksheet-print-root{page-break-inside:avoid}}';
+  } else {
+    css += `.contour-export-worksheet-print-root{width:${layout.pageW}px;min-height:${layout.pageH}px;margin:0 auto;box-sizing:border-box;padding:${layout.marginPx}px;page-break-after:always}`
+      + `.contour-export-worksheet-stage{width:${layout.sheetW}px;height:auto;transform:none}`
+      + '@media print{.contour-export-worksheet-print-root{page-break-inside:avoid}}';
   }
-  return `@page{size:${layout.cssSize};margin:0}`
-    + 'body.contour-export-worksheet{margin:0;padding:0;background:#fff}'
-    + `.contour-export-worksheet-print-root{width:${layout.pageW}px;height:${layout.pageH}px;margin:0 auto;overflow:hidden;position:relative;box-sizing:border-box;page-break-after:always}`
-    + `.contour-export-worksheet-stage{transform:scale(${layout.scale});transform-origin:top left;position:absolute;left:${layout.marginPx}px;top:${layout.marginPx}px;width:${layout.sheetW}px;min-height:${layout.sheetH}px}`
-    + '@media print{.contour-export-worksheet-print-root{page-break-inside:avoid}}';
+  return css;
 }
 
 window.WORKSHEET_EXPORT_DEFAULTS = WORKSHEET_EXPORT_DEFAULTS;
+window.WORKSHEET_SCALE_PRESETS = WORKSHEET_SCALE_PRESETS;
 window.normalizeWorksheetExportOptions = normalizeWorksheetExportOptions;
 window.worksheetPaperSpec = worksheetPaperSpec;
 window.worksheetMarginIn = worksheetMarginIn;
@@ -121,3 +171,4 @@ window.worksheetPrintableAreaPx = worksheetPrintableAreaPx;
 window.getLiveEditorSheetMetrics = getLiveEditorSheetMetrics;
 window.computeWorksheetLayoutForExport = computeWorksheetLayoutForExport;
 window.buildWorksheetLayoutCss = buildWorksheetLayoutCss;
+window.resolveWorksheetScale = resolveWorksheetScale;

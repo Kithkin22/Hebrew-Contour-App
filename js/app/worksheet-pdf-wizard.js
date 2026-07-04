@@ -7,6 +7,15 @@
     return document.getElementById('worksheetPdfModal');
   }
 
+  function syncScaleCustomVisibility() {
+    const form = document.getElementById('worksheetPdfForm');
+    const wrap = document.getElementById('worksheetScaleCustomWrap');
+    if (!form || !wrap) return;
+    const mode = form.elements.scaleMode;
+    const selected = mode && (mode.value || (mode instanceof RadioNodeList && [...mode].find((r) => r.checked)?.value));
+    wrap.classList.toggle('hidden', selected !== 'custom');
+  }
+
   function readWorksheetWizardForm() {
     const form = document.getElementById('worksheetPdfForm');
     if (!form) return { ...(window.WORKSHEET_EXPORT_DEFAULTS || {}) };
@@ -14,11 +23,16 @@
       const el = form.elements[name];
       if (!el) return null;
       if (el.type === 'checkbox') return el.checked;
+      if (el instanceof RadioNodeList) {
+        const checked = [...el].find((r) => r.checked);
+        return checked ? checked.value : null;
+      }
       return el.value;
     };
     return typeof normalizeWorksheetExportOptions === 'function'
       ? normalizeWorksheetExportOptions({
-        fitOnePage: val('fitOnePage'),
+        scaleMode: val('scaleMode'),
+        scalePercent: val('scalePercent'),
         paper: val('paper'),
         margins: val('margins'),
         includeUnitFrames: val('includeUnitFrames'),
@@ -30,6 +44,7 @@
         includePassageTitle: val('includePassageTitle'),
         includeDate: val('includeDate'),
         includeProjectName: val('includeProjectName'),
+        includeExportTimestamp: val('includeExportTimestamp'),
       })
       : {};
   }
@@ -42,9 +57,12 @@
       const el = form.elements[name];
       if (!el) return;
       if (el.type === 'checkbox') el.checked = !!value;
-      else if (value != null) el.value = value;
+      else if (el instanceof RadioNodeList) {
+        [...el].forEach((r) => { r.checked = r.value === String(value); });
+      } else if (value != null) el.value = value;
     };
-    set('fitOnePage', settings.fitOnePage);
+    set('scaleMode', settings.scaleMode || (settings.fitOnePage ? 'fit' : '100'));
+    set('scalePercent', settings.scalePercent);
     set('paper', settings.paper);
     set('margins', settings.margins);
     set('includeUnitFrames', settings.includeUnitFrames);
@@ -56,6 +74,8 @@
     set('includePassageTitle', settings.includePassageTitle);
     set('includeDate', settings.includeDate);
     set('includeProjectName', settings.includeProjectName);
+    set('includeExportTimestamp', settings.includeExportTimestamp);
+    syncScaleCustomVisibility();
   }
 
   function closeWorksheetPdfWizard() {
@@ -96,6 +116,7 @@
         worksheetSettings: settings,
         includePrintButton: false,
         worksheetLayout: layout,
+        docTitle: '\u200B',
       });
     } catch (e) {
       return;
@@ -151,9 +172,13 @@
 
     const form = document.getElementById('worksheetPdfForm');
     if (form) {
-      form.addEventListener('change', schedulePreviewUpdate);
+      form.addEventListener('change', () => {
+        syncScaleCustomVisibility();
+        schedulePreviewUpdate();
+      });
       form.addEventListener('input', schedulePreviewUpdate);
     }
+    syncScaleCustomVisibility();
   }
 
   window.showWorksheetPdfWizard = showWorksheetPdfWizard;

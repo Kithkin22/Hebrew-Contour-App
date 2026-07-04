@@ -240,6 +240,12 @@ function applyWorksheetTitleToLiveClone(sheet, wsOpts) {
     const d = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     metaHtml += `<div class="contour-worksheet-meta">${typeof esc === 'function' ? esc(d) : d}</div>`;
   }
+  if (wsOpts.includeExportTimestamp) {
+    const ts = new Date().toLocaleString(undefined, {
+      year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+    metaHtml += `<div class="contour-worksheet-meta contour-worksheet-meta--timestamp">${typeof esc === 'function' ? esc(ts) : ts}</div>`;
+  }
   if (wsOpts.includeProjectName) {
     let name = 'Untitled Project';
     if (typeof getCurrentProjectRecord === 'function') {
@@ -256,12 +262,17 @@ function applyWorksheetTitleToLiveClone(sheet, wsOpts) {
     titleEl.removeAttribute('id');
     titleEl.hidden = false;
     titleEl.style.display = '';
+    titleEl.style.marginTop = '0';
+    if (!metaHtml) titleEl.style.marginBottom = '12px';
   }
   if (metaHtml) {
     const anchor = sheet.querySelector('.contour-passage-title') || sheet.querySelector('.contour-page-body, #editor');
     if (anchor) anchor.insertAdjacentHTML('beforebegin', metaHtml);
     else sheet.insertAdjacentHTML('afterbegin', metaHtml);
   }
+  const hasMeta = !!(metaHtml || (wsOpts.includePassageTitle && sheet.querySelector('.contour-passage-title')));
+  if (!hasMeta) sheet.classList.add('contour-export-no-meta');
+  else if (!metaHtml) sheet.classList.add('contour-export-title-only');
 }
 
 function cloneLiveEditorForExport(wsOpts) {
@@ -269,14 +280,26 @@ function cloneLiveEditorForExport(wsOpts) {
   refreshLiveEditorOverlaysForExport();
   const liveSheet = document.querySelector('#contourPageZoomStage .contour-document-sheet');
   if (!liveSheet) return null;
+  const liveEd = document.getElementById('editor');
 
   const sheet = liveSheet.cloneNode(true);
   sheet.classList.add('contour-document-sheet--export');
+  sheet.style.minHeight = '0';
+  sheet.style.height = 'auto';
+  sheet.style.margin = '0';
+  sheet.style.boxShadow = 'none';
 
   const ed = sheet.querySelector('#editor');
   if (ed) {
     ed.removeAttribute('id');
     ed.classList.add('contour-page-body');
+    if (liveEd) {
+      ed.className = liveEd.className.replace(/\bselected\b/g, '').trim();
+      if (!ed.classList.contains('lang-hebrew') && !ed.classList.contains('lang-greek')) {
+        const isGreek = typeof state !== 'undefined' && state.language === 'greek';
+        ed.classList.add(isGreek ? 'lang-greek' : 'lang-hebrew');
+      }
+    }
   }
 
   stripLiveEditorInteractionClasses(sheet);
@@ -296,10 +319,8 @@ function cloneLiveEditorForExport(wsOpts) {
 
 function wrapWorksheetExportShell(sheetHtml, layout) {
   if (!sheetHtml) return '';
-  if (layout && layout.fitOnePage) {
-    return `<div class="contour-export-worksheet-print-root"><div class="contour-export-worksheet-stage">${sheetHtml}</div></div>`;
-  }
-  return sheetHtml;
+  if (!layout) return sheetHtml;
+  return `<div class="contour-export-worksheet-print-root"><div class="contour-export-worksheet-stage">${sheetHtml}</div></div>`;
 }
 
 window.refreshLiveEditorOverlaysForExport = refreshLiveEditorOverlaysForExport;

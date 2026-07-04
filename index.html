@@ -415,10 +415,19 @@
     <form id="worksheetPdfForm" class="worksheet-wizard-layout" onsubmit="return false">
       <div class="worksheet-wizard-fields">
         <div class="worksheet-wizard-section">
-          <strong>Page Layout</strong>
-          <div class="worksheet-wizard-checks">
-            <label><input type="checkbox" name="fitOnePage" checked> Fit to one page</label>
+          <strong>Scale</strong>
+          <div class="worksheet-wizard-options">
+            <label><input type="radio" name="scaleMode" value="fit"> Fit to one page</label>
+            <label><input type="radio" name="scaleMode" value="100" checked> 100%</label>
+            <label><input type="radio" name="scaleMode" value="90"> 90%</label>
+            <label><input type="radio" name="scaleMode" value="80"> 80%</label>
+            <label><input type="radio" name="scaleMode" value="70"> 70%</label>
+            <label><input type="radio" name="scaleMode" value="custom"> Custom</label>
           </div>
+          <label class="worksheet-scale-custom hidden" id="worksheetScaleCustomWrap">
+            <span>Custom:</span>
+            <input type="number" name="scalePercent" min="25" max="200" step="1" value="100" style="width:4em"> %
+          </label>
         </div>
         <div class="worksheet-wizard-section">
           <strong>Paper</strong>
@@ -452,6 +461,7 @@
             <label><input type="checkbox" name="includePassageTitle" checked> Passage Title</label>
             <label><input type="checkbox" name="includeDate"> Date</label>
             <label><input type="checkbox" name="includeProjectName"> Project Name</label>
+            <label><input type="checkbox" name="includeExportTimestamp"> Export Timestamp</label>
           </div>
         </div>
         <div class="worksheet-wizard-actions">

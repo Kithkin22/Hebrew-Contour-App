@@ -270,7 +270,7 @@ function exportWorksheetPdf(settings, opts) {
   try {
     docHtml = typeof buildContourExportDocument === 'function' ? buildContourExportDocument({
       includePrintButton: true,
-      docTitle: printMeta.title,
+      docTitle: '\u200B',
       paneState: state,
       worksheetSettings: settings,
     }) : null;
@@ -279,7 +279,7 @@ function exportWorksheetPdf(settings, opts) {
     return;
   }
   if (!docHtml) { alert('Create or generate text first.'); return; }
-  openPdfPrintWindow(docHtml, printMeta);
+  openPdfPrintWindow(docHtml, { title: '\u200B', oldTitle: printMeta.oldTitle, filenameHint: printMeta.title });
 }
 window.exportWorksheetPdf = exportWorksheetPdf;
 
@@ -292,7 +292,7 @@ function openWorksheetPdfWizard(opts) {
     return;
   }
   exportWorksheetPdf(typeof WORKSHEET_EXPORT_DEFAULTS !== 'undefined' ? WORKSHEET_EXPORT_DEFAULTS : {
-    fitOnePage: true,
+    scaleMode: '100',
     includeLegend: !!opts.includeLegend,
   });
 }
