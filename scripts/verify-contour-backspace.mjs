@@ -130,6 +130,30 @@ async function main() {
       const payload = projectPayload();
       const savedClauses = payload.state.panes[0].verses[0].clauses.length;
 
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      parseText('אֶ֣לֶף\n\nבֵּ֑ית', 'Gap test', false, {
+        skipRender: true,
+        preserveLayout: true,
+      });
+      render();
+      const gapBefore = {
+        clauses: state.verses[0].clauses.length,
+        spacingAfterPx: state.verses[0].clauses[0].spacingAfterPx || 0,
+      };
+      state.selected = { v: 0, c: 1, w: 0 };
+      mergeClauseWithPrevious(state.selected);
+      const gapAfter = {
+        clauses: state.verses[0].clauses.length,
+        spacingAfterPx: state.verses[0].clauses[0].spacingAfterPx || 0,
+      };
+
+      loadTwoWords();
+      state.selected = { v: 0, c: 0, w: 1 };
+      insertBreak();
+      state.selected = { v: 0, c: 1, w: 0 };
+      render();
+      focusContourEditor();
       return {
         afterSplit,
         afterMerge,
@@ -140,24 +164,91 @@ async function main() {
         inclusioRemapped,
         exportOneClause,
         savedClauses,
+        gapBefore,
+        gapAfter,
       };
     });
 
     record(
+      'layout-gap-cleared',
+      unit.gapBefore.clauses === 2 &&
+        unit.gapBefore.spacingAfterPx > 0 &&
+        unit.gapAfter.clauses === 1 &&
+        unit.gapAfter.spacingAfterPx === 0,
+      `before sp=${unit.gapBefore.spacingAfterPx} clauses=${unit.gapBefore.clauses}, after sp=${unit.gapAfter.spacingAfterPx} clauses=${unit.gapAfter.clauses}`
+    );
+
+    await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      parseText('אֶ֣לֶף בֵּ֑ית', 'Keyboard', false, { skipRender: true });
+      state.selected = { v: 0, c: 0, w: 1 };
+      insertBreak();
+      state.selected = { v: 0, c: 1, w: 0 };
+      render();
+    });
+    await page.click('.word[data-v="0"][data-c="1"][data-w="0"]');
+    await page.keyboard.press('Backspace');
+    const keyboardMerge = await page.evaluate(() => ({
+      clauses: state.verses[0].clauses.length,
+      focused: document.activeElement?.id || document.activeElement?.tagName,
+    }));
+    record(
+      'keyboard-merge',
+      keyboardMerge.clauses === 1 && keyboardMerge.focused === 'editorWrap',
+      `clauses=${keyboardMerge.clauses}, focus=${keyboardMerge.focused}`
+    );
+
+    await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      parseText('א ב', 'Blocked', false, { skipRender: true });
+      state.selected = { v: 0, c: 0, w: 1 };
+      insertBreak();
+      state.selected = { v: 0, c: 1, w: 0 };
+      render();
+    });
+    await page.click('.word[data-v="0"][data-c="1"][data-w="0"]');
+    const input = page.locator('#modalInput');
+    if (await input.count()) {
+      await page.keyboard.press('Escape');
+    }
+    await page.evaluate(() => {
+      const inp = document.querySelector('#inclusioThemeInput') || document.createElement('input');
+      if (!inp.id) {
+        inp.id = 'testFocusInput';
+        document.body.appendChild(inp);
+      }
+      inp.focus();
+    });
+    await page.keyboard.press('Backspace');
+    const blocked = await page.evaluate(() => state.verses[0].clauses.length);
+    await page.click('.word[data-v="0"][data-c="1"][data-w="0"]');
+    await page.keyboard.press('Backspace');
+    const afterRefocus = await page.evaluate(() => state.verses[0].clauses.length);
+    record(
+      'focus-blocks-then-recovers',
+      blocked === 2 && afterRefocus === 1,
+      `input-focus kept=${blocked}, after word click=${afterRefocus}`
+    );
+
+    const unitRest = unit;
+
+    record(
       'enter-split',
-      unit.afterSplit.clauses === 2,
-      `clauses=${unit.afterSplit.clauses}, a="${unit.afterSplit.w0}", b="${unit.afterSplit.w1}"`
+      unitRest.afterSplit.clauses === 2,
+      `clauses=${unitRest.afterSplit.clauses}, a="${unitRest.afterSplit.w0}", b="${unitRest.afterSplit.w1}"`
     );
     record(
       'backspace-merge',
-      unit.afterMerge.clauses === 1 && unit.afterMerge.allWords.includes('אֶ֣לֶף') && unit.afterMerge.allWords.includes('בֵּ֑ית'),
-      `clauses=${unit.afterMerge.clauses}, words="${unit.afterMerge.allWords}"`
+      unitRest.afterMerge.clauses === 1 && unitRest.afterMerge.allWords.includes('אֶ֣לֶף') && unitRest.afterMerge.allWords.includes('בֵּ֑ית'),
+      `clauses=${unitRest.afterMerge.clauses}, words="${unitRest.afterMerge.allWords}"`
     );
-    record('metadata-preserved', unit.metaPreserved, `bold+note kept=${unit.metaPreserved}`);
-    record('inside-no-merge', unit.insideNoMerge, `mid-clause backspace did not merge=${unit.insideNoMerge}`);
-    record('undo-restore', unit.clausesMerged && unit.undoRestored, `merged then undo restored=${unit.undoRestored}`);
-    record('inclusio-remap', unit.inclusioRemapped, `closing anchor remapped=${unit.inclusioRemapped}`);
-    record('export-single-line', unit.exportOneClause, `export has one clause=${unit.exportOneClause}`);
+    record('metadata-preserved', unitRest.metaPreserved, `bold+note kept=${unitRest.metaPreserved}`);
+    record('inside-no-merge', unitRest.insideNoMerge, `mid-clause backspace did not merge=${unitRest.insideNoMerge}`);
+    record('undo-restore', unitRest.clausesMerged && unitRest.undoRestored, `merged then undo restored=${unitRest.undoRestored}`);
+    record('inclusio-remap', unitRest.inclusioRemapped, `closing anchor remapped=${unitRest.inclusioRemapped}`);
+    record('export-single-line', unitRest.exportOneClause, `export has one clause=${unitRest.exportOneClause}`);
 
     const report = {
       feature: 'contour-backspace-merge',

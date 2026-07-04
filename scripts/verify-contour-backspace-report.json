@@ -1,9 +1,24 @@
 {
   "feature": "contour-backspace-merge",
   "url": "http://127.0.0.1:8765",
-  "at": "2026-07-04T03:21:10.591Z",
+  "at": "2026-07-04T03:52:09.379Z",
   "pass": true,
   "results": [
+    {
+      "id": "layout-gap-cleared",
+      "pass": true,
+      "detail": "before sp=40 clauses=2, after sp=0 clauses=1"
+    },
+    {
+      "id": "keyboard-merge",
+      "pass": true,
+      "detail": "clauses=1, focus=editorWrap"
+    },
+    {
+      "id": "focus-blocks-then-recovers",
+      "pass": true,
+      "detail": "input-focus kept=2, after word click=1"
+    },
     {
       "id": "enter-split",
       "pass": true,
