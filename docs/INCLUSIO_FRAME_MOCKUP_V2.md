@@ -1,8 +1,9 @@
 # Inclusio Frame Redesign — Mockup & Implementation Proposal (v2)
 
-**Status:** Proposal only — **do not extend current word-bracket renderer** until approved.  
+**Status:** Approved — unit-frame renderer v61 (distinct nested brackets).  
 **Date:** July 2026  
-**Visual target:** User mockups + screenshots in `docs/assets/inclusio-mockups/`
+**Approved visual target:** `docs/assets/inclusio-mockups/approved-nested-inclusio-mockup.png` (Aleph Contour nested inclusio, light + dark).  
+**Bracket geometry reference:** `docs/assets/inclusio-mockups/approved-bracket-geometry-mockup.png` (editor text panel).
 
 ---
 

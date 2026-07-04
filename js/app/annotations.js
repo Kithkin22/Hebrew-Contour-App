@@ -24,7 +24,7 @@
         <button type="button" class="annotation-tab-btn" data-panel="ann-highlight">Highlight</button>
         <button type="button" class="annotation-tab-btn" data-panel="ann-brackets">Brackets</button>
         <button type="button" class="annotation-tab-btn" data-panel="ann-arcs">Arcs</button>
-        <button type="button" class="annotation-tab-btn" data-panel="ann-inclusio">Inclusio</button>
+        <button type="button" class="annotation-tab-btn" data-panel="ann-inclusio">Unit</button>
         <button type="button" class="annotation-tab-btn" data-panel="ann-export">Export</button>
       </div>
       <div id="annotationShortcutsBar" aria-label="Keyboard shortcuts for selected word">

@@ -1,4 +1,16 @@
 /* inclusio-phase-a — TextAnchor model, editor + legend registry + draw mode */
+const UNIT_UI = {
+  singular: 'Unit',
+  plural: 'Units',
+  frame: 'Unit frame',
+  new: 'New Unit',
+  draw: 'Draw Unit',
+  drawing: 'Drawing Unit…',
+  delete: 'Delete Unit',
+  clearAll: 'Clear All Units',
+};
+window.UNIT_UI = UNIT_UI;
+
 let inclusioPhraseDraft = null; /* { side: 'opening'|'closing', loc } */
 let inclusioRegistryHoverId = null;
 let inclusioDraw = { active: false, isDragging: false, start: null, current: null };
@@ -20,10 +32,10 @@ const INCLUSIO_FRAME_WEIGHTS = [
 
 const INCLUSIO_FRAME_GUTTER = {
   textGap: 14,
-  layerStep: (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.marginStep) || 24,
+  layerStep: (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.nestRailGap) || 32,
   edgePad: 10,
   capLen: (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.capLen) || 12,
-  marginBase: (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.marginBase) || 28,
+  marginBase: (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.unitPad) || 18,
 };
 
 const RELATIONSHIP_BASIS_OPTIONS = [
@@ -187,6 +199,10 @@ function inclusioMaxNestLevel(spans) {
 }
 
 function inclusioRailXPositions(bounds, level, maxNest, contentW) {
+  if (typeof computeInclusioBracketRails === 'function') {
+    const rail = computeInclusioBracketRails([{ bounds, level: level || 0 }], maxNest || 0, contentW)[0];
+    return { xL: rail.xL, xR: rail.xR, outward: bounds.left - rail.xL };
+  }
   const outward = INCLUSIO_FRAME_GUTTER.textGap + Math.max(0, maxNest - (level || 0)) * INCLUSIO_FRAME_GUTTER.layerStep;
   return {
     xL: Math.max(INCLUSIO_FRAME_GUTTER.edgePad, bounds.left - outward),
@@ -214,17 +230,17 @@ function syncInclusioEditorGutter(paneState) {
   const spans = computeInclusioNestLevels(paneState?.inclusios || [], paneState?.verses || []);
   const visible = spans.filter(s => s.inc.showMarginEnvelope !== false && s.inc.openingAnchor && s.inc.closingAnchor);
   const maxNest = inclusioMaxNestLevel(spans);
-  const base = INCLUSIO_FRAME_GUTTER.marginBase || 28;
-  const step = INCLUSIO_FRAME_GUTTER.layerStep || 24;
-  const gutter = visible.length ? base + maxNest * step + INCLUSIO_FRAME_GUTTER.textGap : 0;
+  const base = INCLUSIO_FRAME_GUTTER.marginBase || 36;
+  const step = INCLUSIO_FRAME_GUTTER.layerStep || 40;
+  const gutter = visible.length ? base + maxNest * step + INCLUSIO_FRAME_GUTTER.textGap + 8 : 0;
   if (gutter) ed.style.setProperty('--inclusio-margin-gutter', `${gutter}px`);
   else ed.style.removeProperty('--inclusio-margin-gutter');
   ed.classList.toggle('has-inclusio-frames', visible.length > 0);
 }
 
-function drawInclusioEnvelopeRail(svg, bounds, inc, level, maxNest, paneState, pane, opts) {
+function drawInclusioEnvelopeRail(svg, bounds, inc, level, maxNest, paneState, pane, opts, railOverride) {
   if (typeof drawInclusioUnitFrame === 'function') {
-    drawInclusioUnitFrame(svg, bounds, inc, level, maxNest, opts);
+    drawInclusioUnitFrame(svg, bounds, inc, level, maxNest, opts, railOverride);
   }
 }
 
@@ -253,12 +269,40 @@ function renderInclusioFrameOverlay(paneState, pane) {
     const spans = computeInclusioNestLevels(paneState.inclusios, paneState.verses);
     const maxNest = inclusioMaxNestLevel(spans);
     spans.sort((a, b) => (a.inc.nestLevel || 0) - (b.inc.nestLevel || 0));
+    const bracketEntries = [];
     spans.forEach(({ inc }) => {
       if (inc.showMarginEnvelope === false) return;
       if (!inc.openingAnchor || !inc.closingAnchor) return;
       const bounds = inclusioEnvelopeBounds(inc, paneState, pane);
       if (!bounds) return;
-      drawInclusioEnvelopeRail(svg, bounds, inc, inc.nestLevel || 0, maxNest, paneState, pane);
+      bracketEntries.push({ inc, bounds, level: inc.nestLevel || 0 });
+    });
+    const bracketRails = typeof computeInclusioBracketRails === 'function'
+      ? computeInclusioBracketRails(
+        bracketEntries.map((e) => ({ bounds: e.bounds, level: e.level })),
+        maxNest,
+        contentW
+      )
+      : [];
+    if (bracketRails.length) {
+      const minRailX = bracketRails.reduce((m, r) => Math.min(m, r.xL), 0);
+      const maxRailX = bracketRails.reduce((m, r) => Math.max(m, r.xR), contentW);
+      const minX = Math.min(0, minRailX - 4);
+      const vbW = Math.max(contentW, maxRailX + 4) - minX;
+      svg.setAttribute('viewBox', `${minX} 0 ${vbW} ${contentH}`);
+    }
+    bracketEntries.forEach((entry, i) => {
+      drawInclusioEnvelopeRail(
+        svg,
+        entry.bounds,
+        entry.inc,
+        entry.level,
+        maxNest,
+        paneState,
+        pane,
+        null,
+        bracketRails[i]
+      );
     });
   }
   if (hasPreview) {
@@ -300,7 +344,7 @@ function updateInclusioWorkflowStatus() {
   if (!el) return;
   if (inclusioDraw.active) {
     el.textContent = inclusioDraw.isDragging
-      ? 'Drawing… release on the closing word to create the inclusio frame.'
+      ? 'Drawing… release on the closing word to create the unit frame.'
       : 'Draw mode on: drag from the opening word to the closing word.';
     el.classList.remove('inclusio-status-warn');
     return;
@@ -309,7 +353,7 @@ function updateInclusioWorkflowStatus() {
   migrateAllInclusios();
   const item = activeInclusio();
   if (!item) {
-    el.textContent = 'No active inclusio. Click New Inclusio, Draw Inclusio, or Set Opening Anchor to create one. Then select a Hebrew word.';
+    el.textContent = `No active unit. Click ${UNIT_UI.new}, ${UNIT_UI.draw}, or Set Opening Anchor to create one. Then select a Hebrew word.`;
     el.classList.remove('inclusio-status-warn');
     return;
   }
@@ -355,7 +399,7 @@ function migrateInclusioItem(item) {
     inc.closingAnchor.normalizedText = anchorTextFromLocRange(inc.closingAnchor.range);
   }
   if (!inc.id) inc.id = 'inc' + Date.now();
-  if (!inc.color) inc.color = '#6B7280';
+  if (!inc.color) inc.color = inclusioColorForNestLevel(0);
   if (inc.frameWeight && !INCLUSIO_FRAME_WEIGHTS.some(w => w.value === inc.frameWeight)) {
     delete inc.frameWeight;
   }
@@ -490,12 +534,10 @@ function addInclusio() {
   markUndo();
   ensureInclusios();
   const n = state.inclusios.length + 1;
-  const label = `Inclusio ${String.fromCharCode(64 + ((n - 1) % 26) + 1)}`;
-  const color = document.getElementById('inclusioColorInput')?.value
-    || document.getElementById('inclusioColor')?.value
-    || '#6B7280';
+  const label = unitDefaultLabel(n - 1);
+  const color = inclusioColorForNestLevel(0);
   const item = {
-    id: 'inc' + Date.now(),
+    id: 'inc' + Date.now() + Math.random().toString(36).slice(2, 6),
     label,
     color,
     showMarginEnvelope: true,
@@ -515,10 +557,25 @@ function addInclusio() {
   render();
 }
 
+function unitDefaultLabel(index) {
+  return `Unit ${String.fromCharCode(64 + ((index || 0) % 26) + 1)}`;
+}
+
+function inclusioColorForNestLevel(level) {
+  return (level || 0) > 0 ? '#5C6F8A' : '#64748B';
+}
+
+function applyDefaultUnitColor(item, paneState) {
+  if (!item || !paneState?.verses) return;
+  const spans = computeInclusioNestLevels(paneState.inclusios || [], paneState.verses);
+  const mine = spans.find(s => s.inc.id === item.id);
+  if (mine) item.color = inclusioColorForNestLevel(mine.inc.nestLevel);
+}
+
 function inclusioDefaultColor() {
   return document.getElementById('inclusioColorInput')?.value
     || document.getElementById('inclusioColor')?.value
-    || '#6B7280';
+    || inclusioColorForNestLevel(0);
 }
 
 function drawInclusioDragPreview(svg, startLoc, endLoc, paneState) {
@@ -551,15 +608,15 @@ function addInclusioFromLocs(startLoc, endLoc) {
   markUndo();
   ensureInclusios();
   const n = state.inclusios.length + 1;
-  const label = `Inclusio ${String.fromCharCode(64 + ((n - 1) % 26) + 1)}`;
-  const color = inclusioDefaultColor();
+  const label = unitDefaultLabel(n - 1);
+  const color = inclusioColorForNestLevel(0);
   const openingAnchor = makeTextAnchorFromLocs(openLoc, openLoc);
   const closingAnchor = makeTextAnchorFromLocs(closeLoc, closeLoc);
   if (!openingAnchor || !closingAnchor) return null;
   const o = openingAnchor.normalizedText || '';
   const c = closingAnchor.normalizedText || '';
   const item = {
-    id: 'inc' + Date.now(),
+    id: 'inc' + Date.now() + Math.random().toString(36).slice(2, 6),
     label,
     color,
     showMarginEnvelope: true,
@@ -572,6 +629,7 @@ function addInclusioFromLocs(startLoc, endLoc) {
     notes: '',
   };
   state.inclusios.push(item);
+  applyDefaultUnitColor(item, state);
   state.activeInclusioId = item.id;
   state.selected = cloneLoc(closeLoc);
   inclusioPhraseDraft = null;
@@ -586,7 +644,7 @@ window.addInclusioFromLocs = addInclusioFromLocs;
 
 function toggleDrawInclusioMode(force) {
   if (typeof isParallelActive === 'function' && isParallelActive()) {
-    if (force !== false) alert('Draw Inclusio is available in single-pane mode.');
+    if (force !== false) alert(`${UNIT_UI.draw} is available in single-pane mode.`);
     return;
   }
   const next = typeof force === 'boolean' ? force : !inclusioDraw.active;
@@ -601,7 +659,7 @@ function toggleDrawInclusioMode(force) {
   const btn = document.getElementById('drawInclusioMode');
   if (wrap) wrap.classList.toggle('inclusio-draw-active', inclusioDraw.active);
   if (btn) {
-    btn.textContent = inclusioDraw.active ? 'Drawing Inclusio…' : 'Draw Inclusio';
+    btn.textContent = inclusioDraw.active ? UNIT_UI.drawing : UNIT_UI.draw;
     btn.classList.toggle('warn', inclusioDraw.active);
     btn.classList.toggle('primary', !inclusioDraw.active);
   }
@@ -706,7 +764,7 @@ function syncInclusioWordMarkers(paneState) {
   clearInclusioWordMarkersOnVerses(st.verses);
   const verses = st.verses;
   st.inclusios.forEach(item => {
-    const color = item.color || '#6B7280';
+    const color = item.color || inclusioColorForNestLevel(0);
     const markAnchor = (anchor, side) => {
       const ord = anchorRangeOrdered(anchor);
       if (!ord) return;
@@ -746,7 +804,7 @@ if (typeof window !== 'undefined') window.syncAllPaneInclusioWordMarkers = syncA
 
 function clearInclusioMarkers() {
   markUndo();
-  if (!confirm('Clear all inclusio markers?')) return;
+  if (!confirm(`Clear all ${UNIT_UI.plural.toLowerCase()}?`)) return;
   state.inclusios = [];
   state.activeInclusioId = null;
   inclusioPhraseDraft = null;
@@ -772,7 +830,7 @@ function renderInclusioEditor() {
   const box = document.getElementById('inclusioEditor');
   if (!box) return;
   if (!state.inclusios.length) {
-    box.innerHTML = '<p class="muted small">No inclusios yet. Click <strong>New Inclusio</strong> to begin.</p>';
+    box.innerHTML = `<p class="muted small">No units yet. Click <strong>${UNIT_UI.new}</strong> to begin.</p>`;
     return;
   }
   const active = activeInclusio();
@@ -780,17 +838,17 @@ function renderInclusioEditor() {
   let html = '<div class="inclusio-editor-grid">';
   html += '<div class="row inclusio-active-row"><label class="small">Active <select id="activeInclusioSelect">';
   state.inclusios.forEach((x, i) => {
-    html += `<option value="${esc(x.id)}"${x.id === activeId ? ' selected' : ''}>${esc(x.label || ('Inclusio ' + (i + 1)))}</option>`;
+    html += `<option value="${esc(x.id)}"${x.id === activeId ? ' selected' : ''}>${esc(x.label || unitDefaultLabel(i))}</option>`;
   });
   html += '</select></label>';
   html += '<label class="small">Label <input id="inclusioLabelInput" value="' + esc(active?.label || '') + '"></label>';
   html += '</div>';
-  html += '<div class="inclusio-field-row inclusio-color-row"><span class="small"><strong>Frame color</strong></span>';
+  html += '<div class="inclusio-field-row inclusio-color-row"><span class="small"><strong>Unit frame color</strong></span>';
   INCLUSIO_COLOR_PRESETS.forEach(p => {
-    const sel = (active?.color || '#6B7280').toLowerCase() === p.value.toLowerCase();
+    const sel = (active?.color || inclusioColorForNestLevel(0)).toLowerCase() === p.value.toLowerCase();
     html += `<button type="button" class="btn small inclusio-color-preset${sel ? ' primary' : ''}" data-inc-color="${esc(p.value)}" title="${esc(p.name)}">${esc(p.name)}</button>`;
   });
-  html += '<label class="small inclusio-custom-color">Custom <input id="inclusioColorInput" type="color" value="' + esc(active?.color || '#6B7280') + '"></label>';
+  html += '<label class="small inclusio-custom-color">Custom <input id="inclusioColorInput" type="color" value="' + esc(active?.color || inclusioColorForNestLevel(0)) + '"></label>';
   html += '</div>';
   html += '<label class="small">Frame weight <select id="inclusioFrameWeightSelect">';
   html += `<option value=""${!active?.frameWeight ? ' selected' : ''}>Auto (by nest level)</option>`;
@@ -798,7 +856,7 @@ function renderInclusioEditor() {
     html += `<option value="${esc(w.value)}"${active?.frameWeight === w.value ? ' selected' : ''}>${esc(w.label)}</option>`;
   });
   html += '</select></label>';
-  html += '<label class="small inclusio-envelope-toggle"><input type="checkbox" id="inclusioEnvelopeToggle"' + (active?.showMarginEnvelope !== false ? ' checked' : '') + '> Show margin envelope</label>';
+  html += '<label class="small inclusio-envelope-toggle"><input type="checkbox" id="inclusioEnvelopeToggle"' + (active?.showMarginEnvelope !== false ? ' checked' : '') + '> Show unit frame</label>';
 
   html += '<div class="inclusio-anchor-block">';
   html += '<div class="inclusio-field-row"><strong class="small">Opening Anchor</strong>';
@@ -846,10 +904,13 @@ function renderInclusioEditor() {
       fn(item, el);
       autoSaveProject();
       if (id === '#inclusioColorInput') syncInclusioWordMarkers();
-      if (id === '#inclusioColorInput' || id === '#inclusioLabelInput' || id === '#inclusioEnvelopeToggle') renderInclusioRegistry();
+      if (id === '#inclusioColorInput' || id === '#inclusioLabelInput' || id === '#inclusioEnvelopeToggle') {
+        renderInclusioRegistry();
+        if (id === '#inclusioColorInput') scheduleInclusioFrameRedraw();
+      }
     };
   };
-  bindField('#inclusioLabelInput', (item, el) => { item.label = el.value; });
+  bindField('#inclusioLabelInput', (item, el) => { item.label = el.value; renderInclusioRegistry(); });
   bindField('#inclusioColorInput', (item, el) => {
     item.color = el.value;
     renderInclusioEditor();
@@ -866,9 +927,9 @@ function renderInclusioEditor() {
     item.showMarginEnvelope = !!el.checked;
     scheduleInclusioFrameRedraw();
   });
-  bindField('#inclusioThemeInput', (item, el) => { item.theme = el.value; });
-  bindField('#inclusioBasisSelect', (item, el) => { item.relationshipBasis = el.value || null; });
-  bindField('#inclusioEvidenceInput', (item, el) => { item.evidence = el.value; });
+  bindField('#inclusioThemeInput', (item, el) => { item.theme = el.value; renderInclusioRegistry(); });
+  bindField('#inclusioBasisSelect', (item, el) => { item.relationshipBasis = el.value || null; renderInclusioRegistry(); });
+  bindField('#inclusioEvidenceInput', (item, el) => { item.evidence = el.value; renderInclusioRegistry(); });
   bindField('#inclusioNotesInput', (item, el) => { item.notes = el.value; });
 
   const oPh = box.querySelector('#inclusioOpeningPhraseStart');
@@ -902,35 +963,38 @@ function renderInclusioRegistry() {
   const n = state.inclusios.length;
   if (head) {
     const collapsed = head.parentElement?.classList.contains('collapsed');
-    head.textContent = (collapsed ? '▶' : '▼') + ` Inclusios (${n})`;
+    head.textContent = (collapsed ? '▶' : '▼') + ` ${UNIT_UI.plural} (${n})`;
   }
   if (!box) return;
   if (!n) {
-    box.innerHTML = '<p class="muted small">No inclusios marked yet. Use the Inclusio tab to create one.</p>';
+    box.innerHTML = `<p class="muted small">No units yet. Use the Unit tab to create one.</p>`;
     return;
   }
   let html = '<div class="inclusio-registry-list">';
   state.inclusios.forEach((inc, i) => {
-    const letter = String.fromCharCode(65 + (i % 26));
     const active = inc.id === (state.activeInclusioId || activeInclusio()?.id);
     const openText = inc.openingAnchor?.normalizedText || anchorTextFromLocRange(inc.openingAnchor?.range) || '—';
     const closeText = inc.closingAnchor?.normalizedText || anchorTextFromLocRange(inc.closingAnchor?.range) || '—';
     const span = deriveInclusioSpan(inc);
     const theme = (inc.theme || '').trim();
     const basis = relationshipBasisLabel(inc.relationshipBasis);
-    const meta = [theme && `Theme: ${theme}`, basis && basis !== '— unset —' && `Basis: ${basis}`].filter(Boolean).join(' · ');
-    const weight = inc.frameWeight || (inc.nestLevel > 0 ? 'thin' : 'medium');
+    const color = inc.color || inclusioColorForNestLevel(inc.nestLevel || 0);
     html += `<div class="inclusio-registry-row${active ? ' active' : ''}" data-inc-id="${esc(inc.id)}" tabindex="0" role="button">`;
-    html += `<div class="inclusio-registry-row-head"><span class="inclusio-registry-swatch" style="border-color:${esc(inc.color || '#6B7280')}" title="Frame color"></span>`;
-    html += `<span class="inclusio-registry-marker" style="color:${esc(inc.color || '#6B7280')}">[${letter}]</span>`;
-    html += `<span class="inclusio-registry-label">${esc(inc.label || ('Inclusio ' + letter))}</span>`;
-    html += `<span class="inclusio-registry-style muted small">${esc(weight)}</span>`;
+    html += `<div class="inclusio-registry-row-head">`;
+    html += `<span class="inclusio-registry-swatch" style="background:${esc(color)};border-color:${esc(color)}" title="Unit frame color"></span>`;
+    html += `<span class="inclusio-registry-label">${esc(inc.label || unitDefaultLabel(i))}</span>`;
     html += `<span class="inclusio-registry-span muted">${esc(span)}</span></div>`;
-    html += `<div class="inclusio-registry-detail small"><span>Opening: <span class="inclusio-registry-hebrew">${esc(openText)}</span></span>`;
-    html += `<span>Closing: <span class="inclusio-registry-hebrew">${esc(closeText)}</span></span></div>`;
-    if (meta) html += `<div class="inclusio-registry-meta muted small">${esc(meta)}</div>`;
+    html += `<div class="inclusio-registry-detail small">`;
+    html += `<div><span class="inclusio-registry-field-label">Derived Span</span> <span class="inclusio-registry-field-value">${esc(span)}</span></div>`;
+    html += `<div><span class="inclusio-registry-field-label">Opening Anchor</span> <span class="inclusio-registry-hebrew">${esc(openText)}</span></div>`;
+    html += `<div><span class="inclusio-registry-field-label">Closing Anchor</span> <span class="inclusio-registry-hebrew">${esc(closeText)}</span></div>`;
+    html += '</div>';
+    if (theme) html += `<div class="inclusio-registry-meta muted small"><span class="inclusio-registry-field-label">Theme</span> ${esc(theme)}</div>`;
+    if (basis && basis !== '— unset —') {
+      html += `<div class="inclusio-registry-meta muted small"><span class="inclusio-registry-field-label">Basis</span> ${esc(basis)}</div>`;
+    }
     if ((inc.evidence || '').trim()) {
-      html += `<div class="inclusio-registry-evidence muted small">Evidence: <span class="inclusio-registry-hebrew">${esc(inc.evidence)}</span></div>`;
+      html += `<div class="inclusio-registry-evidence muted small"><span class="inclusio-registry-field-label">Evidence</span> <span class="inclusio-registry-hebrew">${esc(inc.evidence)}</span></div>`;
     }
     html += '</div>';
   });
@@ -961,7 +1025,7 @@ function initLegendInclusiosSection() {
   const head = document.createElement('div');
   head.id = 'legendInclusiosHeader';
   head.className = 'legend-subsection-header';
-  head.textContent = '▶ Inclusios (0)';
+  head.textContent = `▶ ${UNIT_UI.plural} (0)`;
   head.onclick = () => {
     section.classList.toggle('collapsed');
     renderInclusioRegistry();
@@ -993,10 +1057,10 @@ function inclusiosHtmlForExport() {
   migrateAllInclusios();
   if (!state.inclusios.length) return '';
   let rows = state.inclusios.map((inc, i) => {
-    const letter = String.fromCharCode(65 + (i % 26));
-    return `<tr><td>[${letter}]</td><td>${esc(inc.label || '')}</td><td>${esc(deriveInclusioSpan(inc))}</td><td dir="auto">${esc(inc.openingAnchor?.normalizedText || '')}</td><td dir="auto">${esc(inc.closingAnchor?.normalizedText || '')}</td><td>${esc(inc.theme || '')}</td><td>${esc(relationshipBasisLabel(inc.relationshipBasis))}</td><td dir="auto">${esc(inc.evidence || '')}</td></tr>`;
+    const color = inc.color || inclusioColorForNestLevel(inc.nestLevel || 0);
+    return `<tr><td style="background:${esc(color)}">${esc(color)}</td><td>${esc(inc.label || '')}</td><td>${esc(deriveInclusioSpan(inc))}</td><td dir="auto">${esc(inc.openingAnchor?.normalizedText || '')}</td><td dir="auto">${esc(inc.closingAnchor?.normalizedText || '')}</td><td>${esc(inc.theme || '')}</td><td>${esc(relationshipBasisLabel(inc.relationshipBasis))}</td><td dir="auto">${esc(inc.evidence || '')}</td></tr>`;
   }).join('');
-  return `<h3 style="font-family:Arial,Helvetica,sans-serif;margin-top:14px">Inclusios</h3><table class="export-legend"><thead><tr><th>Marker</th><th>Label</th><th>Derived Span</th><th>Opening</th><th>Closing</th><th>Theme</th><th>Basis</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<h3 style="font-family:Arial,Helvetica,sans-serif;margin-top:14px">${UNIT_UI.plural}</h3><table class="export-legend"><thead><tr><th>Color</th><th>Label</th><th>Derived Span</th><th>Opening Anchor</th><th>Closing Anchor</th><th>Theme</th><th>Basis</th><th>Evidence</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 if (document.readyState === 'loading') {

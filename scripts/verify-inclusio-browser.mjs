@@ -79,7 +79,7 @@ async function main() {
       const docx = typeof contourDocxXml === 'function' ? contourDocxXml() : '';
       const registry = document.getElementById('inclusioRegistry')?.textContent || '';
 
-      return { afterSet, afterReload, exportHasBrackets: exportHtml.includes('bracket-start'), docxOk: docx.includes('Inclusios'), registryHasRow: registry.includes('Inclusio') };
+      return { afterSet, afterReload, exportHasBrackets: exportHtml.includes('bracket-start'), docxOk: docx.includes('Units'), registryHasRow: registry.includes('Unit') };
     });
 
     const regen = await page.evaluate(() => {
@@ -107,8 +107,8 @@ async function main() {
     record('reload-data', unit.afterReload.hasOpening && unit.afterReload.hasClosing, `anchors in state after reload=${unit.afterReload.hasOpening && unit.afterReload.hasClosing}`);
     record('render-after-reload', !unit.afterReload.bracketStart && !unit.afterReload.bracketEnd, `no editor brackets after reload=${!unit.afterReload.bracketStart}`);
     record('export-html', unit.exportHasBrackets, `export HTML has bracket-start=${unit.exportHasBrackets}`);
-    record('export-docx', unit.docxOk, `DOCX mentions Inclusios=${unit.docxOk}`);
-    record('registry', unit.registryHasRow, `legend registry lists inclusio=${unit.registryHasRow}`);
+    record('export-docx', unit.docxOk, `DOCX mentions Units=${unit.docxOk}`);
+    record('registry', unit.registryHasRow, `legend registry lists unit=${unit.registryHasRow}`);
     record(
       'sync-from-data-only',
       regen.wordHasMarker && !regen.domHasBracket,
@@ -148,7 +148,7 @@ async function main() {
       return {
         drawn: !!item && !!item.openingAnchor && !!item.closingAnchor,
         rails: document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail:not(.inclusio-frame-rail-preview)').length,
-        registry: (document.getElementById('inclusioRegistry')?.textContent || '').includes('Inclusio'),
+        registry: (document.getElementById('inclusioRegistry')?.textContent || '').includes('Unit'),
         nestedOk: state.inclusios.length === 2,
         arcMutual: arcOn && arcOff && incOn,
         pastedHidden,
@@ -191,6 +191,76 @@ async function main() {
       return { ok: clearsText && noSpanWash && gutter, clearsText, noSpanWash, gutter, rails: document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail').length };
     });
     record('margin-clears-text', margin.ok, `clears=${margin.clearsText}, noSpan=${margin.noSpanWash}, gutter=${margin.gutter}, rails=${margin.rails}`);
+
+    const nestedRails = await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      parseText(
+        'חָנֵּ֥נִי חָנֵּ֥נִי אַתֶּ֥ם רֵעָ֑י\n'
+        + 'כִּ֤י יַ֣ד אֱל֙וֹהַּ נָ֣גְעָ֔ה בִּ֔י\n'
+        + 'וּֽמִצְפִּ֥י וְאֵ֖לֶף אֲשֶׁר־בְּעַ֣ד תְּרִיעֽוּנִי׃\n'
+        + 'לָ֤מָּה אַתֶּ֨ם רֹדְפִ֥ים כְּאֵ֗ל\n'
+        + 'וּמִבְּשָׂרִ֥י לֹֽא־תִשְׂבָּֽעוּ׃\n'
+        + 'מִֽי־יִתֵּ֣ן וְאֵיכָ֣כָה וְגוֹ׃\n'
+        + 'חָנֵּ֥נִי חָנֵּ֥נִי אַתֶּ֥ם רֵעָ֑י',
+        'Job 19:21–27',
+        false,
+        { preserveLayout: true, skipRender: true }
+      );
+      state.inclusios = [];
+      clearInclusioWordMarkers();
+      const lastC = state.verses[0].clauses.length - 1;
+      addInclusioFromLocs({ v: 0, c: 0, w: 0 }, { v: 0, c: lastC, w: 0 });
+      addInclusioFromLocs({ v: 0, c: 2, w: 0 }, { v: 0, c: Math.min(4, lastC), w: 0 });
+      render();
+      let nestLevels = [0, 0];
+      if (typeof computeInclusioNestLevels === 'function') {
+        nestLevels = computeInclusioNestLevels(state.inclusios, state.verses).map((s) => s.inc.nestLevel);
+      } else {
+        nestLevels = state.inclusios.map(() => 0);
+      }
+      const maxNest = nestLevels.reduce((m, n) => Math.max(m, n), 0);
+      const rails = [...document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail:not(.inclusio-frame-rail-preview)')];
+      const byInc = {};
+      rails.forEach((line) => {
+        const id = line.getAttribute('data-inc-id') || '';
+        const x1 = +line.getAttribute('x1');
+        const x2 = +line.getAttribute('x2');
+        const x = Math.abs(x2 - x1) < 0.01 ? x1 : null;
+        if (x == null) return;
+        if (!byInc[id]) byInc[id] = { xs: [] };
+        byInc[id].xs.push(x);
+      });
+      const ids = Object.keys(byInc);
+      if (ids.length < 2) return { ok: false, reason: 'need two frames', maxNest, nestLevels };
+      const sets = ids.map((id) => ({
+        id,
+        xL: Math.min(...byInc[id].xs),
+        xR: Math.max(...byInc[id].xs),
+      }));
+      sets.sort((a, b) => a.xL - b.xL);
+      const outer = sets[0];
+      const inner = sets[1];
+      const minGap = (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.nestRailGap) || 20;
+      const leftGap = inner.xL - outer.xL;
+      const rightGap = outer.xR - inner.xR;
+      const separated = leftGap >= minGap * 0.75 && rightGap >= minGap * 0.75;
+      return {
+        ok: separated && maxNest >= 1,
+        leftGap,
+        rightGap,
+        minGap,
+        maxNest,
+        nestLevels,
+        outer,
+        inner,
+      };
+    });
+    record(
+      'nested-rail-separation',
+      nestedRails.ok,
+      `leftGap=${nestedRails.leftGap?.toFixed?.(1)}, rightGap=${nestedRails.rightGap?.toFixed?.(1)}, nest=${nestedRails.nestLevels}, maxNest=${nestedRails.maxNest}`
+    );
 
     const pass = results.every((r) => r.pass);
     console.log(`\n${pass ? 'ALL PASSED' : 'SOME FAILED'} (${results.filter((r) => r.pass).length}/${results.length})`);

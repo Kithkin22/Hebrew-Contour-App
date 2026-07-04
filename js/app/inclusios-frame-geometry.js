@@ -1,10 +1,13 @@
-/* Inclusio unit-frame geometry — literary-unit bounds, margin rails (not word boxes) */
+/* Inclusio unit-frame geometry — per-unit brackets, distinct nested rails */
 const INCLUSIO_UNIT_FRAME = {
-  textPad: 8,
-  marginBase: 28,
-  marginStep: 24,
+  textPad: 12,
+  unitPad: 36,
+  nestRailGap: 40,
   edgePad: 10,
   capLen: 12,
+  /* legacy aliases used by gutter sync */
+  marginBase: 36,
+  marginStep: 40,
 };
 window.INCLUSIO_UNIT_FRAME = INCLUSIO_UNIT_FRAME;
 
@@ -69,17 +72,50 @@ function inclusioUnitBounds(inc, paneState, pane) {
 }
 window.inclusioUnitBounds = inclusioUnitBounds;
 
+/** Independent bracket rails per inclusio; nested frames stay inside parents with a clear gap. */
+function computeInclusioBracketRails(entries, maxNest, contentW) {
+  const unitPad = INCLUSIO_UNIT_FRAME.unitPad;
+  const gap = INCLUSIO_UNIT_FRAME.nestRailGap;
+  const placed = [];
+  const out = [];
+
+  entries.forEach((entry) => {
+    const bounds = entry.bounds;
+    const level = entry.level || 0;
+    const layerOut = Math.max(0, (maxNest || 0) - level) * gap;
+    let xL = bounds.left - unitPad - layerOut;
+    let xR = bounds.right + unitPad + layerOut;
+    const y1 = Math.max(0, bounds.top);
+    const y2 = Math.min(bounds.height, bounds.bottom);
+    const textFloorL = bounds.left - unitPad;
+    const textCeilR = bounds.right + unitPad;
+
+    placed.forEach((parent) => {
+      const needL = parent.xL + gap;
+      const needR = parent.xR - gap;
+      if (needL <= textFloorL) xL = Math.max(xL, needL);
+      if (needR >= textCeilR) xR = Math.min(xR, needR);
+    });
+
+    xL = Math.min(xL, textFloorL);
+    xR = Math.max(xR, textCeilR);
+
+    const rail = { xL, xR, y1, y2, level };
+    placed.push(rail);
+    out.push(rail);
+  });
+  return out;
+}
+window.computeInclusioBracketRails = computeInclusioBracketRails;
+
 function inclusioUnitRailX(bounds, level, maxNest, contentW) {
-  const outward = INCLUSIO_UNIT_FRAME.marginBase
-    + Math.max(0, (maxNest || 0) - (level || 0)) * INCLUSIO_UNIT_FRAME.marginStep;
-  return {
-    xL: Math.max(INCLUSIO_UNIT_FRAME.edgePad, bounds.left - outward),
-    xR: Math.min(contentW - INCLUSIO_UNIT_FRAME.edgePad, bounds.right + outward),
-  };
+  const rails = computeInclusioBracketRails([{ bounds, level }], maxNest || 0, contentW);
+  const r = rails[0];
+  return { xL: r.xL, xR: r.xR };
 }
 window.inclusioUnitRailX = inclusioUnitRailX;
 
-function drawInclusioUnitFrame(svg, bounds, inc, level, maxNest, opts) {
+function drawInclusioUnitFrame(svg, bounds, inc, level, maxNest, opts, railOverride) {
   opts = opts || {};
   const color = inc.color || '#64748B';
   const preset = { thin: 1.25, medium: 2, thick: 2.75 };
@@ -87,9 +123,12 @@ function drawInclusioUnitFrame(svg, bounds, inc, level, maxNest, opts) {
     ? preset[inc.frameWeight]
     : Math.max(1.25, 2.75 - (level || 0) * 0.55);
   const opacity = opts.preview ? 0.5 : Math.max(0.5, 0.95 - (level || 0) * 0.1);
-  const { xL, xR } = inclusioUnitRailX(bounds, level, maxNest, bounds.width);
-  const y1 = Math.max(0, bounds.top);
-  const y2 = Math.min(bounds.height, bounds.bottom);
+  const rail = railOverride || computeInclusioBracketRails(
+    [{ bounds, level: level || 0 }],
+    maxNest || 0,
+    bounds.width
+  )[0];
+  const { xL, xR, y1, y2 } = rail;
   const cap = INCLUSIO_UNIT_FRAME.capLen;
   const railCls = opts.preview ? 'inclusio-frame-rail inclusio-frame-rail-preview' : 'inclusio-frame-rail';
   const mk = (x1, y1v, x2, y2v, extraCls) => {

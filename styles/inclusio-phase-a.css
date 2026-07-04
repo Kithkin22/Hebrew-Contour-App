@@ -150,7 +150,8 @@ svg.inclusio-frame-svg {
 
 .inclusio-frame-rail.inclusio-frame-rail-hot {
   opacity: 1 !important;
-  stroke-width: 3px;
+  stroke-width: 2.5px;
+  filter: drop-shadow(0 0 1px currentColor);
 }
 
 .inclusio-frame-rail.inclusio-frame-rail-preview {
@@ -194,7 +195,7 @@ body.dark-mode svg.inclusio-frame-svg .inclusio-frame-rail-preview {
   color: var(--bracket-color, #4b5563);
 }
 
-/* Legend subsection — Inclusios registry */
+/* Legend subsection — Units registry */
 .legend-subsection {
   margin-top: 14px;
   border-top: 1px solid var(--ui-line, #e5e7eb);
@@ -250,12 +251,28 @@ body.dark-mode svg.inclusio-frame-svg .inclusio-frame-rail-preview {
 
 .inclusio-registry-swatch {
   display: inline-block;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   border: 2px solid;
-  border-radius: 2px;
+  border-radius: 3px;
   flex-shrink: 0;
   align-self: center;
+}
+
+.inclusio-registry-field-label {
+  font-weight: 600;
+  color: var(--ui-text-muted, #64748b);
+  margin-right: 4px;
+}
+
+.inclusio-registry-detail {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.inclusio-registry-field-value {
+  font-weight: 500;
 }
 
 .inclusio-registry-marker {

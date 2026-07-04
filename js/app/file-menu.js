@@ -92,7 +92,7 @@ function contourDocxXml(){
   }
   if(typeof migrateAllInclusios==='function')migrateAllInclusios();
   if(state.inclusios&&state.inclusios.length){
-    body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Inclusios</w:t></w:r></w:p>`;
+    body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Units</w:t></w:r></w:p>`;
     state.inclusios.forEach((inc,idx)=>{
       const letter=String.fromCharCode(65+(idx%26));
       const span=typeof deriveInclusioSpan==='function'?deriveInclusioSpan(inc):'';
