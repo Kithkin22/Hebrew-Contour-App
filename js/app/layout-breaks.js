@@ -898,7 +898,7 @@ function finalizeDocumentPagePresentation() {
   if (state.verses.length === 1 && typeof passageRefForDisplay === 'function' && passageRefForDisplay()) {
     ed.querySelectorAll('.verse-ref').forEach((node) => node.remove());
   }
-  if (typeof applyPageZoom === 'function') applyPageZoom({ skipPersist: true });
+  if (typeof syncPageZoomAfterContentChange === 'function') syncPageZoomAfterContentChange();
 }
 window.finalizeDocumentPagePresentation = finalizeDocumentPagePresentation;
 

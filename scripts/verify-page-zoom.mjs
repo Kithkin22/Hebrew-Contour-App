@@ -30,7 +30,14 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   try {
-    await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(BASE + '/?verify=' + Date.now(), { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.evaluate(async () => {
+      if (navigator.serviceWorker?.getRegistrations) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+      }
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await unlock(page);
 
     const unit = await page.evaluate(() => {
@@ -195,25 +202,69 @@ async function main() {
     record('arc-align-85', unit.arcErr85 < 3, `err=${unit.arcErr85}`);
     record('arc-align-100', unit.arcErr100 < 3, `err=${unit.arcErr100}`);
 
-    const fitBlank = await page.evaluate(() => {
+    const fitBlank = await page.evaluate(async () => {
       ensureStateBundle();
       state = stateBundle.panes[0];
       parseText('א ב ג ד ה ו ז ח', 'Short fit', false, { skipRender: true });
       render();
       setPageZoomMode('fit', { skipPersist: true, skipFitGuard: true });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const scaleBefore = getPageZoomScaleValue();
       const words = document.querySelectorAll('#editor .word').length;
       if (typeof ensureFitShowsContent === 'function') ensureFitShowsContent({ skipPersist: true });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const scaleAfter = getPageZoomScaleValue();
       const mode = getPageZoomMode();
       const first = document.querySelector('#editor .word');
       const visible = typeof isWordVisibleInEditorWrap === 'function' && isWordVisibleInEditorWrap(first);
-      return { words, scaleBefore, scaleAfter, mode, visible };
+      const stage = document.getElementById('contourPageZoomStage');
+      const sheet = document.querySelector('.contour-document-sheet');
+      const ed = stage?.querySelector('#editor');
+      const contentH = ed?.scrollHeight || 0;
+      const title = stage?.querySelector('#contourPassageTitle');
+      const titleExtra = title && !title.hidden ? title.offsetHeight + 24 : 0;
+      const fitted = contentH > 0 ? Math.max(200, contentH + titleExtra + 48) : 0;
+      const layoutH = typeof getStageLayoutHeight === 'function'
+        ? getStageLayoutHeight(sheet, stage, 'fit')
+        : fitted;
+      const stageH = parseFloat(stage?.style.height) || stage?.offsetHeight || 0;
+      const expectedH = layoutH * scaleAfter;
+      const stageMatchesFit = layoutH > 0 && Math.abs(stageH - expectedH) < 16;
+      return { words, scaleBefore, scaleAfter, mode, visible, stageMatchesFit, stageH, layoutH, expectedH };
     });
     record(
       'fit-never-blank',
       fitBlank.words > 0 && fitBlank.visible && Number.isFinite(fitBlank.scaleAfter) && fitBlank.scaleAfter >= 0.25,
       `words=${fitBlank.words}, visible=${fitBlank.visible}, scale=${fitBlank.scaleAfter}, mode=${fitBlank.mode}`
+    );
+
+    const zoomToggle = await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      const lines = Array.from({ length: 40 }, (_, i) =>
+        `<p dir=RTL style='margin-right:0pt;text-align:right'>פסוק ${i + 1} מִלִּים עִבְרִיּוֹת לַעֲבוֹדָה</p>`
+      ).join('');
+      const wordHtml = `<html><body dir=RTL>${lines}</body></html>`;
+      const parsed = parseWordHtmlLayoutLines(wordHtml, { isRtl: true });
+      parseText(parsed.text, 'Job 19 Contour', false, { preserveLayout: true, layoutLines: parsed.lines });
+      render();
+      const modes = ['100', '85', 'fit', '75', 'fit', '100', 'fit'];
+      let lastVisible = false;
+      let lastWords = 0;
+      for (const m of modes) {
+        setPageZoomMode(m, { skipPersist: true });
+        if (typeof syncPageZoomAfterContentChange === 'function') syncPageZoomAfterContentChange();
+        const first = document.querySelector('#editor .word');
+        lastWords = document.querySelectorAll('#editor .word').length;
+        lastVisible = typeof isWordVisibleInEditorWrap === 'function' && isWordVisibleInEditorWrap(first);
+        if (!lastVisible || lastWords === 0) break;
+      }
+      return { lastVisible, lastWords, mode: getPageZoomMode(), scale: getPageZoomScaleValue() };
+    });
+    record(
+      'zoom-toggle-words-visible',
+      zoomToggle.lastWords > 0 && zoomToggle.lastVisible,
+      `words=${zoomToggle.lastWords}, visible=${zoomToggle.lastVisible}, mode=${zoomToggle.mode}, scale=${zoomToggle.scale}`
     );
 
     const pass = results.every((r) => r.pass);

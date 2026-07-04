@@ -114,6 +114,14 @@
     return Math.max(200, fitted);
   }
 
+  /** Stage clip height — must match computeFitPageZoom in fit mode to avoid blank/clipped canvas */
+  function getStageLayoutHeight(sheet, stage, mode) {
+    const { pageH } = getPageLayoutSize(sheet);
+    const zoomMode = mode != null ? mode : pageZoomMode;
+    if (zoomMode === 'fit') return getPageContentFitHeight(sheet, stage);
+    return pageH;
+  }
+
   function isWordVisibleInEditorWrap(wordEl) {
     const wrap = document.getElementById('editorWrap');
     if (!wrap || !wordEl) return false;
@@ -141,16 +149,22 @@
 
   function ensureFitShowsContent(opts) {
     if (pageZoomMode !== 'fit') return;
-    const hasWords = document.querySelectorAll('#editor .word').length > 0;
-    const word = document.querySelector('#editor .word');
+    const words = document.querySelectorAll('#editor .word');
+    if (!words.length) return;
+    const word = words[0];
     const scale = getPageZoomScaleValue();
     if (!Number.isFinite(scale) || scale < MIN_PAGE_ZOOM) {
       applyPageZoom({ mode: '85', skipPersist: !!opts?.skipPersist, skipFitScroll: true });
       return;
     }
-    if (hasWords && !isWordVisibleInEditorWrap(word)) {
+    if (isWordVisibleInEditorWrap(word)) return;
+    scrollFitPageIntoView();
+    requestAnimationFrame(() => {
+      if (pageZoomMode !== 'fit') return;
+      refreshPageZoomStageLayout();
+      if (isWordVisibleInEditorWrap(word)) return;
       applyPageZoom({ mode: '85', skipPersist: !!opts?.skipPersist, skipFitScroll: true });
-    }
+    });
   }
 
   function scrollFitPageIntoView() {
@@ -171,11 +185,12 @@
     return stage ? (stage.querySelector('.contour-page-zoom-inner') || stage) : null;
   }
 
-  function syncStageLayoutAfterZoom(stage, scale) {
+  function syncStageLayoutAfterZoom(stage, scale, mode) {
     const sheet = stage?.querySelector('.contour-document-sheet');
     const inner = pageZoomInner(stage);
     if (!sheet || !inner) return;
-    const { pageW, pageH } = getPageLayoutSize(sheet);
+    const { pageW } = getPageLayoutSize(sheet);
+    const pageH = getStageLayoutHeight(sheet, stage, mode);
     stage.style.width = Math.ceil(pageW * scale) + 'px';
     stage.style.height = Math.ceil(pageH * scale) + 'px';
     stage.style.minHeight = '';
@@ -264,7 +279,7 @@
     document.documentElement.style.setProperty('--contour-page-zoom', String(scale));
     stage.dataset.zoomMode = mode;
     stage.dataset.zoomScale = String(scale);
-    syncStageLayoutAfterZoom(stage, scale);
+    syncStageLayoutAfterZoom(stage, scale, mode);
     updatePageZoomControls(mode, scale);
 
     if (opts.focal && wrap && oldScale !== scale) {
@@ -448,6 +463,16 @@
     bindGestureTarget(wrap);
   }
 
+  function syncPageZoomAfterContentChange() {
+    const stage = document.getElementById('contourPageZoomStage');
+    if (!stage) return;
+    if (pageZoomMode === 'fit') {
+      applyPageZoom({ skipPersist: true, skipFitScroll: true, skipFitGuard: true, skipArcRedraw: true });
+    } else {
+      refreshPageZoomStageLayout();
+    }
+  }
+
   window.normalizePageZoomMode = normalizePageZoomMode;
   window.parsePageZoomInput = parsePageZoomInput;
   window.getPageZoomScale = getPageZoomScale;
@@ -461,7 +486,9 @@
   window.scrollContourEditorToTop = scrollContourEditorToTop;
   window.scrollWordIntoEditorView = scrollWordIntoEditorView;
   window.refreshPageZoomStageLayout = refreshPageZoomStageLayout;
+  window.syncPageZoomAfterContentChange = syncPageZoomAfterContentChange;
   window.computeFitPageZoom = computeFitPageZoom;
+  window.getStageLayoutHeight = getStageLayoutHeight;
   window.getEditorFitViewport = getEditorFitViewport;
   window.clampPageZoomScale = clampPageZoomScale;
   window.isWordVisibleInEditorWrap = isWordVisibleInEditorWrap;
