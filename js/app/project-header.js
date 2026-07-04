@@ -185,24 +185,8 @@
     }
   }
 
-  function bindSaveShortcut() {
-    if (window._projectSaveShortcutBound) return;
-    window._projectSaveShortcutBound = 1;
-    document.addEventListener(
-      'keydown',
-      e => {
-        const isSave = (e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 's' && !e.shiftKey && !e.altKey;
-        if (!isSave) return;
-        e.preventDefault();
-        if (typeof saveProjectLocal === 'function') saveProjectLocal();
-      },
-      true
-    );
-  }
-
   window.initProjectHeader = function () {
     mountProjectHeader();
-    bindSaveShortcut();
     updateProjectHeaderName();
     const rec = typeof getCurrentProjectRecord === 'function' ? getCurrentProjectRecord() : null;
     if (rec && rec.updatedAt) {

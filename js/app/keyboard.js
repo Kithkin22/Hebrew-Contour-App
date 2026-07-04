@@ -54,11 +54,25 @@
    pos(); picker.classList.add('show');
  }
  document.addEventListener('keydown',function(e){
+   const mod=e.ctrlKey||e.metaKey;
+   const key=String(e.key||'').toLowerCase();
    const t=(document.activeElement&&document.activeElement.tagName)||'';
-   if(/INPUT|TEXTAREA|SELECT/.test(t)||(document.activeElement&&document.activeElement.isContentEditable))return;
-   if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();undoLastChange();return;}
-   const allMod=(e.ctrlKey||e.metaKey)&&e.shiftKey&&!e.altKey;
-   if((e.ctrlKey||e.metaKey||e.altKey)&&!allMod)return;
+   const inField=/INPUT|TEXTAREA|SELECT/.test(t)||(document.activeElement&&document.activeElement.isContentEditable);
+   if(mod&&key==='s'&&!e.shiftKey&&!e.altKey){
+     e.preventDefault();
+     e.stopPropagation();
+     if(typeof saveProjectLocal==='function')saveProjectLocal();
+     return;
+   }
+   if(!inField&&mod&&key==='z'&&!e.shiftKey&&!e.altKey){
+     e.preventDefault();
+     e.stopPropagation();
+     if(typeof undoLastChange==='function')undoLastChange();
+     return;
+   }
+   if(inField)return;
+   const allMod=mod&&e.shiftKey&&!e.altKey;
+   if((mod||e.altKey)&&!allMod)return;
    if(e.key==='Escape'){closeP();return;}
    if(!selected())return;
    const k=e.key.toLowerCase();
