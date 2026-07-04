@@ -116,14 +116,8 @@
   function scrollFitPageIntoView() {
     scrollContourEditorToTop();
     const wrap = document.getElementById('editorWrap');
-    const stage = document.getElementById('contourPageZoomStage');
-    if (!wrap || !stage) return;
+    if (!wrap) return;
     wrap.scrollLeft = Math.max(0, (wrap.scrollWidth - wrap.clientWidth) / 2);
-    try {
-      stage.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });
-    } catch (_) {
-      stage.scrollIntoView(true);
-    }
   }
 
   function getPageZoomScale(mode) {
@@ -133,13 +127,26 @@
     return PAGE_ZOOM_PRESETS[parsed.mode] || 1;
   }
 
+  function pageZoomInner(stage) {
+    return stage ? (stage.querySelector('.contour-page-zoom-inner') || stage) : null;
+  }
+
   function syncStageLayoutAfterZoom(stage, scale) {
-    const sheet = stage.querySelector('.contour-document-sheet');
-    if (!sheet) return;
-    const w = sheet.offsetWidth;
-    const h = Math.max(sheet.offsetHeight, sheet.scrollHeight);
-    stage.style.width = Math.ceil(w * scale) + 'px';
-    stage.style.minHeight = Math.ceil(h * scale) + 'px';
+    const sheet = stage?.querySelector('.contour-document-sheet');
+    const inner = pageZoomInner(stage);
+    if (!sheet || !inner) return;
+    const { pageW, pageH } = getPageLayoutSize(sheet);
+    stage.style.width = Math.ceil(pageW * scale) + 'px';
+    stage.style.height = Math.ceil(pageH * scale) + 'px';
+    stage.style.minHeight = '';
+    inner.style.width = pageW + 'px';
+  }
+
+  function refreshPageZoomStageLayout() {
+    const stage = document.getElementById('contourPageZoomStage');
+    if (!stage) return;
+    syncStageLayoutAfterZoom(stage, getPageZoomScaleValue());
+    clampEditorWrapScroll(document.getElementById('editorWrap'));
   }
 
   function updatePageZoomControls(mode, scale) {
@@ -182,8 +189,9 @@
 
   function setPinchZooming(active) {
     const stage = document.getElementById('contourPageZoomStage');
+    const inner = pageZoomInner(stage);
     const wrap = document.getElementById('editorWrap');
-    if (stage) stage.classList.toggle('is-pinch-zooming', !!active);
+    if (inner) inner.classList.toggle('is-pinch-zooming', !!active);
     if (wrap) wrap.classList.toggle('contour-page-zoom-gesturing', !!active);
   }
 
@@ -267,6 +275,18 @@
   function scrollContourEditorToTop() {
     const wrap = document.getElementById('editorWrap');
     if (wrap) wrap.scrollTop = 0;
+  }
+
+  function scrollWordIntoEditorView(el, opts) {
+    opts = opts || {};
+    const wrap = document.getElementById('editorWrap');
+    if (!wrap || !el) return;
+    const pad = opts.pad != null ? opts.pad : 48;
+    const wr = wrap.getBoundingClientRect();
+    const er = el.getBoundingClientRect();
+    if (er.top < wr.top + pad) wrap.scrollTop += er.top - wr.top - pad;
+    else if (er.bottom > wr.bottom - pad) wrap.scrollTop += er.bottom - wr.bottom + pad;
+    clampEditorWrapScroll(wrap);
   }
 
   function isDocumentZoomTarget(target) {
@@ -396,13 +416,41 @@
   window.zoomByFactor = zoomByFactor;
   window.getPageZoomMode = getPageZoomMode;
   window.scrollContourEditorToTop = scrollContourEditorToTop;
+  window.scrollWordIntoEditorView = scrollWordIntoEditorView;
+  window.refreshPageZoomStageLayout = refreshPageZoomStageLayout;
   window.computeFitPageZoom = computeFitPageZoom;
   window.getEditorFitViewport = getEditorFitViewport;
   window.clampPageZoomScale = clampPageZoomScale;
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function ensurePageZoomInnerWrapper() {
+    const stage = document.getElementById('contourPageZoomStage');
+    if (!stage || stage.querySelector('.contour-page-zoom-inner')) return;
+    const inner = document.createElement('div');
+    inner.className = 'contour-page-zoom-inner';
+    while (stage.firstChild) inner.appendChild(stage.firstChild);
+    stage.appendChild(inner);
+  }
+
+  function migrateStrayEditorWrapArcSvg() {
+    const wrap = document.getElementById('editorWrap');
+    const ed = document.getElementById('editor');
+    const stray = wrap?.querySelector(':scope > #arcSvg');
+    if (!stray) return;
+    if (ed && typeof ensureArcSvgLayer === 'function') ensureArcSvgLayer();
+    else stray.remove();
+  }
+
+  function bootPageZoom() {
+    ensurePageZoomInnerWrapper();
+    migrateStrayEditorWrapArcSvg();
     bindPageZoomControls();
     bindPageZoomGestures();
     applyPageZoom({ skipPersist: true });
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootPageZoom);
+  } else {
+    bootPageZoom();
+  }
 })();

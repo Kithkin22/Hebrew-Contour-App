@@ -110,16 +110,21 @@ body.dark-mode #editorWrap.contour-document-surface .contour-document-sheet {
     0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
-/* Page zoom / print preview */
+/* Page zoom / print preview — outer stage clips to scaled layout box; inner holds transform */
 .contour-page-zoom-stage {
-  transform: scale(var(--contour-page-zoom, 1));
-  transform-origin: top center;
   margin: 0 auto;
   flex: none !important;
+  overflow: hidden;
+  position: relative;
+}
+
+.contour-page-zoom-inner {
+  transform: scale(var(--contour-page-zoom, 1));
+  transform-origin: top center;
   backface-visibility: hidden;
 }
 
-.contour-page-zoom-stage.is-pinch-zooming {
+.contour-page-zoom-inner.is-pinch-zooming {
   will-change: transform;
 }
 

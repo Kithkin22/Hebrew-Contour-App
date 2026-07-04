@@ -54,6 +54,7 @@ async function main() {
 
       setPageZoomMode('85', { skipPersist: true });
       const stage = document.getElementById('contourPageZoomStage');
+      const inner = stage?.querySelector('.contour-page-zoom-inner');
       const scale85 = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--contour-page-zoom'));
       const titleVisible = !!(document.getElementById('contourPassageTitle') && !document.getElementById('contourPassageTitle').hidden);
       const titleTop = document.getElementById('contourPassageTitle')?.getBoundingClientRect().top || 0;
@@ -79,6 +80,13 @@ async function main() {
 
       const exportHtml = buildContourEditorHtmlFromState(true);
       const exportHasZoom = exportHtml.includes('contour-page-zoom') || exportHtml.includes('contourPageZoomStage');
+
+      const firstWord = document.querySelector('#editor .word');
+      const gapTop = firstWord ? firstWord.getBoundingClientRect().top - wrap.getBoundingClientRect().top : 999;
+      const stageLayoutH = stage?.offsetHeight || 0;
+      const stageVisualH = stage?.getBoundingClientRect().height || 0;
+      const stageLayoutMatchesVisual = stageLayoutH > 0 && Math.abs(stageLayoutH - stageVisualH) < 8;
+      const hasZoomInner = !!inner;
 
       setPageZoomMode('75', { skipPersist: true });
       const captured = captureProjectViewPrefs();
@@ -152,6 +160,9 @@ async function main() {
         titleVisible,
         titleNearTop: titleVisible && titleTop >= wrapTop && titleTop - wrapTop < 200,
         exportHasZoom,
+        gapTop,
+        stageLayoutMatchesVisual,
+        hasZoomInner,
         capturedZoom: captured.pageZoom,
         customScale,
         customMode,
@@ -171,6 +182,8 @@ async function main() {
     record('zoom-fit-visible', unit.fitsVertically && unit.fitsHorizontally, `fit=${unit.scaleFit} vertical=${unit.fitsVertically} horizontal=${unit.fitsHorizontally}`);
     record('zoom-fit-height', unit.heightLimited, `heightLimited=${unit.heightLimited} fitScale=${unit.scaleFit}`);
     record('title-visible', unit.titleVisible && unit.titleNearTop, `titleVisible=${unit.titleVisible} nearTop=${unit.titleNearTop}`);
+    record('fit-content-near-top', unit.gapTop < 120, `gapTop=${unit.gapTop}`);
+    record('stage-layout-box', unit.stageLayoutMatchesVisual && unit.hasZoomInner, `layoutMatchesVisual=${unit.stageLayoutMatchesVisual} inner=${unit.hasZoomInner}`);
     record('export-no-zoom', !unit.exportHasZoom, `exportHasZoom=${unit.exportHasZoom}`);
     record('prefs-capture', unit.capturedZoom === '75', `captured=${unit.capturedZoom}`);
     record('custom-zoom-scale', Math.abs(unit.customScale - 0.92) < 0.02 && unit.customMode === 'custom', `scale=${unit.customScale} mode=${unit.customMode}`);

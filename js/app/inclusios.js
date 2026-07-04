@@ -331,6 +331,7 @@ function renderInclusioFrameOverlay(paneState, pane) {
   if (!pane) {
     syncInclusioEditorGutter(paneState);
     applyInclusioFrameHighlight();
+    if (typeof refreshPageZoomStageLayout === 'function') refreshPageZoomStageLayout();
   }
 }
 
@@ -534,7 +535,10 @@ function activateInclusio(id, scroll) {
       const open = anchorRangeOrdered(item.openingAnchor);
       const sel = open ? inclusioWordSelector(open.start, pane) : null;
       const w = sel ? document.querySelector(sel) : null;
-      if (w) w.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (w) {
+        if (typeof scrollWordIntoEditorView === 'function') scrollWordIntoEditorView(w);
+        else w.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
       applyInclusioRegistryHighlight();
       if (typeof renderInclusioFrameOverlays === 'function') renderInclusioFrameOverlays();
     }, 60);
