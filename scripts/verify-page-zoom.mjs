@@ -83,6 +83,64 @@ async function main() {
       setPageZoomMode('75', { skipPersist: true });
       const captured = captureProjectViewPrefs();
 
+      setPageZoomScale(0.92, { skipPersist: true });
+      const customScale = getPageZoomScaleValue();
+      const customMode = getPageZoomMode();
+      const customLabel = document.getElementById('pageZoomStatus')?.textContent || '';
+      const customBtnActive = document.querySelector('[data-page-zoom="100"]')?.classList.contains('active');
+
+      setPageZoomScale(1, { skipPersist: true });
+      const preset100Active = document.querySelector('[data-page-zoom="100"]')?.classList.contains('active');
+
+      const beforeWheel = getPageZoomScaleValue();
+      wrap.dispatchEvent(new WheelEvent('wheel', {
+        bubbles: true,
+        cancelable: true,
+        clientX: wrap.getBoundingClientRect().left + wrap.clientWidth / 2,
+        clientY: wrap.getBoundingClientRect().top + wrap.clientHeight / 2,
+        deltaY: -50,
+        ctrlKey: true,
+      }));
+      const afterWheel = getPageZoomScaleValue();
+
+      const payload = projectPayload();
+      const savedZoom = payload.viewPrefs?.pageZoom;
+      setPageZoomScale(0.92, { skipPersist: true });
+      syncPageZoomPref(getPageZoomPersistValue());
+      const payloadCustom = projectPayload();
+      const savedCustom = payloadCustom.viewPrefs?.pageZoom;
+
+      state.arcs = [{
+        id: 'arc-test',
+        start: { v: 0, c: 0, w: 0 },
+        end: { v: 0, c: 1, w: 0 },
+        color: '#0b61d8',
+        label: '',
+      }];
+      renderArcOverlay();
+      function arcAnchorError(scaleMode) {
+        setPageZoomMode(scaleMode, { skipPersist: true });
+        renderArcOverlay();
+        const words = Array.from(document.querySelectorAll('#editor .word'));
+        const start = words[0];
+        const end = words.find((w, i) => i > 0 && w.closest('.clause') !== start.closest('.clause')) || words[1];
+        if (!start || !end) return 999;
+        const sr = start.getBoundingClientRect();
+        const er = end.getBoundingClientRect();
+        const ed = document.getElementById('editor');
+        const edr = ed.getBoundingClientRect();
+        const scale = getPageZoomScaleValue();
+        const expectedY1 = (sr.top + sr.height / 2 - edr.top) / scale;
+        const expectedY2 = (er.top + er.height / 2 - edr.top) / scale;
+        const circles = Array.from(document.querySelectorAll('#arcSvg circle'));
+        if (circles.length < 2) return 999;
+        const y1 = parseFloat(circles[0].getAttribute('cy'));
+        const y2 = parseFloat(circles[1].getAttribute('cy'));
+        return Math.max(Math.abs(y1 - expectedY1), Math.abs(y2 - expectedY2));
+      }
+      const err85 = arcAnchorError('85');
+      const err100 = arcAnchorError('100');
+
       return {
         hasStage: !!stage,
         scale85,
@@ -95,6 +153,15 @@ async function main() {
         titleNearTop: titleVisible && titleTop >= wrapTop && titleTop - wrapTop < 200,
         exportHasZoom,
         capturedZoom: captured.pageZoom,
+        customScale,
+        customMode,
+        customLabel,
+        customBtnActive,
+        preset100Active,
+        wheelZoomed: afterWheel > beforeWheel,
+        savedCustom,
+        arcErr85: err85,
+        arcErr100: err100,
       };
     });
 
@@ -106,6 +173,14 @@ async function main() {
     record('title-visible', unit.titleVisible && unit.titleNearTop, `titleVisible=${unit.titleVisible} nearTop=${unit.titleNearTop}`);
     record('export-no-zoom', !unit.exportHasZoom, `exportHasZoom=${unit.exportHasZoom}`);
     record('prefs-capture', unit.capturedZoom === '75', `captured=${unit.capturedZoom}`);
+    record('custom-zoom-scale', Math.abs(unit.customScale - 0.92) < 0.02 && unit.customMode === 'custom', `scale=${unit.customScale} mode=${unit.customMode}`);
+    record('custom-zoom-label', unit.customLabel === '92%', `label=${unit.customLabel}`);
+    record('custom-no-preset-active', !unit.customBtnActive, `100btnActive=${unit.customBtnActive}`);
+    record('preset-rehighlight', unit.preset100Active, `100btnActive=${unit.preset100Active}`);
+    record('wheel-pinch-zoom', unit.wheelZoomed, `before/after wheel`);
+    record('custom-persist', unit.savedCustom === '92', `saved=${unit.savedCustom}`);
+    record('arc-align-85', unit.arcErr85 < 3, `err=${unit.arcErr85}`);
+    record('arc-align-100', unit.arcErr100 < 3, `err=${unit.arcErr100}`);
 
     const pass = results.every((r) => r.pass);
     console.log(`\n${pass ? 'ALL PASSED' : 'SOME FAILED'} (${results.filter((r) => r.pass).length}/${results.length})`);

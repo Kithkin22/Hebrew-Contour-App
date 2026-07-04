@@ -29,9 +29,18 @@
       inspectorEnabled: !!raw.inspectorEnabled,
       commentsPanelOpen: !!raw.commentsPanelOpen,
       contourDensity: raw.contourDensity === 'comfortable' ? 'comfortable' : 'single',
-      pageZoom: typeof normalizePageZoomMode === 'function'
-        ? normalizePageZoomMode(raw.pageZoom)
-        : (raw.pageZoom === 'fit' || raw.pageZoom === '75' || raw.pageZoom === '85' ? raw.pageZoom : '100'),
+      pageZoom: (function () {
+        if (typeof parsePageZoomInput === 'function') {
+          const parsed = parsePageZoomInput(raw.pageZoom);
+          if (parsed.mode === 'custom') return String(Math.round(parsed.scale * 100));
+          return parsed.mode;
+        }
+        const v = raw.pageZoom;
+        if (v === 'fit' || v === '75' || v === '85' || v === '100') return v;
+        const n = parseInt(v, 10);
+        if (!isNaN(n) && n >= 25 && n <= 200) return String(n);
+        return '100';
+      })(),
     };
   }
 
@@ -73,7 +82,9 @@
       inspectorEnabled: !!window.CONTOUR_INSPECTOR_ENABLED,
       commentsPanelOpen: commentsOpen,
       contourDensity: density,
-      pageZoom: typeof getPageZoomMode === 'function' ? getPageZoomMode() : '100',
+      pageZoom: typeof getPageZoomPersistValue === 'function'
+        ? getPageZoomPersistValue()
+        : (typeof getPageZoomMode === 'function' ? getPageZoomMode() : '100'),
     };
   }
 
@@ -107,9 +118,9 @@
 
   function syncPageZoomPref(mode) {
     const prefs = getProjectViewPrefs();
-    prefs.pageZoom = typeof normalizePageZoomMode === 'function'
-      ? normalizePageZoomMode(mode)
-      : String(mode || '100');
+    prefs.pageZoom = mode != null
+      ? String(mode)
+      : (typeof getPageZoomPersistValue === 'function' ? getPageZoomPersistValue() : '100');
     projectViewPrefs = prefs;
     if (typeof autoSaveProject === 'function' && window.autosaveReady) autoSaveProject();
   }

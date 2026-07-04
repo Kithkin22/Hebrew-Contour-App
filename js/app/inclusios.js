@@ -63,6 +63,195 @@ function anchorDisplayLabel(anchor) {
   return ref ? `${ref}: ${text}` : text;
 }
 
+function locRankInVerses(l, verses) {
+  if (!l || !Array.isArray(verses)) return -1;
+  let n = 0;
+  for (let vi = 0; vi < verses.length; vi++) {
+    for (let ci = 0; ci < verses[vi].clauses.length; ci++) {
+      if (vi === l.v && ci === l.c) return n + l.w;
+      n += verses[vi].clauses[ci].words.length;
+    }
+  }
+  return -1;
+}
+
+function locInRangeInVerses(l, start, end, verses) {
+  const r = locRankInVerses(l, verses);
+  const a = locRankInVerses(start, verses);
+  const b = locRankInVerses(end, verses);
+  if (r < 0 || a < 0 || b < 0) return false;
+  return r >= Math.min(a, b) && r <= Math.max(a, b);
+}
+
+function inclusioEditorScale() {
+  if (typeof getArcOverlayScale === 'function') return getArcOverlayScale();
+  const raw = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--contour-page-zoom'));
+  return raw > 0 ? raw : 1;
+}
+
+function computeInclusioNestLevels(inclusios, verses) {
+  const spans = (inclusios || []).map(inc => {
+    const item = migrateInclusioItem(inc);
+    const open = anchorRangeOrdered(item?.openingAnchor);
+    const close = anchorRangeOrdered(item?.closingAnchor);
+    if (!open || !close) return null;
+    const start = locRankInVerses(open.start, verses);
+    const end = locRankInVerses(close.end, verses);
+    if (start < 0 || end < 0) return null;
+    const lo = Math.min(start, end);
+    const hi = Math.max(start, end);
+    return { inc: item, start: lo, end: hi, size: hi - lo };
+  }).filter(Boolean);
+  spans.forEach(item => {
+    let depth = 0;
+    spans.forEach(other => {
+      if (other === item) return;
+      if (other.start <= item.start && other.end >= item.end && other.size > item.size) depth++;
+    });
+    item.inc.nestLevel = depth;
+  });
+  return spans;
+}
+
+function inclusioWordSelector(l, pane) {
+  if (pane != null) {
+    return `.word[data-pane="${pane}"][data-v="${l.v}"][data-c="${l.c}"][data-w="${l.w}"]`;
+  }
+  return `.word[data-v="${l.v}"][data-c="${l.c}"][data-w="${l.w}"]`;
+}
+
+function inclusioEditorRoot(pane) {
+  if (pane != null) {
+    return document.querySelector(`.parallel-pane-arc-wrap[data-pane="${pane}"] .parallel-verse-body`);
+  }
+  return document.getElementById('editor');
+}
+
+function inclusioEnvelopeBounds(inc, paneState, pane) {
+  const item = migrateInclusioItem(inc);
+  const open = anchorRangeOrdered(item?.openingAnchor);
+  const close = anchorRangeOrdered(item?.closingAnchor);
+  if (!open || !close || !paneState?.verses?.length) return null;
+  const ed = inclusioEditorRoot(pane);
+  if (!ed) return null;
+  const scale = inclusioEditorScale();
+  const er = ed.getBoundingClientRect();
+  const verses = paneState.verses;
+  let top = Infinity;
+  let bottom = -Infinity;
+  let left = Infinity;
+  let right = -Infinity;
+  let found = false;
+  verses.forEach((v, vi) => v.clauses.forEach((c, ci) => c.words.forEach((w, wi) => {
+    if (isMaqafConnector(w)) return;
+    const l = { v: vi, c: ci, w: wi };
+    if (!locInRangeInVerses(l, open.start, close.end, verses)) return;
+    const el = document.querySelector(inclusioWordSelector(l, pane));
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    top = Math.min(top, r.top);
+    bottom = Math.max(bottom, r.bottom);
+    left = Math.min(left, r.left);
+    right = Math.max(right, r.right);
+    found = true;
+  })));
+  if (!found) return null;
+  return {
+    top: (top - er.top) / scale,
+    bottom: (bottom - er.top) / scale,
+    left: (left - er.left) / scale,
+    right: (right - er.left) / scale,
+    width: Math.max(ed.scrollWidth, ed.offsetWidth, 1),
+    height: Math.max(ed.scrollHeight, ed.offsetHeight, 1),
+  };
+}
+
+function ensureInclusioFrameSvg(ed) {
+  if (!ed) return null;
+  let svg = ed.querySelector(':scope > svg.inclusio-frame-svg');
+  if (!svg) {
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.classList.add('inclusio-frame-svg');
+    svg.setAttribute('aria-hidden', 'true');
+    const arc = ed.querySelector(':scope > #arcSvg');
+    if (arc) ed.insertBefore(svg, arc);
+    else ed.insertBefore(svg, ed.firstChild);
+  }
+  return svg;
+}
+
+function drawInclusioEnvelopeRail(svg, bounds, inc, level) {
+  const inset = 6 + (level || 0) * 5;
+  const strokeWidth = Math.max(1, 2.2 - (level || 0) * 0.35);
+  const opacity = Math.max(0.38, 0.82 - (level || 0) * 0.1);
+  const color = inc.color || '#6B7280';
+  const xL = Math.max(4, bounds.left - inset);
+  const xR = Math.min(bounds.width - 4, bounds.right + inset);
+  const y1 = Math.max(0, bounds.top - 2);
+  const y2 = Math.min(bounds.height, bounds.bottom + 2);
+  const mkLine = (x1, y1v, x2, y2v) => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('class', 'inclusio-frame-rail');
+    line.setAttribute('x1', String(x1));
+    line.setAttribute('y1', String(y1v));
+    line.setAttribute('x2', String(x2));
+    line.setAttribute('y2', String(y2v));
+    line.setAttribute('stroke', color);
+    line.setAttribute('stroke-width', String(strokeWidth));
+    line.setAttribute('opacity', String(opacity));
+    svg.appendChild(line);
+  };
+  mkLine(xL, y1, xL, y2);
+  mkLine(xR, y1, xR, y2);
+  mkLine(xL, y1, xL + 8, y1);
+  mkLine(xR - 8, y1, xR, y1);
+  mkLine(xL, y2, xL + 8, y2);
+  mkLine(xR - 8, y2, xR, y2);
+}
+
+function renderInclusioFrameOverlay(paneState, pane) {
+  const ed = inclusioEditorRoot(pane);
+  if (!ed || !paneState?.inclusios?.length) {
+    if (ed) {
+      const old = ed.querySelector(':scope > svg.inclusio-frame-svg');
+      if (old) old.remove();
+    }
+    return;
+  }
+  const svg = ensureInclusioFrameSvg(ed);
+  if (!svg) return;
+  svg.innerHTML = '';
+  const contentW = Math.max(ed.scrollWidth, ed.offsetWidth, 1);
+  const contentH = Math.max(ed.scrollHeight, ed.offsetHeight, 1);
+  svg.setAttribute('viewBox', `0 0 ${contentW} ${contentH}`);
+  svg.setAttribute('width', String(contentW));
+  svg.setAttribute('height', String(contentH));
+  svg.style.width = contentW + 'px';
+  svg.style.height = contentH + 'px';
+  const spans = computeInclusioNestLevels(paneState.inclusios, paneState.verses);
+  spans.sort((a, b) => (a.inc.nestLevel || 0) - (b.inc.nestLevel || 0));
+  spans.forEach(({ inc }) => {
+    if (inc.showMarginEnvelope === false) return;
+    if (!inc.openingAnchor || !inc.closingAnchor) return;
+    const bounds = inclusioEnvelopeBounds(inc, paneState, pane);
+    if (!bounds) return;
+    drawInclusioEnvelopeRail(svg, bounds, inc, inc.nestLevel || 0);
+  });
+}
+
+function renderInclusioFrameOverlays() {
+  ensureStateBundle();
+  if (typeof isParallelActive === 'function' && isParallelActive()) {
+    [0, 1].forEach(pane => renderInclusioFrameOverlay(stateBundle.panes[pane], pane));
+  } else {
+    renderInclusioFrameOverlay(state, null);
+  }
+}
+if (typeof window !== 'undefined') {
+  window.renderInclusioFrameOverlay = renderInclusioFrameOverlay;
+  window.renderInclusioFrameOverlays = renderInclusioFrameOverlays;
+}
+
 function migrateInclusioItem(item) {
   if (!item || typeof item !== 'object') return null;
   const inc = Object.assign({}, item);
@@ -82,7 +271,8 @@ function migrateInclusioItem(item) {
     inc.closingAnchor.normalizedText = anchorTextFromLocRange(inc.closingAnchor.range);
   }
   if (!inc.id) inc.id = 'inc' + Date.now();
-  if (!inc.color) inc.color = '#315efb';
+  if (!inc.color) inc.color = '#6B7280';
+  if (inc.showMarginEnvelope == null) inc.showMarginEnvelope = true;
   if (inc.theme == null) inc.theme = inc.theme || '';
   if (inc.evidence == null) inc.evidence = inc.evidence || '';
   if (inc.notes == null) inc.notes = inc.notes || '';
@@ -190,13 +380,20 @@ function activateInclusio(id, scroll) {
   render();
   if (scroll !== false) {
     setTimeout(() => {
-      const w = document.querySelector(
-        `.word[data-v="${open?.start?.v}"][data-c="${open?.start?.c}"][data-w="${open?.start?.w}"]`
-      );
+      const pane = typeof isParallelActive === 'function' && isParallelActive() ? stateBundle.activePane : null;
+      const open = anchorRangeOrdered(item.openingAnchor);
+      const sel = open ? inclusioWordSelector(open.start, pane) : null;
+      const w = sel ? document.querySelector(sel) : null;
       if (w) w.scrollIntoView({ behavior: 'smooth', block: 'center' });
       applyInclusioRegistryHighlight();
+      if (typeof renderInclusioFrameOverlays === 'function') renderInclusioFrameOverlays();
     }, 60);
   }
+}
+
+function expandLegendInclusiosSection() {
+  const section = document.getElementById('legendInclusiosSection');
+  if (section) section.classList.remove('collapsed');
 }
 
 function addInclusio() {
@@ -204,11 +401,14 @@ function addInclusio() {
   ensureInclusios();
   const n = state.inclusios.length + 1;
   const label = `Inclusio ${String.fromCharCode(64 + ((n - 1) % 26) + 1)}`;
-  const color = document.getElementById('inclusioColor')?.value || '#315efb';
+  const color = document.getElementById('inclusioColorInput')?.value
+    || document.getElementById('inclusioColor')?.value
+    || '#6B7280';
   const item = {
     id: 'inc' + Date.now(),
     label,
     color,
+    showMarginEnvelope: true,
     relationshipKind: 'inclusio',
     openingAnchor: null,
     closingAnchor: null,
@@ -220,6 +420,7 @@ function addInclusio() {
   state.inclusios.push(item);
   state.activeInclusioId = item.id;
   inclusioPhraseDraft = null;
+  expandLegendInclusiosSection();
   render();
 }
 
@@ -281,6 +482,7 @@ function setInclusioAnchor(side) {
   else syncInclusioWordMarkers();
   updateInclusioPhraseStatus();
   render();
+  if (typeof renderInclusioFrameOverlays === 'function') setTimeout(renderInclusioFrameOverlays, 0);
 }
 
 function clearInclusioWordMarkersOnVerses(verses) {
@@ -310,14 +512,14 @@ function syncInclusioWordMarkers(paneState) {
   clearInclusioWordMarkersOnVerses(st.verses);
   const verses = st.verses;
   st.inclusios.forEach(item => {
-    const color = item.color || '#315efb';
+    const color = item.color || '#6B7280';
     const applyAnchor = (anchor, side) => {
       const ord = anchorRangeOrdered(anchor);
       if (!ord) return;
       let started = false;
       verses.forEach((v, vi) => v.clauses.forEach((c, ci) => c.words.forEach((w, wi) => {
         const l = { v: vi, c: ci, w: wi };
-        if (!locInRange(l, ord.start, ord.end) || isMaqafConnector(w)) return;
+        if (!locInRangeInVerses(l, ord.start, ord.end, verses) || isMaqafConnector(w)) return;
         w.inclusioId = item.id;
         w.inclusioColor = color;
         w.inclusioAnchorSide = side;
@@ -386,11 +588,14 @@ function applyInclusioRegistryHighlight() {
   const id = inclusioRegistryHoverId || state.activeInclusioId;
   if (!id) return;
   const cls = inclusioRegistryHoverId ? 'inclusio-registry-hover' : 'inclusio-anchor-active';
+  const activePane = typeof isParallelActive === 'function' && isParallelActive() ? stateBundle.activePane : null;
+  const paneState = activePane != null ? stateBundle.panes[activePane] : state;
   document.querySelectorAll('.word').forEach(el => {
+    if (activePane != null && el.dataset.pane != null && +el.dataset.pane !== activePane) return;
     const vi = +el.dataset.v;
     const ci = +el.dataset.c;
     const wi = +el.dataset.w;
-    const w = state.verses[vi]?.clauses[ci]?.words[wi];
+    const w = paneState.verses[vi]?.clauses[ci]?.words[wi];
     if (w && w.inclusioId === id) el.classList.add(cls);
   });
 }
@@ -413,7 +618,8 @@ function renderInclusioEditor() {
   });
   html += '</select></label>';
   html += '<label class="small">Label <input id="inclusioLabelInput" value="' + esc(active?.label || '') + '"></label>';
-  html += '<label class="small">Color <input id="inclusioColorInput" type="color" value="' + esc(active?.color || '#315efb') + '"></label>';
+  html += '<label class="small">Color <input id="inclusioColorInput" type="color" value="' + esc(active?.color || '#6B7280') + '"></label>';
+  html += '<label class="small inclusio-envelope-toggle"><input type="checkbox" id="inclusioEnvelopeToggle"' + (active?.showMarginEnvelope !== false ? ' checked' : '') + '> Show margin envelope</label>';
   html += '</div>';
 
   html += '<div class="inclusio-anchor-block">';
@@ -454,19 +660,20 @@ function renderInclusioEditor() {
   const bindField = (id, fn) => {
     const el = box.querySelector(id);
     if (!el) return;
-    const ev = el.tagName === 'SELECT' ? 'change' : 'input';
+    const ev = el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input';
     el[ev] = () => {
       const item = activeInclusio();
       if (!item) return;
       markUndo();
       fn(item, el);
-      if (id === '#inclusioColorInput') syncInclusioWordMarkers();
       autoSaveProject();
-      if (id === '#inclusioColorInput' || id === '#inclusioLabelInput') renderInclusioRegistry();
+      if (id === '#inclusioColorInput') syncInclusioWordMarkers();
+      if (id === '#inclusioColorInput' || id === '#inclusioLabelInput' || id === '#inclusioEnvelopeToggle') renderInclusioRegistry();
     };
   };
   bindField('#inclusioLabelInput', (item, el) => { item.label = el.value; });
-  bindField('#inclusioColorInput', (item, el) => { item.color = el.value; renderInclusioEditor(); });
+  bindField('#inclusioColorInput', (item, el) => { item.color = el.value; renderInclusioEditor(); syncInclusioWordMarkers(); if (typeof renderInclusioFrameOverlays === 'function') renderInclusioFrameOverlays(); });
+  bindField('#inclusioEnvelopeToggle', (item, el) => { item.showMarginEnvelope = !!el.checked; if (typeof renderInclusioFrameOverlays === 'function') renderInclusioFrameOverlays(); });
   bindField('#inclusioThemeInput', (item, el) => { item.theme = el.value; });
   bindField('#inclusioBasisSelect', (item, el) => { item.relationshipBasis = el.value || null; });
   bindField('#inclusioEvidenceInput', (item, el) => { item.evidence = el.value; });
@@ -564,10 +771,12 @@ function initLegendInclusiosSection() {
 
 function renderInclusioUI() {
   initLegendInclusiosSection();
-  syncInclusioWordMarkers();
   renderInclusioEditor();
   renderInclusioRegistry();
-  setTimeout(applyInclusioRegistryHighlight, 0);
+  setTimeout(() => {
+    applyInclusioRegistryHighlight();
+    if (typeof renderInclusioFrameOverlays === 'function' && !isParallelActive()) renderInclusioFrameOverlays();
+  }, 0);
 }
 
 function inclusiosHtmlForExport() {

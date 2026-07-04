@@ -1,11 +1,62 @@
 /* Page zoom / print preview — editor presentation only (exports unaffected) */
 (function () {
+  const PAGE_ZOOM_PRESETS = { fit: null, '75': 0.75, '85': 0.85, '100': 1 };
+  const MIN_PAGE_ZOOM = 0.25;
+  const MAX_PAGE_ZOOM = 2;
+  const PRESET_MATCH_EPS = 0.008;
+  const WHEEL_ZOOM_SENSITIVITY = 0.0022;
+
   let pageZoomMode = '100';
+  let pageZoomScale = 1;
+  let gestureSession = null;
+  let pinchSession = null;
+  let persistAfterGestureTimer = null;
+
+  function clampPageZoomScale(scale) {
+    return Math.min(MAX_PAGE_ZOOM, Math.max(MIN_PAGE_ZOOM, Math.round(scale * 1000) / 1000));
+  }
+
+  function parsePageZoomInput(value) {
+    const v = String(value == null ? '' : value).trim();
+    if (v === 'fit') return { mode: 'fit', scale: null };
+    if (v === '75' || v === '85' || v === '100') {
+      return { mode: v, scale: parseInt(v, 10) / 100 };
+    }
+    const n = parseInt(v, 10);
+    if (!isNaN(n) && n >= 25 && n <= 200) {
+      return { mode: 'custom', scale: n / 100 };
+    }
+    return { mode: '100', scale: 1 };
+  }
 
   function normalizePageZoomMode(value) {
-    const v = String(value || '').trim();
-    if (v === 'fit' || v === '75' || v === '85' || v === '100') return v;
-    return '100';
+    return parsePageZoomInput(value).mode;
+  }
+
+  function presetModeFromScale(scale) {
+    const s = clampPageZoomScale(scale);
+    if (Math.abs(s - 1) < PRESET_MATCH_EPS) return '100';
+    if (Math.abs(s - 0.85) < PRESET_MATCH_EPS) return '85';
+    if (Math.abs(s - 0.75) < PRESET_MATCH_EPS) return '75';
+    return 'custom';
+  }
+
+  function getPageZoomScaleValue() {
+    if (pageZoomMode === 'fit') return computeFitPageZoom();
+    if (pageZoomMode === 'custom') return clampPageZoomScale(pageZoomScale);
+    const preset = PAGE_ZOOM_PRESETS[pageZoomMode];
+    return preset != null ? preset : 1;
+  }
+
+  function getPageZoomPersistValue() {
+    if (pageZoomMode === 'fit') return 'fit';
+    if (pageZoomMode === 'custom') return String(Math.round(getPageZoomScaleValue() * 100));
+    return pageZoomMode;
+  }
+
+  function isParallelPageZoomDisabled() {
+    const parallelWrap = document.getElementById('parallelCompareWrap');
+    return !!(parallelWrap && !parallelWrap.classList.contains('hidden'));
   }
 
   function getEditorFitViewport() {
@@ -59,7 +110,7 @@
     const scaleW = viewport.width / pageW;
     const scaleH = viewport.height / pageH;
     const scale = Math.min(1, scaleW, scaleH);
-    return Math.max(0.2, Math.round(scale * 1000) / 1000);
+    return clampPageZoomScale(scale);
   }
 
   function scrollFitPageIntoView() {
@@ -76,9 +127,10 @@
   }
 
   function getPageZoomScale(mode) {
-    const m = normalizePageZoomMode(mode != null ? mode : pageZoomMode);
-    if (m === 'fit') return computeFitPageZoom();
-    return parseInt(m, 10) / 100;
+    const parsed = parsePageZoomInput(mode != null ? mode : pageZoomMode);
+    if (parsed.mode === 'fit') return computeFitPageZoom();
+    if (parsed.mode === 'custom') return clampPageZoomScale(parsed.scale);
+    return PAGE_ZOOM_PRESETS[parsed.mode] || 1;
   }
 
   function syncStageLayoutAfterZoom(stage, scale) {
@@ -98,9 +150,10 @@
     });
     const label = document.getElementById('pageZoomStatus');
     if (label) {
-      label.textContent = mode === 'fit'
-        ? `Fit (${Math.round(scale * 100)}%)`
-        : `${mode}%`;
+      const pct = Math.round(scale * 100);
+      if (mode === 'fit') label.textContent = `Fit (${pct}%)`;
+      else if (mode === 'custom') label.textContent = `${pct}%`;
+      else label.textContent = `${mode}%`;
     }
     const controls = document.getElementById('pageZoomControls');
     const parallelWrap = document.getElementById('parallelCompareWrap');
@@ -108,21 +161,99 @@
     if (controls) controls.classList.toggle('hidden', !!parallelActive);
   }
 
+  function clampEditorWrapScroll(wrap) {
+    if (!wrap) return;
+    const maxScrollL = Math.max(0, wrap.scrollWidth - wrap.clientWidth);
+    const maxScrollT = Math.max(0, wrap.scrollHeight - wrap.clientHeight);
+    wrap.scrollLeft = Math.min(maxScrollL, Math.max(0, wrap.scrollLeft));
+    wrap.scrollTop = Math.min(maxScrollT, Math.max(0, wrap.scrollTop));
+  }
+
+  function adjustScrollForZoom(wrap, focalX, focalY, oldScale, newScale) {
+    if (!wrap || oldScale === newScale) return;
+    const rect = wrap.getBoundingClientRect();
+    const offsetX = focalX - rect.left;
+    const offsetY = focalY - rect.top;
+    const ratio = newScale / oldScale;
+    wrap.scrollLeft = (wrap.scrollLeft + offsetX) * ratio - offsetX;
+    wrap.scrollTop = (wrap.scrollTop + offsetY) * ratio - offsetY;
+    clampEditorWrapScroll(wrap);
+  }
+
+  function setPinchZooming(active) {
+    const stage = document.getElementById('contourPageZoomStage');
+    const wrap = document.getElementById('editorWrap');
+    if (stage) stage.classList.toggle('is-pinch-zooming', !!active);
+    if (wrap) wrap.classList.toggle('contour-page-zoom-gesturing', !!active);
+  }
+
+  function queuePersistAfterGesture() {
+    if (persistAfterGestureTimer) clearTimeout(persistAfterGestureTimer);
+    persistAfterGestureTimer = setTimeout(() => {
+      persistAfterGestureTimer = null;
+      if (typeof syncPageZoomPref === 'function') syncPageZoomPref(getPageZoomPersistValue());
+    }, 120);
+  }
+
   function applyPageZoom(opts) {
     opts = opts || {};
     const stage = document.getElementById('contourPageZoomStage');
     if (!stage) return;
-    const mode = normalizePageZoomMode(opts.mode != null ? opts.mode : pageZoomMode);
-    pageZoomMode = mode;
-    const scale = getPageZoomScale(mode);
+    const wrap = document.getElementById('editorWrap');
+    const oldScale = getPageZoomScaleValue();
+
+    if (opts.scale != null) {
+      pageZoomScale = clampPageZoomScale(opts.scale);
+      pageZoomMode = presetModeFromScale(pageZoomScale);
+    } else if (opts.mode != null) {
+      const parsed = parsePageZoomInput(opts.mode);
+      pageZoomMode = parsed.mode;
+      if (parsed.mode === 'custom') pageZoomScale = parsed.scale;
+    }
+
+    const mode = pageZoomMode;
+    const scale = getPageZoomScaleValue();
     document.documentElement.style.setProperty('--contour-page-zoom', String(scale));
     stage.dataset.zoomMode = mode;
     stage.dataset.zoomScale = String(scale);
     syncStageLayoutAfterZoom(stage, scale);
     updatePageZoomControls(mode, scale);
-    if (!opts.skipPersist && typeof syncPageZoomPref === 'function') syncPageZoomPref(mode);
-    if (mode === 'fit') scrollFitPageIntoView();
-    if (typeof scheduleArcOverlayRedraw === 'function') scheduleArcOverlayRedraw();
+
+    if (opts.focal && wrap && oldScale !== scale) {
+      adjustScrollForZoom(wrap, opts.focal.x, opts.focal.y, oldScale, scale);
+    } else if (mode === 'fit' && !opts.skipFitScroll) {
+      scrollFitPageIntoView();
+    } else {
+      clampEditorWrapScroll(wrap);
+    }
+
+    if (!opts.skipPersist && typeof syncPageZoomPref === 'function') {
+      syncPageZoomPref(getPageZoomPersistValue());
+    }
+    if (!opts.skipArcRedraw && typeof scheduleArcOverlayRedraw === 'function') {
+      scheduleArcOverlayRedraw();
+    }
+    if (!opts.skipArcRedraw && typeof renderInclusioFrameOverlays === 'function') {
+      renderInclusioFrameOverlays();
+    }
+  }
+
+  function setPageZoomScale(scale, opts) {
+    opts = opts || {};
+    applyPageZoom(Object.assign({
+      scale,
+      skipPersist: !!opts.live,
+      skipArcRedraw: !!opts.live,
+      skipFitScroll: true,
+      focal: opts.focal,
+    }, opts));
+    if (!opts.live) return;
+    queuePersistAfterGesture();
+  }
+
+  function zoomByFactor(factor, focal, opts) {
+    const next = clampPageZoomScale(getPageZoomScaleValue() * factor);
+    setPageZoomScale(next, Object.assign({ focal }, opts || {}));
   }
 
   function setPageZoomMode(mode, opts) {
@@ -138,6 +269,14 @@
     if (wrap) wrap.scrollTop = 0;
   }
 
+  function isDocumentZoomTarget(target) {
+    if (!target || isParallelPageZoomDisabled()) return false;
+    const wrap = document.getElementById('editorWrap');
+    const stage = document.getElementById('contourPageZoomStage');
+    if (!wrap || !stage) return false;
+    return wrap.contains(target) || stage.contains(target);
+  }
+
   function bindPageZoomControls() {
     document.querySelectorAll('[data-page-zoom]').forEach((btn) => {
       if (btn.dataset.pageZoomBound) return;
@@ -151,17 +290,119 @@
     });
   }
 
+  function bindPageZoomGestures() {
+    if (window._pageZoomGesturesBound) return;
+    window._pageZoomGesturesBound = true;
+
+    document.addEventListener('wheel', (e) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      if (!isDocumentZoomTarget(e.target)) return;
+      e.preventDefault();
+      setPinchZooming(true);
+      const factor = Math.exp(-e.deltaY * WHEEL_ZOOM_SENSITIVITY);
+      zoomByFactor(factor, { x: e.clientX, y: e.clientY }, { live: true });
+      setPinchZooming(false);
+    }, { passive: false, capture: true });
+
+    const bindGestureTarget = (el) => {
+      if (!el || el.dataset.pageZoomGestureBound) return;
+      el.dataset.pageZoomGestureBound = '1';
+
+      el.addEventListener('gesturestart', (e) => {
+        if (isParallelPageZoomDisabled()) return;
+        e.preventDefault();
+        gestureSession = {
+          startScale: getPageZoomScaleValue(),
+          lastScale: getPageZoomScaleValue(),
+        };
+        setPinchZooming(true);
+      }, { passive: false });
+
+      el.addEventListener('gesturechange', (e) => {
+        if (!gestureSession || isParallelPageZoomDisabled()) return;
+        e.preventDefault();
+        const next = clampPageZoomScale(gestureSession.startScale * (e.scale || 1));
+        setPageZoomScale(next, {
+          live: true,
+          focal: { x: e.clientX, y: e.clientY },
+        });
+        gestureSession.lastScale = next;
+      }, { passive: false });
+
+      el.addEventListener('gestureend', (e) => {
+        if (!gestureSession) return;
+        e.preventDefault();
+        gestureSession = null;
+        setPinchZooming(false);
+        queuePersistAfterGesture();
+      }, { passive: false });
+
+      el.addEventListener('touchstart', (e) => {
+        if (isParallelPageZoomDisabled() || e.touches.length !== 2) return;
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        pinchSession = {
+          startDist: Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY),
+          startScale: getPageZoomScaleValue(),
+          focalX: (t0.clientX + t1.clientX) / 2,
+          focalY: (t0.clientY + t1.clientY) / 2,
+        };
+        setPinchZooming(true);
+      }, { passive: true });
+
+      el.addEventListener('touchmove', (e) => {
+        if (!pinchSession || e.touches.length !== 2) return;
+        e.preventDefault();
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        const dist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+        if (pinchSession.startDist <= 0) return;
+        const next = clampPageZoomScale(pinchSession.startScale * (dist / pinchSession.startDist));
+        pinchSession.focalX = (t0.clientX + t1.clientX) / 2;
+        pinchSession.focalY = (t0.clientY + t1.clientY) / 2;
+        setPageZoomScale(next, {
+          live: true,
+          focal: { x: pinchSession.focalX, y: pinchSession.focalY },
+        });
+      }, { passive: false });
+
+      el.addEventListener('touchend', () => {
+        if (!pinchSession) return;
+        pinchSession = null;
+        setPinchZooming(false);
+        queuePersistAfterGesture();
+      }, { passive: true });
+
+      el.addEventListener('touchcancel', () => {
+        pinchSession = null;
+        setPinchZooming(false);
+      }, { passive: true });
+    };
+
+    const stage = document.getElementById('contourPageZoomStage');
+    const wrap = document.getElementById('editorWrap');
+    bindGestureTarget(stage);
+    bindGestureTarget(wrap);
+  }
+
   window.normalizePageZoomMode = normalizePageZoomMode;
+  window.parsePageZoomInput = parsePageZoomInput;
   window.getPageZoomScale = getPageZoomScale;
+  window.getPageZoomScaleValue = getPageZoomScaleValue;
+  window.getPageZoomPersistValue = getPageZoomPersistValue;
   window.applyPageZoom = applyPageZoom;
   window.setPageZoomMode = setPageZoomMode;
+  window.setPageZoomScale = setPageZoomScale;
+  window.zoomByFactor = zoomByFactor;
   window.getPageZoomMode = getPageZoomMode;
   window.scrollContourEditorToTop = scrollContourEditorToTop;
   window.computeFitPageZoom = computeFitPageZoom;
   window.getEditorFitViewport = getEditorFitViewport;
+  window.clampPageZoomScale = clampPageZoomScale;
 
   document.addEventListener('DOMContentLoaded', () => {
     bindPageZoomControls();
+    bindPageZoomGestures();
     applyPageZoom({ skipPersist: true });
   });
 })();

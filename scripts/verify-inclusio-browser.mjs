@@ -55,6 +55,7 @@ async function main() {
         hasClosing: !!state.inclusios[0]?.closingAnchor,
         bracketStart: !!document.querySelector('#editor .word.bracket-start'),
         bracketEnd: !!document.querySelector('#editor .word.bracket-end'),
+        frameRails: document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail').length,
       };
 
       const payload = projectPayload();
@@ -94,6 +95,7 @@ async function main() {
 
     record('set-anchors', unit.afterSet.hasOpening && unit.afterSet.hasClosing, `opening=${unit.afterSet.hasOpening}, closing=${unit.afterSet.hasClosing}`);
     record('render-after-set', unit.afterSet.bracketStart && unit.afterSet.bracketEnd, `brackets visible after set=${unit.afterSet.bracketStart && unit.afterSet.bracketEnd}`);
+    record('margin-envelope', unit.afterSet.frameRails >= 2, `frameRails=${unit.afterSet.frameRails}`);
     record('reload-data', unit.afterReload.hasOpening && unit.afterReload.hasClosing, `anchors in state after reload=${unit.afterReload.hasOpening && unit.afterReload.hasClosing}`);
     record('render-after-reload', unit.afterReload.bracketStart && unit.afterReload.bracketEnd, `brackets visible after reload=${unit.afterReload.bracketStart && unit.afterReload.bracketEnd}`);
     record('export-html', unit.exportHasBrackets, `export HTML has bracket-start=${unit.exportHasBrackets}`);

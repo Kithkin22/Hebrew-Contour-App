@@ -12,6 +12,7 @@
   padding: 24px 16px 32px;
   overflow-x: hidden;
   overflow-y: auto;
+  touch-action: pan-x pan-y;
 }
 
 #editorWrap.contour-document-surface .contour-document-sheet {
@@ -115,6 +116,15 @@ body.dark-mode #editorWrap.contour-document-surface .contour-document-sheet {
   transform-origin: top center;
   margin: 0 auto;
   flex: none !important;
+  backface-visibility: hidden;
+}
+
+.contour-page-zoom-stage.is-pinch-zooming {
+  will-change: transform;
+}
+
+#editorWrap.contour-document-surface.contour-page-zoom-gesturing {
+  touch-action: none;
 }
 
 .page-zoom-controls {
