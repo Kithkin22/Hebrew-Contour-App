@@ -164,6 +164,9 @@ function buildSnapshotWorksheetDocument(capture, wsOpts) {
   const imgH = Math.round(capture.sheetH * imgScale);
   const marginIn = layout.marginIn;
   const pageSize = layout.cssSize;
+  const isGreek = typeof state !== 'undefined' && state.language === 'greek';
+  const alignClass = isGreek ? 'contour-snapshot-align-ltr' : 'contour-snapshot-align-rtl';
+  const objectPos = isGreek ? 'top left' : 'top right';
 
   const css = `@page{size:${pageSize};margin:0}`
     + '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
@@ -172,13 +175,17 @@ function buildSnapshotWorksheetDocument(capture, wsOpts) {
     + '.contour-snapshot-print-hint{font-size:13px;color:#64748b;margin:0 0 12px 0;max-width:640px;line-height:1.45}'
     + '.contour-snapshot-print-hint strong{color:#b45309}'
     + `.contour-snapshot-page{width:${layout.pageW}px;min-height:${layout.pageH}px;padding:${layout.marginPx}px;background:#fff;page-break-after:avoid;page-break-inside:avoid}`
-    + `.contour-snapshot-img-wrap{width:${layout.areaW}px;max-height:${layout.areaH}px;overflow:hidden}`
-    + `.contour-snapshot-img{display:block;width:${imgW}px;height:${imgH}px;image-rendering:auto}`
+    + `.contour-snapshot-img-wrap{display:flex;align-items:flex-start;width:${layout.areaW}px;max-height:${layout.areaH}px;overflow:hidden}`
+    + `.contour-snapshot-align-rtl{justify-content:flex-end}`
+    + `.contour-snapshot-align-ltr{justify-content:flex-start}`
+    + `.contour-snapshot-img{display:block;flex:0 0 auto;width:${imgW}px;height:${imgH}px;max-width:100%;image-rendering:auto}`
     + '@media print{'
     + 'html,body{margin:0!important;padding:0!important;width:8.5in;height:11in}'
     + `.contour-snapshot-page{width:8.5in!important;height:11in!important;min-height:11in;padding:${marginIn}in!important;overflow:hidden;transform:none!important}`
-    + `.contour-snapshot-img-wrap{width:calc(8.5in - ${marginIn * 2}in)!important;max-height:calc(11in - ${marginIn * 2}in)!important}`
-    + `.contour-snapshot-img{width:100%!important;height:auto!important;max-height:calc(11in - ${marginIn * 2}in)!important;object-fit:contain;object-position:top left;transform:none!important}`
+    + `.contour-snapshot-img-wrap{display:flex!important;align-items:flex-start!important;width:calc(8.5in - ${marginIn * 2}in)!important;max-height:calc(11in - ${marginIn * 2}in)!important;overflow:hidden!important}`
+    + `.contour-snapshot-align-rtl{justify-content:flex-end!important}`
+    + `.contour-snapshot-align-ltr{justify-content:flex-start!important}`
+    + `.contour-snapshot-img{display:block!important;flex:0 0 auto!important;width:auto!important;max-width:100%!important;height:auto!important;max-height:calc(11in - ${marginIn * 2}in)!important;object-fit:contain;object-position:${objectPos}!important;transform:none!important}`
     + 'button,.contour-snapshot-print-hint{display:none!important}'
     + '}';
 
@@ -191,7 +198,7 @@ function buildSnapshotWorksheetDocument(capture, wsOpts) {
     + '<body class="contour-snapshot-worksheet">'
     + hint
     + '<button type="button" onclick="window.print()" style="margin-bottom:14px;padding:8px 14px">Print / Save as PDF</button>'
-    + `<div class="contour-snapshot-page"><div class="contour-snapshot-img-wrap">`
+    + `<div class="contour-snapshot-page"><div class="contour-snapshot-img-wrap ${alignClass}">`
     + `<img class="contour-snapshot-img" src="${capture.dataUrl}" width="${imgW}" height="${imgH}" alt="Contour worksheet snapshot">`
     + '</div></div></body></html>';
 }
