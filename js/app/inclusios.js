@@ -4,11 +4,12 @@ let inclusioRegistryHoverId = null;
 let inclusioDraw = { active: false, isDragging: false, start: null, current: null };
 
 const INCLUSIO_COLOR_PRESETS = [
-  { name: 'Gray', value: '#6B7280' },
-  { name: 'Blue', value: '#315efb' },
-  { name: 'Red', value: '#b02a2a' },
-  { name: 'Green', value: '#3c763d' },
-  { name: 'Brown', value: '#8a6d3b' },
+  { name: 'Slate', value: '#64748B' },
+  { name: 'Blue Gray', value: '#6B7C93' },
+  { name: 'Muted Blue', value: '#5C6F8A' },
+  { name: 'Olive', value: '#6B7355' },
+  { name: 'Burgundy', value: '#7A4A52' },
+  { name: 'Brown', value: '#7A6550' },
 ];
 
 const INCLUSIO_FRAME_WEIGHTS = [
@@ -19,9 +20,10 @@ const INCLUSIO_FRAME_WEIGHTS = [
 
 const INCLUSIO_FRAME_GUTTER = {
   textGap: 14,
-  layerStep: 20,
+  layerStep: (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.marginStep) || 24,
   edgePad: 10,
-  capLen: 14,
+  capLen: (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.capLen) || 12,
+  marginBase: (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.marginBase) || 28,
 };
 
 const RELATIONSHIP_BASIS_OPTIONS = [
@@ -156,42 +158,8 @@ function inclusioEditorRoot(pane) {
 }
 
 function inclusioEnvelopeBounds(inc, paneState, pane) {
-  const item = migrateInclusioItem(inc);
-  const open = anchorRangeOrdered(item?.openingAnchor);
-  const close = anchorRangeOrdered(item?.closingAnchor);
-  if (!open || !close || !paneState?.verses?.length) return null;
-  const ed = inclusioEditorRoot(pane);
-  if (!ed) return null;
-  const scale = inclusioEditorScale();
-  const er = ed.getBoundingClientRect();
-  const verses = paneState.verses;
-  let top = Infinity;
-  let bottom = -Infinity;
-  let left = Infinity;
-  let right = -Infinity;
-  let found = false;
-  verses.forEach((v, vi) => v.clauses.forEach((c, ci) => c.words.forEach((w, wi) => {
-    if (isMaqafConnector(w)) return;
-    const l = { v: vi, c: ci, w: wi };
-    if (!locInRangeInVerses(l, open.start, close.end, verses)) return;
-    const el = document.querySelector(inclusioWordSelector(l, pane));
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    top = Math.min(top, r.top);
-    bottom = Math.max(bottom, r.bottom);
-    left = Math.min(left, r.left);
-    right = Math.max(right, r.right);
-    found = true;
-  })));
-  if (!found) return null;
-  return {
-    top: (top - er.top) / scale,
-    bottom: (bottom - er.top) / scale,
-    left: (left - er.left) / scale,
-    right: (right - er.left) / scale,
-    width: Math.max(ed.scrollWidth, ed.offsetWidth, 1),
-    height: Math.max(ed.scrollHeight, ed.offsetHeight, 1),
-  };
+  if (typeof inclusioUnitBounds === 'function') return inclusioUnitBounds(inc, paneState, pane);
+  return null;
 }
 
 function ensureInclusioFrameSvg(ed) {
@@ -246,49 +214,17 @@ function syncInclusioEditorGutter(paneState) {
   const spans = computeInclusioNestLevels(paneState?.inclusios || [], paneState?.verses || []);
   const visible = spans.filter(s => s.inc.showMarginEnvelope !== false && s.inc.openingAnchor && s.inc.closingAnchor);
   const maxNest = inclusioMaxNestLevel(spans);
-  const gutter = visible.length ? 40 + maxNest * INCLUSIO_FRAME_GUTTER.layerStep + INCLUSIO_FRAME_GUTTER.textGap : 0;
+  const base = INCLUSIO_FRAME_GUTTER.marginBase || 28;
+  const step = INCLUSIO_FRAME_GUTTER.layerStep || 24;
+  const gutter = visible.length ? base + maxNest * step + INCLUSIO_FRAME_GUTTER.textGap : 0;
   if (gutter) ed.style.setProperty('--inclusio-margin-gutter', `${gutter}px`);
   else ed.style.removeProperty('--inclusio-margin-gutter');
   ed.classList.toggle('has-inclusio-frames', visible.length > 0);
 }
 
 function drawInclusioEnvelopeRail(svg, bounds, inc, level, maxNest, paneState, pane, opts) {
-  opts = opts || {};
-  const color = inc.color || '#6B7280';
-  const strokeWidth = inclusioFrameStrokeWidth(inc, level);
-  const opacity = opts.preview ? 0.5 : Math.max(0.5, 0.9 - (level || 0) * 0.1);
-  const { xL, xR } = inclusioRailXPositions(bounds, level, maxNest, bounds.width);
-  const y1 = Math.max(0, bounds.top - 2);
-  const y2 = Math.min(bounds.height, bounds.bottom + 2);
-  const cap = INCLUSIO_FRAME_GUTTER.capLen;
-  const openY = inclusioAnchorMidY(inc.openingAnchor, paneState, pane);
-  const closeY = inclusioAnchorMidY(inc.closingAnchor, paneState, pane);
-  const mkLine = (x1, y1v, x2, y2v, extraCls) => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('class', `${opts.preview ? 'inclusio-frame-rail inclusio-frame-rail-preview' : 'inclusio-frame-rail'}${extraCls ? ' ' + extraCls : ''}`);
-    line.setAttribute('data-inc-id', inc.id || '');
-    line.setAttribute('x1', String(x1));
-    line.setAttribute('y1', String(y1v));
-    line.setAttribute('x2', String(x2));
-    line.setAttribute('y2', String(y2v));
-    line.setAttribute('stroke', color);
-    line.setAttribute('stroke-width', String(strokeWidth));
-    line.setAttribute('opacity', String(opacity));
-    svg.appendChild(line);
-  };
-  mkLine(xL, y1, xL, y2);
-  mkLine(xR, y1, xR, y2);
-  mkLine(xL, y1, xL + cap, y1);
-  mkLine(xR - cap, y1, xR, y1);
-  mkLine(xL, y2, xL + cap, y2);
-  mkLine(xR - cap, y2, xR, y2);
-  if (openY != null) {
-    mkLine(xL, openY, xL + cap, openY, 'inclusio-frame-endcap');
-    mkLine(xR - cap, openY, xR, openY, 'inclusio-frame-endcap');
-  }
-  if (closeY != null && closeY !== openY) {
-    mkLine(xL, closeY, xL + cap, closeY, 'inclusio-frame-endcap');
-    mkLine(xR - cap, closeY, xR, closeY, 'inclusio-frame-endcap');
+  if (typeof drawInclusioUnitFrame === 'function') {
+    drawInclusioUnitFrame(svg, bounds, inc, level, maxNest, opts);
   }
 }
 
@@ -819,11 +755,7 @@ function clearInclusioMarkers() {
 }
 
 function inclusioWordHighlightClass(l, w) {
-  if (!w.inclusioId) return '';
-  const activeId = state.activeInclusioId || activeInclusio()?.id;
-  const hoverId = inclusioRegistryHoverId;
-  if (hoverId && w.inclusioId === hoverId) return 'inclusio-registry-hover';
-  if (activeId && w.inclusioId === activeId) return 'inclusio-anchor-active';
+  if (inclusioDraw.active && w.inclusioId) return '';
   return '';
 }
 
@@ -832,20 +764,6 @@ function applyInclusioRegistryHighlight() {
     el.classList.remove('inclusio-registry-hover', 'inclusio-anchor-active');
   });
   applyInclusioFrameHighlight();
-  const id = inclusioRegistryHoverId || state.activeInclusioId;
-  if (!id) return;
-  const item = state.inclusios.find(x => x.id === id);
-  if (!item) return;
-  const cls = inclusioRegistryHoverId ? 'inclusio-registry-hover' : 'inclusio-anchor-active';
-  const activePane = typeof isParallelActive === 'function' && isParallelActive() ? stateBundle.activePane : null;
-  document.querySelectorAll('.word.inclusio-bracket').forEach(el => {
-    if (activePane != null && el.dataset.pane != null && +el.dataset.pane !== activePane) return;
-    const vi = +el.dataset.v;
-    const ci = +el.dataset.c;
-    const wi = +el.dataset.w;
-    const w = state.verses[vi]?.clauses[ci]?.words[wi];
-    if (w && w.inclusioId === id) el.classList.add(cls);
-  });
 }
 
 function renderInclusioEditor() {

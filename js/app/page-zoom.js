@@ -92,6 +92,8 @@
     };
   }
 
+  const FIT_FALLBACK_SCALE = 0.85;
+
   function getPageLayoutSize(sheet) {
     const letterW = (window.CONTOUR_PAGE && window.CONTOUR_PAGE.letterWidthPx) || 816;
     const letterMinH = (window.CONTOUR_PAGE && window.CONTOUR_PAGE.letterHeightPx) || 1056;
@@ -100,17 +102,55 @@
     return { pageW, pageH };
   }
 
+  function getPageContentFitHeight(sheet, stage) {
+    const { pageH } = getPageLayoutSize(sheet);
+    const editor = stage?.querySelector('#editor');
+    const contentH = editor?.scrollHeight || 0;
+    if (contentH <= 0) return pageH;
+    const title = stage?.querySelector('#contourPassageTitle');
+    const titleExtra = title && !title.hidden ? title.offsetHeight + 24 : 0;
+    const fitted = contentH + titleExtra + 48;
+    if (fitted >= pageH - 80) return pageH;
+    return Math.max(200, fitted);
+  }
+
+  function isWordVisibleInEditorWrap(wordEl) {
+    const wrap = document.getElementById('editorWrap');
+    if (!wrap || !wordEl) return false;
+    const fr = wordEl.getBoundingClientRect();
+    const wr = wrap.getBoundingClientRect();
+    return fr.width > 0 && fr.height > 0 && fr.bottom > wr.top + 2 && fr.top < wr.bottom - 2;
+  }
+
   function computeFitPageZoom() {
     const wrap = document.getElementById('editorWrap');
+    const stage = document.getElementById('contourPageZoomStage');
     const sheet = document.querySelector('.contour-document-sheet');
     const viewport = getEditorFitViewport();
-    if (!wrap || !sheet || !viewport) return 1;
+    if (!wrap || !sheet || !viewport) return FIT_FALLBACK_SCALE;
 
-    const { pageW, pageH } = getPageLayoutSize(sheet);
+    const { pageW } = getPageLayoutSize(sheet);
+    const pageH = getPageContentFitHeight(sheet, stage);
     const scaleW = viewport.width / pageW;
     const scaleH = viewport.height / pageH;
-    const scale = Math.min(1, scaleW, scaleH);
-    return clampPageZoomScale(scale);
+    let scale = Math.min(1, scaleW, scaleH);
+    scale = clampPageZoomScale(scale);
+    if (!Number.isFinite(scale)) return FIT_FALLBACK_SCALE;
+    return scale;
+  }
+
+  function ensureFitShowsContent(opts) {
+    if (pageZoomMode !== 'fit') return;
+    const hasWords = document.querySelectorAll('#editor .word').length > 0;
+    const word = document.querySelector('#editor .word');
+    const scale = getPageZoomScaleValue();
+    if (!Number.isFinite(scale) || scale < MIN_PAGE_ZOOM) {
+      applyPageZoom({ mode: '85', skipPersist: !!opts?.skipPersist, skipFitScroll: true });
+      return;
+    }
+    if (hasWords && !isWordVisibleInEditorWrap(word)) {
+      applyPageZoom({ mode: '85', skipPersist: !!opts?.skipPersist, skipFitScroll: true });
+    }
   }
 
   function scrollFitPageIntoView() {
@@ -243,6 +283,9 @@
     }
     if (!opts.skipArcRedraw && typeof renderInclusioFrameOverlays === 'function') {
       renderInclusioFrameOverlays();
+    }
+    if (mode === 'fit' && !opts.skipFitGuard) {
+      requestAnimationFrame(() => ensureFitShowsContent({ skipPersist: opts.skipPersist }));
     }
   }
 
@@ -421,6 +464,8 @@
   window.computeFitPageZoom = computeFitPageZoom;
   window.getEditorFitViewport = getEditorFitViewport;
   window.clampPageZoomScale = clampPageZoomScale;
+  window.isWordVisibleInEditorWrap = isWordVisibleInEditorWrap;
+  window.ensureFitShowsContent = ensureFitShowsContent;
 
   function ensurePageZoomInnerWrapper() {
     const stage = document.getElementById('contourPageZoomStage');

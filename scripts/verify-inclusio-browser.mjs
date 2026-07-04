@@ -53,9 +53,12 @@ async function main() {
       const afterSet = {
         hasOpening: !!state.inclusios[0]?.openingAnchor,
         hasClosing: !!state.inclusios[0]?.closingAnchor,
+        editorBracket: !!document.querySelector('#editor .word.bracket-start'),
         bracketStart: !!document.querySelector('#editor .word.bracket-start'),
         bracketEnd: !!document.querySelector('#editor .word.bracket-end'),
+        wordBox: !!document.querySelector('#editor .word.inclusio-anchor-active, #editor .word.inclusio-registry-hover'),
         frameRails: document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail').length,
+        endcaps: document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-endcap').length,
       };
 
       const payload = projectPayload();
@@ -94,16 +97,21 @@ async function main() {
     });
 
     record('set-anchors', unit.afterSet.hasOpening && unit.afterSet.hasClosing, `opening=${unit.afterSet.hasOpening}, closing=${unit.afterSet.hasClosing}`);
-    record('render-after-set', unit.afterSet.bracketStart && unit.afterSet.bracketEnd, `brackets visible after set=${unit.afterSet.bracketStart && unit.afterSet.bracketEnd}`);
+    record('render-after-set', !unit.afterSet.editorBracket && unit.afterSet.frameRails >= 2 && !unit.afterSet.wordBox, `editorBracket=${unit.afterSet.editorBracket}, rails=${unit.afterSet.frameRails}, wordBox=${unit.afterSet.wordBox}`);
     record('margin-envelope', unit.afterSet.frameRails >= 2, `frameRails=${unit.afterSet.frameRails}`);
+    record(
+      'no-midline-prongs',
+      unit.afterSet.endcaps === 4,
+      `endcaps=${unit.afterSet.endcaps} (expect 4 per single frame)`
+    );
     record('reload-data', unit.afterReload.hasOpening && unit.afterReload.hasClosing, `anchors in state after reload=${unit.afterReload.hasOpening && unit.afterReload.hasClosing}`);
-    record('render-after-reload', unit.afterReload.bracketStart && unit.afterReload.bracketEnd, `brackets visible after reload=${unit.afterReload.bracketStart && unit.afterReload.bracketEnd}`);
+    record('render-after-reload', !unit.afterReload.bracketStart && !unit.afterReload.bracketEnd, `no editor brackets after reload=${!unit.afterReload.bracketStart}`);
     record('export-html', unit.exportHasBrackets, `export HTML has bracket-start=${unit.exportHasBrackets}`);
     record('export-docx', unit.docxOk, `DOCX mentions Inclusios=${unit.docxOk}`);
     record('registry', unit.registryHasRow, `legend registry lists inclusio=${unit.registryHasRow}`);
     record(
       'sync-from-data-only',
-      regen.wordHasMarker && regen.domHasBracket,
+      regen.wordHasMarker && !regen.domHasBracket,
       `markers on words=${regen.wordHasMarker}, DOM brackets=${regen.domHasBracket}`
     );
 

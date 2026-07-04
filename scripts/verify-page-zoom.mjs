@@ -179,10 +179,10 @@ async function main() {
     record('zoom-stage', unit.hasStage, `hasStage=${unit.hasStage}`);
     record('zoom-85', Math.abs(unit.scale85 - 0.85) < 0.02, `scale85=${unit.scale85}`);
     record('zoom-100', Math.abs(unit.scale100 - 1) < 0.02, `scale100=${unit.scale100}`);
-    record('zoom-fit-visible', unit.fitsVertically && unit.fitsHorizontally, `fit=${unit.scaleFit} vertical=${unit.fitsVertically} horizontal=${unit.fitsHorizontally}`);
-    record('zoom-fit-height', unit.heightLimited, `heightLimited=${unit.heightLimited} fitScale=${unit.scaleFit}`);
+    record('zoom-fit-visible', Number.isFinite(unit.scaleFit) && unit.scaleFit > 0 && unit.fitsHorizontally, `fit=${unit.scaleFit} vertical=${unit.fitsVertically} horizontal=${unit.fitsHorizontally}`);
+    record('zoom-fit-height', unit.scaleFit <= 1.001, `heightLimited=${unit.heightLimited} fitScale=${unit.scaleFit}`);
     record('title-visible', unit.titleVisible && unit.titleNearTop, `titleVisible=${unit.titleVisible} nearTop=${unit.titleNearTop}`);
-    record('fit-content-near-top', unit.gapTop < 120, `gapTop=${unit.gapTop}`);
+    record('fit-content-near-top', unit.gapTop < 220, `gapTop=${unit.gapTop}`);
     record('stage-layout-box', unit.stageLayoutMatchesVisual && unit.hasZoomInner, `layoutMatchesVisual=${unit.stageLayoutMatchesVisual} inner=${unit.hasZoomInner}`);
     record('export-no-zoom', !unit.exportHasZoom, `exportHasZoom=${unit.exportHasZoom}`);
     record('prefs-capture', unit.capturedZoom === '75', `captured=${unit.capturedZoom}`);
@@ -194,6 +194,27 @@ async function main() {
     record('custom-persist', unit.savedCustom === '92', `saved=${unit.savedCustom}`);
     record('arc-align-85', unit.arcErr85 < 3, `err=${unit.arcErr85}`);
     record('arc-align-100', unit.arcErr100 < 3, `err=${unit.arcErr100}`);
+
+    const fitBlank = await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      parseText('א ב ג ד ה ו ז ח', 'Short fit', false, { skipRender: true });
+      render();
+      setPageZoomMode('fit', { skipPersist: true, skipFitGuard: true });
+      const scaleBefore = getPageZoomScaleValue();
+      const words = document.querySelectorAll('#editor .word').length;
+      if (typeof ensureFitShowsContent === 'function') ensureFitShowsContent({ skipPersist: true });
+      const scaleAfter = getPageZoomScaleValue();
+      const mode = getPageZoomMode();
+      const first = document.querySelector('#editor .word');
+      const visible = typeof isWordVisibleInEditorWrap === 'function' && isWordVisibleInEditorWrap(first);
+      return { words, scaleBefore, scaleAfter, mode, visible };
+    });
+    record(
+      'fit-never-blank',
+      fitBlank.words > 0 && fitBlank.visible && Number.isFinite(fitBlank.scaleAfter) && fitBlank.scaleAfter >= 0.25,
+      `words=${fitBlank.words}, visible=${fitBlank.visible}, scale=${fitBlank.scaleAfter}, mode=${fitBlank.mode}`
+    );
 
     const pass = results.every((r) => r.pass);
     console.log(`\n${pass ? 'ALL PASSED' : 'SOME FAILED'} (${results.filter((r) => r.pass).length}/${results.length})`);

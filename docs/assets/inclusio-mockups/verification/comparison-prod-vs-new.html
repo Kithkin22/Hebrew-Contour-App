@@ -1,0 +1,28 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body{font-family:Inter,system-ui,sans-serif;margin:24px;background:#f1f5f9;color:#0f172a}
+    h2{margin:0 0 8px;font-size:16px} .row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+    .card{background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:12px;max-width:48%}
+    img{max-width:100%;height:auto;border:1px solid #e2e8f0}
+    ul{font-size:13px;line-height:1.5}
+  </style></head><body>
+  <h1>Inclusio implementation comparison</h1>
+  <div class="row">
+    <div class="card"><h2>Production (previous word-rail)</h2><img src="prod-single-inclusio.png" alt="production"></div>
+    <div class="card"><h2>Local (unit-frame v2)</h2><img src="light-01-single-inclusio.png" alt="local"></div>
+  </div>
+  <ul>
+    <li>Unit bounds from clause lines, not per-word boxes</li>
+    <li>Margin rails offset 28px+ outward; no overlap with Hebrew</li>
+    <li>Top/bottom caps only — midline prongs removed</li>
+    <li>No persistent blue word selection boxes in editor</li>
+  </ul>
+  <div class="row">
+    <div class="card"><h2>Approved mockup</h2><img src="approved-mockup-reference.png" alt="mockup"></div>
+    <div class="card"><h2>Implementation</h2><img src="light-01-single-inclusio.png" alt="impl"></div>
+  </div>
+  <ul>
+    <li><strong>Matches:</strong> margin-only frames, nested outward offset, muted palette, document-first Hebrew</li>
+    <li><strong>Differs:</strong> caps are short line segments (not full corner glyphs) for SVG simplicity</li>
+    <li><strong>Why:</strong> segments scale cleanly at all zoom levels and export identically to screen</li>
+  </ul>
+  </body></html>

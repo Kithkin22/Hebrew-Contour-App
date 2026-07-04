@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inclusio Frame Mockup v2 — Aleph Contour</title>
+  <style>
+    :root {
+      --sheet: #ffffff;
+      --sheet-border: #d5dbe3;
+      --bg: #e9edf2;
+      --text: #1e293b;
+      --hebrew: #2d3748;
+      --rail-0: #5b6b7c;
+      --rail-1: #7c8da0;
+      --rail-2: #9aa8b8;
+      --rail-w0: 2.75px;
+      --rail-w1: 2px;
+      --margin-base: 28px;
+      --margin-step: 24px;
+      --cap: 12px;
+      --sheet-w: 680px;
+      --text-inset: 72px;
+    }
+    body.dark {
+      --sheet: #111827;
+      --sheet-border: #334155;
+      --bg: #1a2230;
+      --text: #e2e8f0;
+      --hebrew: #e8eef5;
+      --rail-0: #94a3b8;
+      --rail-1: #cbd5e1;
+      --rail-2: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 24px;
+    }
+    h1 { font-size: 18px; margin: 0 0 8px; }
+    p.lead { margin: 0 0 16px; font-size: 13px; opacity: 0.85; max-width: 720px; line-height: 1.5; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .toolbar button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--sheet-border);
+      background: var(--sheet);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .toolbar button.active {
+      background: #1e3a5f;
+      color: #fff;
+      border-color: #1e3a5f;
+    }
+    .stage {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .panel label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      opacity: 0.7;
+    }
+    .sheet {
+      width: var(--sheet-w);
+      min-height: 420px;
+      background: var(--sheet);
+      border: 1px solid var(--sheet-border);
+      border-radius: 2px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      padding: 48px var(--text-inset) 48px 48px;
+      position: relative;
+    }
+    .title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 28px;
+      direction: ltr;
+      text-align: left;
+    }
+    .hebrew-block {
+      direction: rtl;
+      text-align: right;
+      font-family: 'SBL Hebrew', 'Ezra SIL', serif;
+      font-size: 22px;
+      line-height: 2.1;
+      color: var(--hebrew);
+      position: relative;
+      z-index: 2;
+    }
+    .line { margin: 0; padding: 0; }
+  </style>
+</head>
+<body>
+  <h1>Inclusio Frame Mockup v2</h1>
+  <p class="lead">
+    Target visual: unit frame in the margin — two vertical rails, one top cap and one bottom cap per side.
+    No prongs through text. No word boxes. Nested layers offset outward only.
+  </p>
+  <div class="toolbar">
+    <button type="button" id="btnLight" class="active">Light mode</button>
+    <button type="button" id="btnDark">Dark mode</button>
+    <button type="button" id="btnSingle" class="active">Single frame</button>
+    <button type="button" id="btnNested">Nested frames</button>
+    <button type="button" id="btnColorSlate">Slate</button>
+    <button type="button" id="btnColorOlive">Olive</button>
+    <button type="button" id="btnColorBurgundy">Burgundy</button>
+  </div>
+  <div class="stage">
+    <div class="panel">
+      <label>Mockup — editor sheet</label>
+      <div class="sheet" id="sheet">
+        <div class="title">Job 19:21–27 (BHS OT)</div>
+        <div class="hebrew-block" id="hebrew">
+          <p class="line">חָנֵּ֥נִי חָנֵּ֥נִי אַתֶּ֥ם רֵעָ֑י</p>
+          <p class="line">כִּ֤י יַ֣ד אֱל֙וֹהַּ נָ֣גְעָ֔ה בִּ֔י</p>
+          <p class="line">וּֽמִצְפִּ֥י וְאֵ֖לֶף אֲשֶׁר־בְּעַ֣ד תְּרִיעֽוּנִי׃</p>
+          <p class="line">לָ֤מָּה אַתֶּ֨ם רֹדְפִ֥ים כְּאֵ֗ל</p>
+          <p class="line">וּמִבְּשָׂרִ֥י לֹֽא־תִשְׂבָּֽעוּ׃</p>
+          <p class="line">מִֽי־יִתֵּ֣ן וְאֵיכָ֣כָה וְגוֹ׃</p>
+          <p class="line">חָנֵּ֥נִי חָנֵּ֥נִי אַתֶּ֥ם רֵעָ֑י</p>
+        </div>
+        <svg id="frameSvg" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"
+          style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:1"></svg>
+      </div>
+    </div>
+    <div class="panel" style="max-width:280px;font-size:13px;line-height:1.55">
+      <label>Spec</label>
+      <div id="spec"></div>
+    </div>
+  </div>
+  <script>
+    const PALETTES = {
+      slate: ['#5b6b7c', '#7c8da0', '#9aa8b8'],
+      olive: ['#6b7355', '#828a68', '#9aa382'],
+      burgundy: ['#7a4a52', '#946065', '#ad7680'],
+    };
+    let dark = false;
+    let nested = false;
+    let palette = 'slate';
+
+    function measureUnitBounds() {
+      const sheet = document.getElementById('sheet');
+      const lines = Array.from(document.querySelectorAll('.hebrew-block .line'));
+      const use = nested ? lines : lines;
+      const sr = sheet.getBoundingClientRect();
+      let top = Infinity, bottom = -Infinity, left = Infinity, right = -Infinity;
+      const span = nested ? [1, 5] : [0, lines.length - 1];
+      for (let i = span[0]; i <= span[1]; i++) {
+        const r = lines[i].getBoundingClientRect();
+        top = Math.min(top, r.top);
+        bottom = Math.max(bottom, r.bottom);
+        left = Math.min(left, r.left);
+        right = Math.max(right, r.right);
+      }
+      return {
+        top: top - sr.top + 4,
+        bottom: bottom - sr.top - 4,
+        left: left - sr.left,
+        right: right - sr.left,
+      };
+    }
+
+    function drawFrames() {
+      const svg = document.getElementById('frameSvg');
+      const sheet = document.getElementById('sheet');
+      const w = sheet.clientWidth;
+      const h = sheet.clientHeight;
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      svg.innerHTML = '';
+      const b = measureUnitBounds();
+      const colors = PALETTES[palette];
+      const base = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--margin-base'));
+      const step = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--margin-step'));
+      const cap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--cap'));
+
+      const frames = nested
+        ? [
+            { level: 0, color: colors[0], weight: 2.75, span: [0, 6] },
+            { level: 1, color: colors[1], weight: 2, span: [1, 4] },
+          ]
+        : [{ level: 0, color: colors[0], weight: 2.75, span: [0, 6] }];
+
+      frames.forEach((f) => {
+        const lines = document.querySelectorAll('.hebrew-block .line');
+        const sheetR = sheet.getBoundingClientRect();
+        let top = Infinity, bottom = -Infinity, left = Infinity, right = -Infinity;
+        for (let i = f.span[0]; i <= f.span[1]; i++) {
+          const r = lines[i].getBoundingClientRect();
+          top = Math.min(top, r.top);
+          bottom = Math.max(bottom, r.bottom);
+          left = Math.min(left, r.left);
+          right = Math.max(right, r.right);
+        }
+        const pad = 6;
+        const y1 = top - sheetR.top + pad;
+        const y2 = bottom - sheetR.top - pad;
+        const outward = base + f.level * step;
+        const xR = right - sheetR.left + outward;
+        const xL = left - sheetR.left - outward;
+
+        const mk = (x1, y1v, x2, y2v) => {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          line.setAttribute('x1', x1);
+          line.setAttribute('y1', y1v);
+          line.setAttribute('x2', x2);
+          line.setAttribute('y2', y2v);
+          line.setAttribute('stroke', f.color);
+          line.setAttribute('stroke-width', String(f.weight));
+          line.setAttribute('stroke-linecap', 'square');
+          line.setAttribute('opacity', String(0.95 - f.level * 0.1));
+          svg.appendChild(line);
+        };
+        mk(xR, y1, xR, y2);
+        mk(xL, y1, xL, y2);
+        mk(xR - cap, y1, xR, y1);
+        mk(xR - cap, y2, xR, y2);
+        mk(xL, y1, xL + cap, y1);
+        mk(xL, y2, xL + cap, y2);
+      });
+
+      document.getElementById('spec').innerHTML = `
+        <strong>Mode:</strong> ${dark ? 'Dark' : 'Light'}, ${nested ? 'Nested (2)' : 'Single'}<br>
+        <strong>Bounds:</strong> clause-line union (not per-word)<br>
+        <strong>Margin offset:</strong> ${base}px + n×${step}px<br>
+        <strong>Caps:</strong> top + bottom only (${cap}px)<br>
+        <strong>Palette:</strong> ${palette}<br>
+        <strong>Pointer events:</strong> none on SVG<br>
+        <strong>Word boxes:</strong> none
+      `;
+    }
+
+    function setDark(on) {
+      dark = on;
+      document.body.classList.toggle('dark', on);
+      document.getElementById('btnDark').classList.toggle('active', on);
+      document.getElementById('btnLight').classList.toggle('active', !on);
+      drawFrames();
+    }
+
+    document.getElementById('btnLight').onclick = () => setDark(false);
+    document.getElementById('btnDark').onclick = () => setDark(true);
+    document.getElementById('btnSingle').onclick = () => {
+      nested = false;
+      document.getElementById('btnSingle').classList.add('active');
+      document.getElementById('btnNested').classList.remove('active');
+      drawFrames();
+    };
+    document.getElementById('btnNested').onclick = () => {
+      nested = true;
+      document.getElementById('btnNested').classList.add('active');
+      document.getElementById('btnSingle').classList.remove('active');
+      drawFrames();
+    };
+    ['Slate', 'Olive', 'Burgundy'].forEach((name) => {
+      document.getElementById('btnColor' + name).onclick = () => {
+        palette = name.toLowerCase();
+        document.querySelectorAll('[id^="btnColor"]').forEach((b) => b.classList.remove('active'));
+        document.getElementById('btnColor' + name).classList.add('active');
+        drawFrames();
+      };
+    });
+
+    window.addEventListener('resize', drawFrames);
+    drawFrames();
+  </script>
+</body>
+</html>
