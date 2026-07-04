@@ -79,19 +79,21 @@ async function main() {
       if (state.verses[0]) state.verses[0].hideRef = true;
       render();
 
-      const titleEl = document.querySelector('.contour-passage-title');
+      const titleEl = document.getElementById('contourPassageTitle');
       const editor = document.getElementById('editor');
       const wrap = document.getElementById('editorWrap');
-      const titleText = titleEl ? titleEl.textContent.trim() : '';
-      const titleRect = titleEl ? titleEl.getBoundingClientRect() : null;
-      const editorRect = editor.getBoundingClientRect();
+      const sheet = document.querySelector('.contour-document-sheet');
+      const titleText = titleEl && !titleEl.hidden ? titleEl.textContent.trim() : '';
+      const titleRect = titleEl && !titleEl.hidden ? titleEl.getBoundingClientRect() : null;
+      const sheetRect = sheet ? sheet.getBoundingClientRect() : editor.getBoundingClientRect();
       const wrapRect = wrap.getBoundingClientRect();
 
-      const titleLeftInset = titleRect ? titleRect.left - editorRect.left : null;
-      const titleTopInset = titleRect ? titleRect.top - editorRect.top : null;
-      const editorCenter = editorRect.left + editorRect.width / 2;
+      const titleLeftInset = titleRect ? titleRect.left - sheetRect.left : null;
+      const titleTopInset = titleRect ? titleRect.top - sheetRect.top : null;
+      const sheetCenter = sheetRect.left + sheetRect.width / 2;
       const wrapCenter = wrapRect.left + wrapRect.width / 2;
-      const centerDelta = Math.abs(editorCenter - wrapCenter);
+      const centerDelta = Math.abs(sheetCenter - wrapCenter);
+      const sheetWidth = sheetRect.width;
 
       const clauseEls = Array.from(document.querySelectorAll('#editor .clause'));
       const mdEl = clauseEls.find((el) => el.classList.contains('layout-break-md'));
@@ -103,7 +105,7 @@ async function main() {
         const r = el.getBoundingClientRect();
         return Math.max(max, r.right);
       }, 0);
-      const rightInset = editorRect.right - rightmost;
+      const rightInset = sheetRect.right - rightmost;
 
       const indentSample = clauseEls
         .map((el) => parseFloat(getComputedStyle(el).marginRight) || 0)
@@ -128,7 +130,7 @@ async function main() {
         titleLeftInset,
         titleTopInset,
         centerDelta,
-        editorMaxWidth: parseFloat(getComputedStyle(editor).maxWidth) || editorRect.width,
+        editorMaxWidth: sheetWidth,
         rightInset,
         mdMb,
         lgMb,
@@ -140,7 +142,7 @@ async function main() {
         docxBreaks: docx.includes('w:spacing w:after="480"') && docx.includes('w:spacing w:after="960"'),
         docxIndent: docx.includes('w:ind w:right="720"') || docx.includes('w:ind w:right="1440"'),
         reloadOk,
-        hasDocumentPage: editor.classList.contains('contour-document-page'),
+        hasDocumentPage: editor.classList.contains('contour-document-page') && !!sheet,
         hasDocumentSurface: wrap.classList.contains('contour-document-surface'),
         clauseCount: clauseEls.length,
       };
@@ -167,10 +169,10 @@ async function main() {
     qa.parallelVisible = parallelOk;
 
     record('passage-title-text', qa.titleText === EXPECTED_TITLE, `title="${qa.titleText}" expected="${EXPECTED_TITLE}"`);
-    record('passage-title-upper-left', qa.titleLeftInset != null && qa.titleLeftInset >= 30 && qa.titleLeftInset <= 90 && qa.titleTopInset >= 30 && qa.titleTopInset <= 90,
+    record('passage-title-upper-left', qa.titleLeftInset != null && qa.titleLeftInset >= 88 && qa.titleLeftInset <= 110 && qa.titleTopInset >= 88 && qa.titleTopInset <= 110,
       `leftInset=${qa.titleLeftInset?.toFixed(0)}px topInset=${qa.titleTopInset?.toFixed(0)}px`);
-    record('page-centered', qa.centerDelta <= 40, `centerDelta=${qa.centerDelta.toFixed(0)}px maxWidth=${qa.editorMaxWidth}px`);
-    record('right-margin-breathing', qa.rightInset >= 50, `rightInset=${qa.rightInset.toFixed(0)}px`);
+    record('page-centered', qa.centerDelta <= 40 && qa.editorMaxWidth >= 780 && qa.editorMaxWidth <= 830, `centerDelta=${qa.centerDelta?.toFixed(0)}px sheetWidth=${qa.editorMaxWidth?.toFixed(0)}px`);
+    record('right-margin-breathing', qa.rightInset >= 88 && qa.rightInset <= 115, `rightInset=${qa.rightInset?.toFixed(0)}px`);
     record('medium-break-spacing', qa.mdMb >= 36 && qa.mdMb <= 48, `medium margin-bottom=${qa.mdMb}px`);
     record('large-break-spacing', qa.lgMb >= 64 && qa.lgMb <= 80, `large margin-bottom=${qa.lgMb}px`);
     record('word-indent-visual', qa.indentCount >= 3, `indented clauses=${qa.indentCount}`);

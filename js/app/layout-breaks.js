@@ -454,12 +454,48 @@ function verseRefHidden(verse) {
 }
 window.verseRefHidden = verseRefHidden;
 
+function formatPassageTitleDisplay(ref) {
+  const raw = String(ref || '').trim();
+  if (!raw) return '';
+  const suffixMatch = raw.match(/\s(\([^)]+\))\s*$/);
+  const suffix = suffixMatch ? ' ' + suffixMatch[1] : '';
+  const core = suffix ? raw.slice(0, suffixMatch.index).trim() : raw;
+  let text = typeof normalizePassageRangeRef === 'function'
+    ? normalizePassageRangeRef(core)
+    : core;
+  if (!text || text === core) text = core;
+  text = text.replace(/(\d)\s*-\s*(\d)/g, '$1\u2013$2');
+  return text + suffix;
+}
+window.formatPassageTitleDisplay = formatPassageTitleDisplay;
+
+function passageRefForDisplay() {
+  if (state && state.ref && String(state.ref).trim()) return String(state.ref).trim();
+  if (state && state.verses && state.verses.length === 1 && state.verses[0].ref) {
+    return String(state.verses[0].ref).trim();
+  }
+  return '';
+}
+window.passageRefForDisplay = passageRefForDisplay;
+
+function syncContourPassageTitle() {
+  const el = document.getElementById('contourPassageTitle');
+  if (!el) return;
+  const ref = passageRefForDisplay();
+  if (!state || !state.verses || !state.verses.length || !ref) {
+    el.hidden = true;
+    el.textContent = '';
+    return;
+  }
+  el.textContent = formatPassageTitleDisplay(ref);
+  el.hidden = false;
+  if (typeof applyLtrAnnotationInput === 'function') applyLtrAnnotationInput(el);
+}
+window.syncContourPassageTitle = syncContourPassageTitle;
+
 function contourPassageTitleHtml(ref) {
   if (!ref || !String(ref).trim()) return '';
-  let text = typeof normalizePassageRangeRef === 'function'
-    ? normalizePassageRangeRef(ref)
-    : String(ref).trim();
-  text = text.replace(/(\d)\s*-\s*(\d)/g, '$1\u2013$2');
+  const text = formatPassageTitleDisplay(ref);
   return `<div class="contour-passage-title" dir="ltr">${esc(text)}</div>`;
 }
 window.contourPassageTitleHtml = contourPassageTitleHtml;
@@ -467,6 +503,9 @@ window.contourPassageTitleHtml = contourPassageTitleHtml;
 function contourVerseRefHtml(verse, vi, opts) {
   opts = opts || {};
   if (verseRefHidden(verse)) return '';
+  if (!opts.parallel && vi === 0 && state && state.verses && state.verses.length === 1 && passageRefForDisplay()) {
+    return '';
+  }
   const ref = esc(verse.ref || '');
   if (opts.parallel) {
     const picked = !!opts.picked;

@@ -95,6 +95,16 @@ function syncLanguageFromSource(){
   return state.language;
 }
 function applyLtrAnnotationInput(el){if(!el)return;el.dir='ltr';el.style.direction='ltr';el.style.textAlign='left';el.style.unicodeBidi='isolate';}
+function applyDocumentPageEditorTypography(ed, layout) {
+  if (!ed) return;
+  ed.dir = 'ltr';
+  ed.style.direction = 'ltr';
+  ed.style.textAlign = 'left';
+  ed.style.unicodeBidi = 'normal';
+  if (layout) ed.style.fontFamily = layout.fontFamily;
+}
+window.applyDocumentPageEditorTypography = applyDocumentPageEditorTypography;
+
 function applyScriptTypography(el,layout){
   if(!el||!layout)return;
   el.dir=layout.dir;
@@ -110,7 +120,11 @@ function applyLanguageLayout(){
   if(ed){
     ed.classList.remove('lang-hebrew','lang-greek');
     ed.classList.add(layout.language==='greek'?'lang-greek':'lang-hebrew');
-    applyScriptTypography(ed,layout);
+    if(ed.classList.contains('contour-document-page')&&state.verses&&state.verses.length){
+      applyDocumentPageEditorTypography(ed,layout);
+    }else{
+      applyScriptTypography(ed,layout);
+    }
   }
   const paste=document.getElementById('pasteBox');
   if(paste){
