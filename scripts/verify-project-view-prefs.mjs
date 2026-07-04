@@ -50,9 +50,12 @@ async function main() {
       const singleDensity = document.body.classList.contains('contour-density-single');
       const editorLh = parseFloat(getComputedStyle(document.getElementById('editor')).lineHeight);
 
+      parseText('שָׁמַיִם\nוְאֵת הָאָרֶץ', 'Gen 1:1-2', false, { skipRender: true });
+      state.verses.forEach((v) => { delete v.hideRef; });
+      render();
       setAllVerseRefsHidden(false);
       render();
-      const shownRefs = !!document.querySelector('#editor .verse-ref');
+      const shownRefs = document.querySelectorAll('#editor .verse-ref').length >= 2;
 
       const payload = projectPayload();
       const savedPrefs = payload.viewPrefs;
@@ -61,8 +64,10 @@ async function main() {
       state = stateBundle.panes[0];
       restoreProjectViewPrefsFromPayload(payload);
       render();
+      state.verses.forEach((v) => { delete v.hideRef; });
+      render();
 
-      const restoredShowRefs = !!document.querySelector('#editor .verse-ref');
+      const restoredShowRefs = document.querySelectorAll('#editor .verse-ref').length >= 2;
       const restoredPrefs = JSON.parse(JSON.stringify(getProjectViewPrefs()));
 
       restoreProjectViewPrefsFromPayload({ viewPrefs: null });
@@ -86,6 +91,7 @@ async function main() {
     record('default-hide-refs', unit.defaults.hideVerseRefs === true, `hideVerseRefs=${unit.defaults.hideVerseRefs}`);
     record('default-single-density', unit.defaults.contourDensity === 'single', `density=${unit.defaults.contourDensity}`);
     record('default-inspector-off', unit.defaults.inspectorEnabled === false, `inspector=${unit.defaults.inspectorEnabled}`);
+    record('default-page-zoom-85', unit.defaults.pageZoom === '85', `pageZoom=${unit.defaults.pageZoom}`);
     record('new-gen-hidden', unit.newGenHidden && unit.noVerseRefDom, `hidden=${unit.newGenHidden}, dom=${unit.noVerseRefDom}`);
     record('single-spacing-class', unit.singleDensity, `singleDensity=${unit.singleDensity}`);
     record('compact-line-height', unit.editorLh > 0 && unit.editorLh < 40, `lineHeight=${unit.editorLh}`);

@@ -77,6 +77,7 @@ async function main() {
         layoutLines: parsed.lines,
       });
       if (state.verses[0]) state.verses[0].hideRef = true;
+      if (typeof setPageZoomMode === 'function') setPageZoomMode('100', { skipPersist: true });
       render();
 
       const titleEl = document.getElementById('contourPassageTitle');
@@ -95,7 +96,7 @@ async function main() {
       const sheetCenter = sheetRect.left + sheetRect.width / 2;
       const wrapCenter = wrapRect.left + wrapRect.width / 2;
       const centerDelta = Math.abs(sheetCenter - wrapCenter);
-      const sheetWidth = sheetRect.width;
+      const sheetWidth = sheet ? sheet.offsetWidth : 0;
 
       const clauseEls = Array.from(document.querySelectorAll('#editor .clause'));
       const mdEl = clauseEls.find((el) => el.classList.contains('layout-break-md'));
@@ -111,7 +112,7 @@ async function main() {
 
       const indentSample = clauseEls
         .map((el) => parseFloat(getComputedStyle(el).marginRight) || 0)
-        .filter((mr) => mr >= 36);
+        .filter((mr) => mr >= 28);
 
       const exportCss = typeof exportLayoutBreakCss === 'function' ? exportLayoutBreakCss() : '';
       const exportHtml = typeof buildContourEditorHtmlFromState === 'function'

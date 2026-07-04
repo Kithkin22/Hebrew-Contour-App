@@ -8,6 +8,7 @@
       inspectorEnabled: false,
       commentsPanelOpen: false,
       contourDensity: 'single',
+      pageZoom: '85',
     };
   }
 
@@ -17,6 +18,7 @@
       inspectorEnabled: false,
       commentsPanelOpen: false,
       contourDensity: 'comfortable',
+      pageZoom: '100',
     };
   }
 
@@ -27,6 +29,9 @@
       inspectorEnabled: !!raw.inspectorEnabled,
       commentsPanelOpen: !!raw.commentsPanelOpen,
       contourDensity: raw.contourDensity === 'comfortable' ? 'comfortable' : 'single',
+      pageZoom: typeof normalizePageZoomMode === 'function'
+        ? normalizePageZoomMode(raw.pageZoom)
+        : (raw.pageZoom === 'fit' || raw.pageZoom === '75' || raw.pageZoom === '85' ? raw.pageZoom : '100'),
     };
   }
 
@@ -68,6 +73,7 @@
       inspectorEnabled: !!window.CONTOUR_INSPECTOR_ENABLED,
       commentsPanelOpen: commentsOpen,
       contourDensity: density,
+      pageZoom: typeof getPageZoomMode === 'function' ? getPageZoomMode() : '100',
     };
   }
 
@@ -93,6 +99,19 @@
         if (typeof renderCommentsPanel === 'function') renderCommentsPanel();
       }
     } catch (e) { /* ignore */ }
+
+    if (typeof setPageZoomMode === 'function') {
+      setPageZoomMode(prefs.pageZoom || '100', { skipPersist: true });
+    }
+  }
+
+  function syncPageZoomPref(mode) {
+    const prefs = getProjectViewPrefs();
+    prefs.pageZoom = typeof normalizePageZoomMode === 'function'
+      ? normalizePageZoomMode(mode)
+      : String(mode || '100');
+    projectViewPrefs = prefs;
+    if (typeof autoSaveProject === 'function' && window.autosaveReady) autoSaveProject();
   }
 
   function applyNewContentViewPrefs(verses) {
@@ -145,6 +164,7 @@
   window.syncHideVerseRefsPref = syncHideVerseRefsPref;
   window.syncInspectorPref = syncInspectorPref;
   window.syncCommentsPanelPref = syncCommentsPanelPref;
+  window.syncPageZoomPref = syncPageZoomPref;
   window.restoreProjectViewPrefsFromPayload = restoreProjectViewPrefsFromPayload;
 
   document.addEventListener('DOMContentLoaded', () => {

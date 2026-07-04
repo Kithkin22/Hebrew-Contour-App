@@ -398,6 +398,9 @@ function finishTextFromPaste(cleaned,opts){
     parseText(cleaned,ref,true,{preserveLayout:!!opts.preserveLayout,layoutLines});
     if(stateBundle.parallelEnabled)syncStateBundle();
     closeTopMenus();
+    if(opts.preserveLayout&&typeof scrollContourEditorToTop==='function'){
+      requestAnimationFrame(()=>scrollContourEditorToTop());
+    }
   };
   if(opts.preserveLayout&&meta&&meta.hasIndent&&typeof resolveWordIndentImport==='function'){
     resolveWordIndentImport(meta,runParse);

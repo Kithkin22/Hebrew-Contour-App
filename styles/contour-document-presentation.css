@@ -18,7 +18,7 @@
   direction: ltr;
   text-align: left;
   flex: none !important;
-  width: 100%;
+  width: var(--contour-letter-width);
   max-width: var(--contour-letter-width);
   min-height: var(--contour-letter-min-height);
   margin: 0 auto;
@@ -107,4 +107,41 @@ body.dark-mode #editorWrap.contour-document-surface .contour-document-sheet {
   box-shadow:
     0 1px 3px rgba(0, 0, 0, 0.35),
     0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Page zoom / print preview */
+.contour-page-zoom-stage {
+  transform: scale(var(--contour-page-zoom, 1));
+  transform-origin: top center;
+  margin: 0 auto;
+  flex: none !important;
+}
+
+.page-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-right: 10px;
+}
+
+.page-zoom-controls .toolbar-label {
+  margin-right: 2px;
+}
+
+.page-zoom-btn.active {
+  background: var(--hc-navy-soft, #1e3a5f) !important;
+  color: #fff !important;
+  border-color: var(--hc-navy-soft, #1e3a5f) !important;
+}
+
+.page-zoom-status {
+  min-width: 4.5em;
+  margin-left: 2px;
+}
+
+body.dark-mode .page-zoom-btn.active {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #fff !important;
 }

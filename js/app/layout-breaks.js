@@ -521,7 +521,11 @@ function finalizeDocumentPagePresentation() {
     applyDocumentPageEditorTypography(ed, layout);
   }
   if (typeof syncContourPassageTitle === 'function') syncContourPassageTitle();
-  ed.querySelectorAll('.contour-passage-title, .verse-ref').forEach((node) => node.remove());
+  ed.querySelectorAll('.contour-passage-title').forEach((node) => node.remove());
+  if (state.verses.length === 1 && typeof passageRefForDisplay === 'function' && passageRefForDisplay()) {
+    ed.querySelectorAll('.verse-ref').forEach((node) => node.remove());
+  }
+  if (typeof applyPageZoom === 'function') applyPageZoom({ skipPersist: true });
 }
 window.finalizeDocumentPagePresentation = finalizeDocumentPagePresentation;
 
