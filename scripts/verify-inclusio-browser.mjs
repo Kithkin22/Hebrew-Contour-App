@@ -361,20 +361,70 @@ async function main() {
       addInclusioFromLocs({ v: 0, c: 0, w: 0 }, { v: 0, c: 0, w: 1 });
       addInclusioFromLocs({ v: 1, c: 0, w: 0 }, { v: 1, c: 0, w: 2 });
       render();
-      const switcher = document.getElementById('unitSwitcher');
-      const buttons = switcher ? switcher.querySelectorAll('.unit-switcher-btn').length : 0;
+      const select = document.getElementById('activeInclusioRibbonSelect');
+      const options = select ? select.querySelectorAll('option:not([value=""])').length : 0;
       const rails = document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail:not(.inclusio-frame-rail-preview)').length;
       return {
-        ok: state.inclusios.length === 2 && buttons === 2 && rails >= 4,
+        ok: state.inclusios.length === 2 && options === 2 && rails >= 4,
         count: state.inclusios.length,
-        buttons,
+        options,
         rails,
       };
     });
     record(
       'multiple-units-per-passage',
       multiUnits.ok,
-      `units=${multiUnits.count}, switcher=${multiUnits.buttons}, rails=${multiUnits.rails}`
+      `units=${multiUnits.count}, selector=${multiUnits.options}, rails=${multiUnits.rails}`
+    );
+
+    const ribbonNoScroll = await page.evaluate(() => {
+      const tabIds = ['ann-color', 'ann-format', 'ann-highlight', 'ann-brackets', 'ann-arcs', 'ann-inclusio', 'ann-export'];
+      const scrollable = [];
+      tabIds.forEach((id) => {
+        const panel = document.getElementById(id);
+        if (!panel) return;
+        const cs = getComputedStyle(panel);
+        const canScroll = panel.scrollHeight > panel.clientHeight + 2
+          && (cs.overflowY === 'auto' || cs.overflowY === 'scroll');
+        if (canScroll) scrollable.push(id);
+      });
+      return { scrollable };
+    });
+    await page.click('.annotation-tab-btn[data-panel="ann-inclusio"]');
+    const unitRibbon = await page.evaluate(() => {
+      const unitPanel = document.getElementById('ann-inclusio');
+      const shell = document.getElementById('annotationTabsShell');
+      const detailsEl = document.getElementById('unitDetails');
+      if (detailsEl) detailsEl.open = false;
+      const unitControls = {
+        draw: !!document.getElementById('drawInclusioMode'),
+        select: !!document.getElementById('activeInclusioRibbonSelect'),
+        colorRow: !!document.getElementById('unitColorToolbar'),
+        details: !!document.getElementById('unitDetails'),
+      };
+      const panelHeight = unitPanel?.getBoundingClientRect().height || 0;
+      const shellScrolls = shell && shell.scrollHeight > shell.clientHeight + 2
+        && ['auto', 'scroll'].includes(getComputedStyle(shell).overflowY);
+      const panelScrolls = unitPanel && unitPanel.scrollHeight > unitPanel.clientHeight + 2
+        && ['auto', 'scroll'].includes(getComputedStyle(unitPanel).overflowY);
+      return {
+        unitControls,
+        panelHeight,
+        shellScrolls,
+        panelScrolls,
+      };
+    });
+    record(
+      'annotation-ribbon-no-scroll',
+      ribbonNoScroll.scrollable.length === 0
+        && unitRibbon.unitControls.draw
+        && unitRibbon.unitControls.select
+        && unitRibbon.unitControls.colorRow
+        && !unitRibbon.shellScrolls
+        && !unitRibbon.panelScrolls
+        && unitRibbon.panelHeight > 40
+        && unitRibbon.panelHeight < 140,
+      `scrollable=${ribbonNoScroll.scrollable.join(',') || 'none'}, unitH=${Math.round(unitRibbon.panelHeight)}, panelScrolls=${unitRibbon.panelScrolls}`
     );
 
     const horizontalBalance = await page.evaluate(() => {

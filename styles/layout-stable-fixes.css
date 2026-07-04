@@ -6,8 +6,8 @@
 #annotationTabsShell {
   flex: 0 0 auto !important;
   flex-shrink: 0 !important;
-  max-height: min(38vh, 320px);
-  overflow: hidden;
+  max-height: none;
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
@@ -21,11 +21,10 @@
 }
 
 .annotation-tab-panel {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
-  max-height: min(28vh, 220px);
-  overflow-x: auto;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .annotation-tab-panel .toolbar-section,
@@ -42,8 +41,8 @@
 }
 
 #arcManager {
-  max-height: 120px;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 #contourTab:not(.hidden),

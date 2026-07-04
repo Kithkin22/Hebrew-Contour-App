@@ -1,0 +1,154 @@
+/**
+ * Annotation toolbar ribbon — compact, no internal vertical scrolling.
+ * Panels are shallow multi-row strips; overflow is visible (horizontal wrap only).
+ */
+
+#annotationTabsShell {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.annotation-tab-panel {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.annotation-ribbon-panel {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.annotation-ribbon {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.annotation-ribbon-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 0;
+}
+
+.annotation-ribbon-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.annotation-ribbon-field input[type="color"] {
+  width: 36px;
+  height: 26px;
+  padding: 1px;
+  vertical-align: middle;
+}
+
+.unit-ribbon-select {
+  min-width: 5.5rem;
+  max-width: 10rem;
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--ui-line, #d8e1ea);
+  background: var(--ui-surface, #fff);
+}
+
+.inclusio-workflow-inline {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inclusio-workflow-inline.inclusio-status-warn {
+  color: #c2410c;
+}
+
+.unit-color-status-inline {
+  flex: 1 1 6rem;
+  min-width: 4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unit-ribbon-details {
+  margin: 0;
+}
+
+.unit-ribbon-details > summary {
+  display: inline-block;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ui-muted, #64748b);
+  padding: 2px 0;
+  list-style: none;
+  user-select: none;
+}
+
+.unit-ribbon-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.unit-ribbon-details > summary::before {
+  content: "▸ ";
+  font-size: 10px;
+}
+
+.unit-ribbon-details[open] > summary::before {
+  content: "▾ ";
+}
+
+.unit-ribbon-details #inclusioEditor {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--ui-line, #e2e8f0);
+}
+
+.unit-ribbon-details .inclusio-editor-grid {
+  display: grid;
+  gap: 8px;
+  max-width: 640px;
+}
+
+/* Long inline tips: hide in ribbon; use button titles instead */
+.annotation-tab-panel #bracketStatus,
+.annotation-tab-panel #arcStatus,
+.annotation-tab-panel .comment-start-status {
+  display: none;
+}
+
+#arcManager {
+  max-height: none;
+  overflow: visible;
+}
+
+#arcManager .arc-manager-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+body.dark-mode .unit-ribbon-select {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #e2e8f0;
+}
+
+body.dark-mode .inclusio-workflow-inline.inclusio-status-warn {
+  color: #fb923c;
+}

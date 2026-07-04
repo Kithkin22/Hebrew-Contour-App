@@ -309,7 +309,8 @@ body.dark-mode .annotation-tab-btn.active {
 .annotation-tab-panel {
   background: var(--hc-surface, #fff) !important;
   padding: 6px 8px !important;
-  max-height: 88px !important;
+  max-height: none !important;
+  overflow: visible !important;
 }
 
 .annotation-tab-panel .toolbar-label {

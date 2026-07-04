@@ -2,9 +2,9 @@
 
 #inclusioPanel {
   margin: 0;
-  background: var(--ui-surface-2, #f8fafc);
-  border-left: 3px solid #315efb;
-  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  padding: 0;
 }
 
 .inclusio-panel-hint {

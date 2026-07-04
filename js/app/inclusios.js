@@ -345,8 +345,8 @@ function updateInclusioWorkflowStatus() {
   if (inclusioDraw.active) {
     const n = state.inclusios?.length || 0;
     el.textContent = inclusioDraw.isDragging
-      ? 'Drawing… release on the closing word to add a unit frame.'
-      : `Draw mode on: drag opening → closing word. Each drag adds a new unit${n ? ` (${n} so far)` : ''}. Click Draw Unit again to exit.`;
+      ? 'Drawing… release on closing word.'
+      : `Draw mode — drag opening → closing.${n ? ` (${n} unit${n === 1 ? '' : 's'})` : ''}`;
     el.classList.remove('inclusio-status-warn');
     return;
   }
@@ -354,32 +354,26 @@ function updateInclusioWorkflowStatus() {
   migrateAllInclusios();
   const item = activeInclusio();
   if (!item) {
-    el.textContent = `No active unit. Click ${UNIT_UI.new}, ${UNIT_UI.draw}, or Set Opening Anchor to create one. Then select a Hebrew word.`;
+    el.textContent = 'No unit — New Unit or Draw Unit.';
     el.classList.remove('inclusio-status-warn');
     return;
   }
   const open = anchorDisplayLabel(item.openingAnchor);
   const close = anchorDisplayLabel(item.closingAnchor);
   const span = deriveInclusioSpan(item);
-  const total = state.inclusios.length;
-  let rails = 0;
-  const ed = inclusioEditorRoot(null);
-  if (ed) rails = ed.querySelectorAll('svg.inclusio-frame-svg line.inclusio-frame-rail').length;
-  const bracketN = document.querySelectorAll('#editor .word.inclusio-bracket.bracket-start, #editor .word.inclusio-bracket.bracket-end').length;
-  let msg = total > 1
-    ? `${total} units in this passage. Active: ${item.label || item.id}. Opening: ${open}. Closing: ${close}. Span: ${span}.`
-    : `Active: ${item.label || item.id}. Opening: ${open}. Closing: ${close}. Span: ${span}.`;
-  if (item.openingAnchor && item.closingAnchor) {
-    msg += rails >= 2 ? ` Frame rails: ${rails}.` : ' Frame pending — check margin envelope toggle.';
-    if (bracketN < 2) msg += ' Endpoint brackets pending.';
-  } else if (!locOK(state.selected)) {
-    msg += ' Select a Hebrew word first.';
-    el.classList.add('inclusio-status-warn');
+  let msg = `${item.label || item.id}: ${open} → ${close}`;
+  if (span && span !== '—') msg += ` · ${span}`;
+  if (!item.openingAnchor || !item.closingAnchor) {
+    if (!locOK(state.selected)) {
+      msg = 'Select a Hebrew word, then set anchors.';
+      el.classList.add('inclusio-status-warn');
+    } else {
+      msg += item.openingAnchor ? ' · set closing' : ' · set opening';
+      el.classList.remove('inclusio-status-warn');
+    }
   } else {
-    msg += ' Select closing word, then Set Closing Anchor.';
     el.classList.remove('inclusio-status-warn');
   }
-  if (item.openingAnchor && item.closingAnchor) el.classList.remove('inclusio-status-warn');
   el.textContent = msg;
 }
 window.updateInclusioWorkflowStatus = updateInclusioWorkflowStatus;
@@ -535,33 +529,33 @@ function expandLegendInclusiosSection() {
 }
 
 function renderUnitSwitcher() {
-  const box = document.getElementById('unitSwitcher');
-  if (!box) return;
+  const select = document.getElementById('activeInclusioRibbonSelect');
+  if (!select) return;
   ensureInclusios();
   migrateAllInclusios();
   const n = state.inclusios.length;
   if (!n) {
-    box.innerHTML = '<span class="muted small">No units yet — use <strong>Draw Unit</strong> or <strong>New Unit</strong> to add one.</span>';
+    select.innerHTML = '<option value="">—</option>';
+    select.disabled = true;
     return;
   }
-  let html = `<span class="small toolbar-label">Units (${n}):</span>`;
+  let html = '';
   state.inclusios.forEach((inc, i) => {
-    const active = inc.id === state.activeInclusioId;
     const label = esc(inc.label || unitDefaultLabel(i));
-    const color = inc.color || inclusioColorForNestLevel(inc.nestLevel || 0);
     const ready = inc.openingAnchor && inc.closingAnchor;
-    html += `<button type="button" class="btn small unit-switcher-btn${active ? ' primary' : ''}" data-inc-id="${esc(inc.id)}" title="${ready ? 'Anchors set' : 'Anchors incomplete'}" style="border-left:3px solid ${esc(color)}">${label}${ready ? '' : ' *'}</button>`;
+    html += `<option value="${esc(inc.id)}"${inc.id === state.activeInclusioId ? ' selected' : ''}>${label}${ready ? '' : ' *'}</option>`;
   });
-  html += '<button type="button" class="btn small" id="unitSwitcherNew">+ New Unit</button>';
-  box.innerHTML = html;
-  box.querySelectorAll('.unit-switcher-btn').forEach((btn) => {
-    btn.onclick = () => {
-      state.activeInclusioId = btn.dataset.incId;
-      render();
+  select.innerHTML = html;
+  select.disabled = false;
+  if (!select.dataset.wired) {
+    select.dataset.wired = '1';
+    select.onchange = () => {
+      if (select.value) {
+        state.activeInclusioId = select.value;
+        render();
+      }
     };
-  });
-  const newBtn = box.querySelector('#unitSwitcherNew');
-  if (newBtn) newBtn.onclick = () => addInclusio();
+  }
 }
 window.renderUnitSwitcher = renderUnitSwitcher;
 
@@ -691,8 +685,8 @@ function syncUnitColorToolbar() {
   const status = document.getElementById('unitColorStatus');
   if (status) {
     status.textContent = hasUnit
-      ? `Active: ${item.label || UNIT_UI.singular}. Presets apply immediately.`
-      : 'Create or select a unit to change its frame color.';
+      ? `${item.label || UNIT_UI.singular}`
+      : '';
   }
   toolbar.classList.toggle('unit-color-disabled', !hasUnit);
 }
@@ -950,19 +944,13 @@ function renderInclusioEditor() {
   const box = document.getElementById('inclusioEditor');
   if (!box) return;
   if (!state.inclusios.length) {
-    box.innerHTML = `<p class="muted small">No units yet. Click <strong>${UNIT_UI.new}</strong> to begin.</p>`;
+    box.innerHTML = '<p class="muted small">Label, frame weight, theme, and notes — or edit in Legend / Key.</p>';
     return;
   }
   const active = activeInclusio();
   const activeId = active?.id || '';
   let html = '<div class="inclusio-editor-grid">';
-  html += '<div class="row inclusio-active-row"><label class="small">Active <select id="activeInclusioSelect">';
-  state.inclusios.forEach((x, i) => {
-    html += `<option value="${esc(x.id)}"${x.id === activeId ? ' selected' : ''}>${esc(x.label || unitDefaultLabel(i))}</option>`;
-  });
-  html += '</select></label>';
   html += '<label class="small">Label <input id="inclusioLabelInput" value="' + esc(active?.label || '') + '"></label>';
-  html += '</div>';
   html += '<label class="small">Frame weight <select id="inclusioFrameWeightSelect">';
   html += `<option value=""${!active?.frameWeight ? ' selected' : ''}>Auto (by nest level)</option>`;
   INCLUSIO_FRAME_WEIGHTS.forEach(w => {
@@ -972,39 +960,34 @@ function renderInclusioEditor() {
   html += '<label class="small inclusio-envelope-toggle"><input type="checkbox" id="inclusioEnvelopeToggle"' + (active?.showMarginEnvelope !== false ? ' checked' : '') + '> Show unit frame</label>';
 
   html += '<div class="inclusio-anchor-block">';
-  html += '<div class="inclusio-field-row"><strong class="small">Opening Anchor</strong>';
-  html += '<button type="button" class="btn small" id="inclusioOpeningPhraseStart">Phrase start</button>';
-  html += '<button type="button" class="btn small" id="setInclusioOpening">Set Opening Anchor</button></div>';
+  html += '<div class="inclusio-field-row"><strong class="small">Opening</strong>';
+  html += '<button type="button" class="btn small" id="inclusioOpeningPhraseStart">Phrase start</button></div>';
   html += '<div class="inclusio-readonly muted small" id="inclusioOpeningDisplay">' + esc(anchorDisplayLabel(active?.openingAnchor)) + '</div>';
   html += '</div>';
 
   html += '<div class="inclusio-anchor-block">';
-  html += '<div class="inclusio-field-row"><strong class="small">Closing Anchor</strong>';
-  html += '<button type="button" class="btn small" id="inclusioClosingPhraseStart">Phrase start</button>';
-  html += '<button type="button" class="btn small" id="setInclusioClosing">Set Closing Anchor</button></div>';
+  html += '<div class="inclusio-field-row"><strong class="small">Closing</strong>';
+  html += '<button type="button" class="btn small" id="inclusioClosingPhraseStart">Phrase start</button></div>';
   html += '<div class="inclusio-readonly muted small" id="inclusioClosingDisplay">' + esc(anchorDisplayLabel(active?.closingAnchor)) + '</div>';
   html += '</div>';
 
-  html += '<div class="inclusio-field-row"><label class="small">Derived Span</label>';
+  html += '<div class="inclusio-field-row"><label class="small">Derived span</label>';
   html += '<div class="inclusio-readonly inclusio-derived-span" id="inclusioDerivedSpan">' + esc(deriveInclusioSpan(active)) + '</div></div>';
 
-  html += '<label class="small">Theme <input id="inclusioThemeInput" value="' + esc(active?.theme || '') + '" placeholder="Optional theme"></label>';
-  html += '<label class="small">Relationship Basis <select id="inclusioBasisSelect">';
+  html += '<label class="small">Theme <input id="inclusioThemeInput" value="' + esc(active?.theme || '') + '" placeholder="Optional"></label>';
+  html += '<label class="small">Relationship <select id="inclusioBasisSelect">';
   RELATIONSHIP_BASIS_OPTIONS.forEach(o => {
     html += `<option value="${esc(o.value)}"${(active?.relationshipBasis || '') === o.value ? ' selected' : ''}>${esc(o.label)}</option>`;
   });
   html += '</select></label>';
   html += '<label class="small">Evidence <input id="inclusioEvidenceInput" value="' + esc(active?.evidence || '') + '" placeholder="Repeated word or phrase"></label>';
-  html += '<label class="small">Notes <textarea id="inclusioNotesInput" rows="2" placeholder="Optional notes">' + esc(active?.notes || '') + '</textarea></label>';
+  html += '<label class="small">Notes <textarea id="inclusioNotesInput" rows="2" placeholder="Optional">' + esc(active?.notes || '') + '</textarea></label>';
 
   html += '<p class="muted small" id="inclusioPhraseStatus"></p>';
   html += '</div>';
 
   box.innerHTML = html;
   updateInclusioPhraseStatus();
-
-  const sel = box.querySelector('#activeInclusioSelect');
-  if (sel) sel.onchange = () => { state.activeInclusioId = sel.value; render(); };
 
   const bindField = (id, fn) => {
     const el = box.querySelector(id);
@@ -1021,7 +1004,7 @@ function renderInclusioEditor() {
       }
     };
   };
-  bindField('#inclusioLabelInput', (item, el) => { item.label = el.value; renderInclusioRegistry(); });
+  bindField('#inclusioLabelInput', (item, el) => { item.label = el.value; renderInclusioRegistry(); renderUnitSwitcher(); });
   bindField('#inclusioFrameWeightSelect', (item, el) => {
     item.frameWeight = el.value || null;
     if (!item.frameWeight) delete item.frameWeight;
@@ -1041,10 +1024,6 @@ function renderInclusioEditor() {
   if (oPh) oPh.onclick = () => setInclusioPhraseStart('opening');
   const cPh = box.querySelector('#inclusioClosingPhraseStart');
   if (cPh) cPh.onclick = () => setInclusioPhraseStart('closing');
-  const oSet = box.querySelector('#setInclusioOpening');
-  if (oSet) oSet.onclick = () => setInclusioAnchor('opening');
-  const cSet = box.querySelector('#setInclusioClosing');
-  if (cSet) cSet.onclick = () => setInclusioAnchor('closing');
 }
 
 function renderInclusioRegistry() {
