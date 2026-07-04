@@ -97,26 +97,19 @@ function contourPageExportCss(opts) {
   const textFont = contourScriptFontFamily(isGreek);
   const bodySel = '.contour-page-body';
   const sheetSel = '.contour-document-sheet.contour-document-sheet--export';
-  const worksheet = !!opts.worksheet;
+  const isWorksheetExport = !!opts.worksheetExport;
   const paperSpec = typeof worksheetPaperSpec === 'function'
     ? worksheetPaperSpec(opts.paper || 'letter')
     : { cssSize: 'letter', widthIn: 8.5, heightIn: 11 };
-  const pageRule = worksheet
+  const pageRule = isWorksheetExport
     ? `@page{size:${paperSpec.cssSize};margin:0}`
     : '@page{margin:0.6in}';
-  const worksheetHostCss = worksheet
-    ? `.contour-export-worksheet-host{width:${paperSpec.widthIn}in;height:${paperSpec.heightIn}in}`
-    : '';
 
   return contourPageCssVarsBlock()
     + 'body{margin:0;padding:24px;background:#fff;color:#222;font-family:Arial,Helvetica,sans-serif}'
     + pageRule
-    + worksheetHostCss
-    + (worksheet
-      ? `${sheetSel}{direction:ltr;text-align:left;width:auto;min-height:0;`
-        + 'margin:0;padding:20px 28px;box-sizing:border-box;background:#fff}'
-      : `${sheetSel}{direction:ltr;text-align:left;width:var(--contour-letter-width);min-height:var(--contour-letter-min-height);`
-        + 'margin:0 auto;padding:var(--contour-letter-margin);box-sizing:border-box;background:#fff}')
+    + `${sheetSel}{direction:ltr;text-align:left;width:var(--contour-letter-width);min-height:var(--contour-letter-min-height);`
+    + 'margin:0;padding:var(--contour-letter-margin);box-sizing:border-box;background:#fff;overflow:visible;position:relative}'
     + `${sheetSel} .contour-passage-title{display:block;unicode-bidi:isolate;direction:ltr;text-align:left;`
     + 'font-family:Arial,Helvetica,sans-serif;font-size:var(--contour-passage-title-size);font-weight:700;'
     + 'line-height:1.35;margin:0 0 24px 0;color:#1e293b}'
@@ -268,7 +261,8 @@ function buildContourExportDocument(opts) {
   const wsOpts = hasWsSettings && typeof normalizeWorksheetExportOptions === 'function'
     ? normalizeWorksheetExportOptions(opts.worksheetSettings)
     : null;
-  const worksheet = wsOpts ? wsOpts.fitOnePage : (opts.worksheet === true);
+  const isWorksheetExport = !!wsOpts || opts.worksheet === true;
+  const worksheetFitOnePage = wsOpts ? wsOpts.fitOnePage : (opts.worksheet === true);
   const includeSupplementLegacy = !!opts.includeSupplement;
   let bodyHtml = opts.bodyHtml != null ? opts.bodyHtml : buildContourPageBodyHtml(true);
   if (!bodyHtml) return null;
@@ -296,32 +290,63 @@ function buildContourExportDocument(opts) {
     arcsHtml = typeof arcsHtmlForExport === 'function' ? arcsHtmlForExport() : '';
   }
 
-  const shellOpts = {
-    isGreek,
-    paneState: opts.paneState || (typeof state !== 'undefined' ? state : null),
-    includeTitle: opts.includeTitle !== false,
-    worksheet,
-    includeUnitFrames: wsOpts ? wsOpts.includeUnitFrames : true,
-    includeArcs: wsOpts ? wsOpts.includeArcs : true,
-  };
-  if (wsOpts) {
-    shellOpts.worksheetTitle = wsOpts;
-    shellOpts.includeTitle = wsOpts.includePassageTitle || wsOpts.includeDate || wsOpts.includeProjectName;
+  const worksheetLayout = (() => {
+    if (opts.worksheetLayout) return opts.worksheetLayout;
+    if (wsOpts && typeof computeWorksheetLayoutForExport === 'function') {
+      return computeWorksheetLayoutForExport(wsOpts);
+    }
+    if (isWorksheetExport && typeof computeWorksheetLayoutForExport === 'function') {
+      return computeWorksheetLayoutForExport({
+        fitOnePage: worksheetFitOnePage,
+        paper: (wsOpts && wsOpts.paper) || 'letter',
+        margins: (wsOpts && wsOpts.margins) || 'normal',
+      });
+    }
+    return null;
+  })();
+
+  let pageShell = '';
+  if (isWorksheetExport && typeof cloneLiveEditorForExport === 'function') {
+    const cloneOpts = wsOpts || (typeof WORKSHEET_EXPORT_DEFAULTS !== 'undefined' ? WORKSHEET_EXPORT_DEFAULTS : {});
+    const liveHtml = cloneLiveEditorForExport(cloneOpts);
+    if (liveHtml && typeof wrapWorksheetExportShell === 'function') {
+      pageShell = wrapWorksheetExportShell(liveHtml, worksheetLayout);
+    }
   }
-  const pageShell = buildContourPageShellHtml(bodyHtml, shellOpts);
-  const cssOpts = { isGreek, worksheet };
-  if (worksheet && wsOpts) {
+  if (!pageShell) {
+    const shellOpts = {
+      isGreek,
+      paneState: opts.paneState || (typeof state !== 'undefined' ? state : null),
+      includeTitle: opts.includeTitle !== false,
+      includeUnitFrames: wsOpts ? wsOpts.includeUnitFrames : true,
+      includeArcs: wsOpts ? wsOpts.includeArcs : true,
+    };
+    if (wsOpts) {
+      shellOpts.worksheetTitle = wsOpts;
+      shellOpts.includeTitle = wsOpts.includePassageTitle || wsOpts.includeDate || wsOpts.includeProjectName;
+    }
+    pageShell = buildContourPageShellHtml(bodyHtml, shellOpts);
+    if (isWorksheetExport && typeof wrapWorksheetExportShell === 'function') {
+      pageShell = wrapWorksheetExportShell(pageShell, worksheetLayout);
+    }
+  }
+
+  const cssOpts = { isGreek, worksheetExport: isWorksheetExport };
+  if (wsOpts) {
     cssOpts.paper = wsOpts.paper;
     cssOpts.margins = wsOpts.margins;
-  } else if (worksheet) {
+  } else if (isWorksheetExport) {
     cssOpts.paper = opts.paper || 'letter';
   }
-  const css = contourPageExportCss(cssOpts);
+  let css = contourPageExportCss(cssOpts);
+  if (worksheetLayout && typeof buildWorksheetLayoutCss === 'function') {
+    css += buildWorksheetLayoutCss(worksheetLayout);
+  }
   const printBtn = opts.includePrintButton
     ? '<button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button>'
     : '';
-  const layoutScript = worksheet && typeof buildContourWorksheetScript === 'function'
-    ? buildContourWorksheetScript(wsOpts || { paper: opts.paper || 'letter', margins: opts.margins || 'normal' })
+  const layoutScript = isWorksheetExport && typeof buildContourWorksheetScript === 'function'
+    ? buildContourWorksheetScript()
     : '';
   const printScript = opts.printScript || '';
   const legendBlock = legendHtml + inclusiosHtml + commentsHtml + notesHtml + arcsHtml;

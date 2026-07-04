@@ -262,6 +262,7 @@ function exportWorksheetPdf(settings, opts) {
     ? normalizeWorksheetExportOptions(settings)
     : (settings || {});
   if (!state.verses.length) { alert('Create or generate text first.'); return; }
+  if (typeof refreshLiveEditorOverlaysForExport === 'function') refreshLiveEditorOverlaysForExport();
   const fname = askExportFilename(suggestedExportBase('contour-editor'), 'pdf');
   if (!fname) return;
   const printMeta = preparePrintFilename(fname);

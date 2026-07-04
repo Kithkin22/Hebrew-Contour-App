@@ -86,8 +86,8 @@ async function main() {
         afterSet,
         afterReload,
         exportHasInclusioBrackets: exportHtml.includes('bracket-start'),
-        exportHasFrameOverlay: exportDoc.includes('contour-export-inclusio-svg') && exportDoc.includes('inclusio-frame-rail'),
-        exportWorksheetOnly: !exportDoc.includes('<table class="export-legend"') && exportDoc.includes('layoutWorksheet'),
+        exportHasFrameOverlay: exportDoc.includes('inclusio-frame-rail'),
+        exportWorksheetOnly: !exportDoc.includes('<div class="contour-export-supplement-page">') && exportDoc.includes('contour-export-worksheet-stage'),
         docxOk: docx.includes('Units'),
         registryHasRow: registry.includes('Unit'),
       };
@@ -661,10 +661,10 @@ async function main() {
         : '';
       if (!html || html.length < 500) return { ok: false, reason: 'export html too short' };
       if (!html.includes('window.print()')) return { ok: false, reason: 'missing print button' };
-      const hasArcOverlay = html.includes('contour-export-arc-svg') && html.includes('arc-path');
-      const hasFrameOverlay = html.includes('contour-export-inclusio-svg') && html.includes('inclusio-frame-rail');
-      const hasWorksheetScript = html.includes('layoutWorksheet') && html.includes('contour-export-worksheet');
-      const noLegendOnWorksheet = !html.includes('<table class="export-legend"');
+      const hasArcOverlay = html.includes('arc-path') && (html.includes('contour-export-arc-svg') || html.includes('id="arcSvg"') || html.includes('id=\\"arcSvg\\"'));
+      const hasFrameOverlay = html.includes('inclusio-frame-rail') && (html.includes('contour-export-inclusio-svg') || html.includes('inclusio-frame-svg'));
+      const hasWorksheetLayout = html.includes('contour-export-worksheet-stage') && html.includes('contour-export-worksheet-print-root');
+      const noLegendOnWorksheet = !html.includes('<div class="contour-export-supplement-page">');
       const legendOnPage2 = legendHtml.includes('contour-export-supplement-page') && legendHtml.includes('<table class="export-legend"');
       let printed = false;
       const oldOpen = window.open;
@@ -687,17 +687,17 @@ async function main() {
       }
       const docx = typeof contourDocxXml === 'function' ? contourDocxXml() : '';
       return {
-        ok: printed && hasArcOverlay && hasFrameOverlay && hasWorksheetScript && noLegendOnWorksheet && legendOnPage2,
+        ok: printed && hasArcOverlay && hasFrameOverlay && hasWorksheetLayout && noLegendOnWorksheet && legendOnPage2,
         htmlLen: html.length,
         docxOk: docx.length > 200,
         hasArcOverlay,
         hasFrameOverlay,
-        hasWorksheetScript,
+        hasWorksheetLayout,
         noLegendOnWorksheet,
         legendOnPage2,
         reason: !hasArcOverlay ? 'missing arc overlay'
           : !hasFrameOverlay ? 'missing frame overlay'
-          : !hasWorksheetScript ? 'missing worksheet script'
+          : !hasWorksheetLayout ? 'missing worksheet layout'
           : !noLegendOnWorksheet ? 'legend on worksheet page'
           : !legendOnPage2 ? 'legend page missing'
           : !printed ? 'print not triggered' : '',
@@ -707,7 +707,7 @@ async function main() {
       'export-pdf-script',
       exportPdf.ok,
       exportPdf.ok
-        ? `printTriggered, htmlLen=${exportPdf.htmlLen}, arcs=${exportPdf.hasArcOverlay}, frames=${exportPdf.hasFrameOverlay}, worksheet=${exportPdf.hasWorksheetScript}, legendPage2=${exportPdf.legendOnPage2}`
+        ? `printTriggered, htmlLen=${exportPdf.htmlLen}, arcs=${exportPdf.hasArcOverlay}, frames=${exportPdf.hasFrameOverlay}, worksheet=${exportPdf.hasWorksheetLayout}, legendPage2=${exportPdf.legendOnPage2}`
         : exportPdf.reason || 'export failed'
     );
 

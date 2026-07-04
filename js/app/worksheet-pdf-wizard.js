@@ -72,17 +72,30 @@
 
   function updateWorksheetPreview() {
     const frame = document.getElementById('worksheetPdfPreview');
+    const previewWrap = document.querySelector('.worksheet-wizard-preview');
     if (!frame || typeof buildContourExportDocument !== 'function') return;
     if (!state.verses.length) {
       frame.removeAttribute('srcdoc');
       return;
     }
     const settings = readWorksheetWizardForm();
+    let layout = null;
+    if (typeof computeWorksheetLayoutForExport === 'function') {
+      layout = computeWorksheetLayoutForExport(settings);
+    }
+    if (layout && previewWrap) {
+      const thumbW = 180;
+      const scale = thumbW / layout.pageW;
+      previewWrap.style.setProperty('--worksheet-preview-page-w', layout.pageW + 'px');
+      previewWrap.style.setProperty('--worksheet-preview-page-h', layout.pageH + 'px');
+      previewWrap.style.setProperty('--worksheet-preview-scale', String(scale));
+    }
     let html = '';
     try {
       html = buildContourExportDocument({
         worksheetSettings: settings,
         includePrintButton: false,
+        worksheetLayout: layout,
       });
     } catch (e) {
       return;
