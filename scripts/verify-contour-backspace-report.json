@@ -1,0 +1,43 @@
+{
+  "feature": "contour-backspace-merge",
+  "url": "http://127.0.0.1:8765",
+  "at": "2026-07-04T03:21:10.591Z",
+  "pass": true,
+  "results": [
+    {
+      "id": "enter-split",
+      "pass": true,
+      "detail": "clauses=2, a=\"אֶ֣לֶף\", b=\"בֵּ֑ית\""
+    },
+    {
+      "id": "backspace-merge",
+      "pass": true,
+      "detail": "clauses=1, words=\"אֶ֣לֶף בֵּ֑ית\""
+    },
+    {
+      "id": "metadata-preserved",
+      "pass": true,
+      "detail": "bold+note kept=true"
+    },
+    {
+      "id": "inside-no-merge",
+      "pass": true,
+      "detail": "mid-clause backspace did not merge=true"
+    },
+    {
+      "id": "undo-restore",
+      "pass": true,
+      "detail": "merged then undo restored=true"
+    },
+    {
+      "id": "inclusio-remap",
+      "pass": true,
+      "detail": "closing anchor remapped=true"
+    },
+    {
+      "id": "export-single-line",
+      "pass": true,
+      "detail": "export has one clause=true"
+    }
+  ]
+}
