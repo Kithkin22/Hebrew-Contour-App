@@ -129,7 +129,7 @@ async function main() {
       stateBundle.panes[0] = extractPaneFromPayload(JSON.parse(saved), 0).pane;
       state = stateBundle.panes[0];
       render();
-      const reloadOk = state.verses[0].clauses.some((c) => (c.indent || 0) > 0)
+      const reloadOk = state.verses[0].clauses.some((c) => (c.indentPx || 0) >= 48 || (c.indent || 0) > 0)
         && state.verses[0].clauses.some((c) => c.spacingAfter === 'medium' || c.spacingAfter === 'large');
 
       const snapshot = {
@@ -147,10 +147,10 @@ async function main() {
         exportCssHas40: exportCss.includes('40px') || exportCss.includes('--contour-break-md'),
         exportCssHas72: exportCss.includes('72px') || exportCss.includes('--contour-break-lg'),
         exportHasBreaks: exportHtml.includes('layout-break-md') && exportHtml.includes('layout-break-lg'),
-        exportHasIndent: exportHtml.includes('margin-right:30px') || exportHtml.includes('margin-right:60px'),
+        exportHasIndent: exportHtml.includes('margin-right:48px') || exportHtml.includes('margin-right:96px'),
         exportCanonicalShell: exportDoc.includes('contour-document-sheet--export') && exportDoc.includes('contour-page-body'),
         docxBreaks: docx.includes('w:spacing w:after="600"') && docx.includes('w:spacing w:after="1080"'),
-        docxIndent: docx.includes('w:ind w:right="450"') || docx.includes('w:ind w:right="900"'),
+        docxIndent: docx.includes('w:ind w:right="720"') || docx.includes('w:ind w:right="1440"'),
         reloadOk,
         hasDocumentPage: editor.classList.contains('contour-document-page') && !!sheet,
         hasDocumentSurface: wrap.classList.contains('contour-document-surface'),

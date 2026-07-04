@@ -106,7 +106,7 @@ function contourDocxXml(){
       body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:color w:val="666666"/><w:sz w:val="20"/></w:rPr><w:t>${xmlEscape(v.ref)}</w:t></w:r></w:p>`;
     }
     v.clauses.forEach((c,ci)=>{
-      const indentTwips=typeof contourIndentDocxTwips==='function'?contourIndentDocxTwips(c.indent||0):Math.max(0,(c.indent||0)*720);
+      const indentTwips=typeof contourIndentDocxTwipsForClause==='function'?contourIndentDocxTwipsForClause(c):Math.max(0,(c.indent||0)*720);
       let runs=c.words.map((w,wi)=>wordRun(w,{v:vi,c:ci,w:wi})).join('');
       let ppr=isGreek?`<w:jc w:val="left"/><w:ind w:left="${indentTwips}"/>`:`<w:bidi/><w:jc w:val="right"/><w:ind w:right="${indentTwips}"/>`;
       const clauseTwips=typeof spacingAfterDocxTwips==='function'?spacingAfterDocxTwips(c):0;

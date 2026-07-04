@@ -51,6 +51,22 @@ CSS custom properties are injected at load via `injectContourPageTokens()`.
 
 DOCX twips derive from pixels: `px × 15` (96 dpi → 1440 twips/inch).
 
+## Pixel-fidelity clause layout (Word paste)
+
+Clauses store canonical layout geometry — not quantized contour levels when imported from Word:
+
+| Field | Example | Source |
+|-------|---------|--------|
+| `indentPx` | `48` | Word `margin-right: 36pt` |
+| `spacingAfterPx` | `40` | Blank-line discourse breaks or Word paragraph margins |
+| `alignment` | `rtl` | Paragraph direction |
+
+Legacy projects with `indent` levels only still render via `clauseIndentPx()` fallback (`indent × 30px`).
+
+**Tab / Shift+Tab** adjusts `indentPx` by ±30px (`contourTabIndentStepPx`). **Visual Break** sets `spacingAfterPx` to preset values (18 / 40 / 72) while keeping `spacingAfter` when they match.
+
+Helpers: `clauseIndentPx`, `clauseSpacingAfterPx`, `clauseLayoutStyle`, `contourIndentDocxTwipsForClause`.
+
 ## Module responsibilities
 
 ### `js/app/contour-page-renderer.js`

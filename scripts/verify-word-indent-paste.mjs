@@ -55,8 +55,11 @@ async function main() {
       const parsed = parseWordHtmlLayoutLines(html, { isRtl: true });
       const layoutLines = parsed.lines;
       const verses = buildVersesFromLayoutPaste(parsed.text, 'Job 19:21-29', 'hebrew-bhsa', [], layoutLines);
-      const indents = verses[0].clauses.map((c) => c.indent || 0);
+      const indentPxValues = verses[0].clauses.map((c) => (
+        typeof c.indentPx === 'number' ? c.indentPx : (c.indent || 0) * 30
+      ));
       const spacing = verses[0].clauses.map((c) => c.spacingAfter || 'default');
+      const spacingPx = verses[0].clauses.map((c) => c.spacingAfterPx || 0);
 
       ensureStateBundle();
       stateBundle.parallelEnabled = false;
@@ -74,35 +77,41 @@ async function main() {
       const payload = projectPayload();
       stateBundle.panes[0] = extractPaneFromPayload(JSON.parse(JSON.stringify(payload)), 0).pane;
       state = stateBundle.panes[0];
-      const reloadedIndents = state.verses[0].clauses.map((c) => c.indent || 0);
+      const reloadedPx = state.verses[0].clauses.map((c) => (
+        typeof c.indentPx === 'number' ? c.indentPx : (c.indent || 0) * 30
+      ));
 
       const plainOnly = buildVersesFromLayoutPaste(parsed.text, 'Job 19:21-29', 'hebrew-bhsa', [], null);
       const plainIndents = plainOnly[0].clauses.map((c) => c.indent || 0);
 
       return {
         lineCount: layoutLines.length,
-        indents,
+        indentPxValues,
         spacing,
+        spacingPx,
         hasIndent: parsed.hasIndent,
         ambiguous: parsed.ambiguous,
         marginRights,
-        reloadedIndents,
-        plainIndents,
-        exportHasIndent: buildContourEditorHtmlFromState(true).includes('margin-right:30px')
-          || buildContourEditorHtmlFromState(true).includes('margin-right:72px'),
+        reloadedPx,
+        plainIndents: plainOnly[0].clauses.map((c) => c.indentPx || c.indent || 0),
+        exportHas48: buildContourEditorHtmlFromState(true).includes('margin-right:48px'),
+        exportHas96: buildContourEditorHtmlFromState(true).includes('margin-right:96px'),
+        alignmentRtl: verses[0].clauses.every((c) => c.alignment === 'rtl'),
       };
     }, WORD_HTML);
 
     record('parse-lines', unit.lineCount === 7, `lines=${unit.lineCount}`);
     record('has-indent-flag', unit.hasIndent === true, `hasIndent=${unit.hasIndent}`);
     record('not-ambiguous', unit.ambiguous === false, `ambiguous=${unit.ambiguous}`);
-    record('indent-levels', unit.indents[1] === 1 && unit.indents[4] === 2 && unit.indents[5] === 2, `indents=${unit.indents.join(',')}`);
-    record('deep-indent', unit.indents[5] >= 2, `line6 indent=${unit.indents[5]}`);
+    record('indent-px-exact', unit.indentPxValues[1] === 48 && unit.indentPxValues[4] === 96 && unit.indentPxValues[5] === 96, `indentPx=${unit.indentPxValues.join(',')}`);
+    record('deep-indent-px', unit.indentPxValues[5] >= 96, `line6 indentPx=${unit.indentPxValues[5]}`);
     record('spacing-preserved', unit.spacing[2] === 'medium' && unit.spacing[4] === 'large', `spacing=${unit.spacing.join(',')}`);
-    record('dom-margin-right', unit.marginRights.some((m) => m >= 36), `margins=${unit.marginRights.join(',')}`);
-    record('reload-indents', unit.reloadedIndents.some((i) => i > 0), `reloaded=${unit.reloadedIndents.join(',')}`);
+    record('spacing-px', unit.spacingPx[2] === 40 && unit.spacingPx[4] === 72, `spacingPx=${unit.spacingPx.join(',')}`);
+    record('dom-margin-right', unit.marginRights.some((m) => m >= 48), `margins=${unit.marginRights.join(',')}`);
+    record('reload-indent-px', unit.reloadedPx.some((i) => i >= 48), `reloaded=${unit.reloadedPx.join(',')}`);
     record('plain-fallback', unit.plainIndents.every((i) => i === 0), `plain=${unit.plainIndents.join(',')}`);
-    record('export-indent', unit.exportHasIndent, `exportHasIndent=${unit.exportHasIndent}`);
+    record('export-indent-px', unit.exportHas48 && unit.exportHas96, `export48=${unit.exportHas48} export96=${unit.exportHas96}`);
+    record('alignment-rtl', unit.alignmentRtl, `alignmentRtl=${unit.alignmentRtl}`);
 
     const pass = results.every((r) => r.pass);
     console.log(`\n${pass ? 'ALL PASSED' : 'SOME FAILED'} (${results.filter((r) => r.pass).length}/${results.length})`);

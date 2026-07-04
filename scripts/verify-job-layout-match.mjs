@@ -81,11 +81,11 @@ async function main() {
       const v = state.verses[0];
       const clauses = v.clauses;
       const spacing = clauses.map((c) => c.spacingAfter || 'default');
-      const indents = clauses.map((c) => c.indent || 0);
+      const indents = clauses.map((c) => (typeof c.indentPx === 'number' ? c.indentPx : (c.indent || 0) * 30));
       const mediumCount = spacing.filter((s) => s === 'medium').length;
       const largeCount = spacing.filter((s) => s === 'large').length;
       const fakeEmpty = clauses.some((c) => !c.words.length);
-      const indentCount = indents.filter((i) => i > 0).length;
+      const indentCount = indents.filter((i) => i >= 48).length;
 
       render();
 
@@ -118,7 +118,9 @@ async function main() {
       state = stateBundle.panes[0];
       render();
       const reloadedSpacing = state.verses[0].clauses.map((c) => c.spacingAfter || 'default');
-      const reloadedIndents = state.verses[0].clauses.map((c) => c.indent || 0);
+      const reloadedIndents = state.verses[0].clauses.map((c) => (
+        typeof c.indentPx === 'number' ? c.indentPx : (c.indent || 0) * 30
+      ));
 
       const editorDir = document.getElementById('editor')?.querySelector('.clause')?.getAttribute('dir');
       const hasRtl = editorDir === 'rtl';
@@ -136,10 +138,10 @@ async function main() {
         exportHasMd: exportHtml.includes('layout-break-md'),
         exportHasLg: exportHtml.includes('layout-break-lg'),
         exportHasSm: exportHtml.includes('layout-break-sm'),
-        exportHasIndent: exportHtml.includes('margin-right:30px') || exportHtml.includes('margin-right:60px'),
+        exportHasIndent: exportHtml.includes('margin-right:48px') || exportHtml.includes('margin-right:96px'),
         docx480: docx.includes('w:spacing w:after="600"'),
         docx960: docx.includes('w:spacing w:after="1080"'),
-        docxIndent: docx.includes('w:ind w:right="450"') || docx.includes('w:ind w:right="900"'),
+        docxIndent: docx.includes('w:ind w:right="720"') || docx.includes('w:ind w:right="1440"'),
         reloadedSpacing: reloadedSpacing.slice(0, 6),
         reloadedIndents: reloadedIndents.slice(0, 6),
         hasRtl,
@@ -155,7 +157,7 @@ async function main() {
     record('large-breaks', unit.largeCount >= 1, `large=${unit.largeCount}`);
     record('no-fake-clauses', !unit.fakeEmpty, `fakeEmpty=${unit.fakeEmpty}`);
     record('rtl', unit.hasRtl, `dir=${unit.hasRtl ? 'rtl' : 'missing'}`);
-    record('indent-preserved-reload', unit.reloadedIndents.some((i) => i > 0), `indents=${unit.reloadedIndents.join(',')}`);
+    record('indent-preserved-reload', unit.reloadedIndents.some((i) => i >= 48), `indentPx=${unit.reloadedIndents.join(',')}`);
     record('spacing-preserved-reload', unit.reloadedSpacing.includes('medium') || unit.reloadedSpacing.includes('large'), `spacing=${unit.reloadedSpacing.join(',')}`);
     record('manual-visual-break', unit.afterManual.small === 'small' && unit.afterManual.large === 'large', `manual=${JSON.stringify(unit.afterManual)}`);
     record('export-html-breaks', unit.exportHasMd && unit.exportHasLg, `md=${unit.exportHasMd}, lg=${unit.exportHasLg}`);
@@ -165,8 +167,8 @@ async function main() {
 
     const mdMargin = unit.margins.find((m) => m.cls.includes('layout-break-md'));
     record('editor-md-margin', mdMargin && mdMargin.mb >= 24, `medium margin-bottom=${mdMargin?.mb}px`);
-    const indentedMargin = unit.margins.find((m) => m.mr >= 28);
-    record('editor-indent-margin', !!indentedMargin && indentedMargin.mr >= 28, `margin-right=${indentedMargin?.mr}px`);
+    const indentedMargin = unit.margins.find((m) => m.mr >= 46);
+    record('editor-indent-margin', !!indentedMargin && indentedMargin.mr >= 46, `margin-right=${indentedMargin?.mr}px`);
 
     // Screenshot of editor state
     await page.evaluate((wordHtml) => {

@@ -27,20 +27,122 @@ window.clauseSpacingAfterClass = clauseSpacingAfterClass;
 function clauseLayoutClassNames(clause, selected) {
   let cls = 'clause';
   if (selected) cls += ' selected';
-  const br = clauseSpacingAfterClass(clause);
-  if (br) cls += ' ' + br;
+  const px = clauseSpacingAfterPx(clause);
+  if (px <= 0) return cls;
+  if (px === 18) cls += ' layout-break-sm';
+  else if (px === 40) cls += ' layout-break-md';
+  else if (px === 72) cls += ' layout-break-lg';
+  else if (typeof (clause && clause.spacingAfterPx) !== 'number') {
+    const br = clauseSpacingAfterClass(clause);
+    if (br) cls += ' ' + br;
+  }
   return cls;
 }
 window.clauseLayoutClassNames = clauseLayoutClassNames;
 
+function contourTabIndentStepPx() {
+  return (window.CONTOUR_PAGE && window.CONTOUR_PAGE.displayIndentPx)
+    || (typeof contourDisplayIndentPx === 'function' ? contourDisplayIndentPx() : 30);
+}
+window.contourTabIndentStepPx = contourTabIndentStepPx;
+
+function spacingAfterPxFromLevel(level) {
+  const norm = normalizeSpacingAfter(level);
+  if (norm === 'default') return 0;
+  if (typeof contourBreakDocxTwips === 'function') {
+    return contourBreakDocxTwips(norm) / 15;
+  }
+  const px = window.CONTOUR_PAGE && window.CONTOUR_PAGE.breakPx && window.CONTOUR_PAGE.breakPx[norm];
+  if (px) return px;
+  if (norm === 'small') return 18;
+  if (norm === 'medium') return 40;
+  if (norm === 'large') return 72;
+  return 0;
+}
+window.spacingAfterPxFromLevel = spacingAfterPxFromLevel;
+
+function clauseIndentPx(clause) {
+  if (!clause) return 0;
+  if (typeof clause.indentPx === 'number' && !Number.isNaN(clause.indentPx)) {
+    return Math.max(0, Math.round(clause.indentPx));
+  }
+  return Math.max(0, (clause.indent || 0) * contourTabIndentStepPx());
+}
+window.clauseIndentPx = clauseIndentPx;
+
+function setClauseIndentPx(clause, px) {
+  if (!clause) return;
+  const rounded = Math.max(0, Math.round(px));
+  clause.indentPx = rounded;
+  const step = contourTabIndentStepPx();
+  clause.indent = step > 0 ? Math.round(rounded / step) : 0;
+}
+window.setClauseIndentPx = setClauseIndentPx;
+
+function clauseSpacingAfterPx(clause) {
+  if (!clause) return 0;
+  if (typeof clause.spacingAfterPx === 'number' && clause.spacingAfterPx > 0) {
+    return Math.round(clause.spacingAfterPx);
+  }
+  return spacingAfterPxFromLevel(clause && clause.spacingAfter);
+}
+window.clauseSpacingAfterPx = clauseSpacingAfterPx;
+
+function setClauseSpacingAfterPx(clause, px) {
+  if (!clause) return;
+  const rounded = Math.max(0, Math.round(px));
+  if (rounded <= 0) {
+    delete clause.spacingAfterPx;
+    delete clause.spacingAfter;
+    return;
+  }
+  clause.spacingAfterPx = rounded;
+  const presets = [
+    ['small', 18],
+    ['medium', 40],
+    ['large', 72],
+  ];
+  const match = presets.find(([, v]) => Math.abs(v - rounded) < 1);
+  if (match) clause.spacingAfter = match[0];
+  else delete clause.spacingAfter;
+}
+window.setClauseSpacingAfterPx = setClauseSpacingAfterPx;
+
+function clauseLayoutDir(clause, layout) {
+  if (clause && clause.alignment === 'rtl') return 'rtl';
+  if (clause && clause.alignment === 'ltr') return 'ltr';
+  return layout && layout.dir ? layout.dir : 'rtl';
+}
+window.clauseLayoutDir = clauseLayoutDir;
+
+function clauseLayoutStyle(clause, layout) {
+  const dir = clauseLayoutDir(clause, layout);
+  const align = dir === 'rtl' ? 'right' : 'left';
+  const side = layout.indentSide === 'left' ? 'margin-left' : 'margin-right';
+  let style = `${side}:${clauseIndentPx(clause)}px`;
+  const spPx = clauseSpacingAfterPx(clause);
+  const useClass = typeof clause.spacingAfterPx !== 'number'
+    || spPx === 18 || spPx === 40 || spPx === 72;
+  if (spPx > 0 && !useClass) style += `;margin-bottom:${spPx}px`;
+  style += `;direction:${dir};text-align:${align};font-family:${layout.fontFamily}`;
+  return style;
+}
+window.clauseLayoutStyle = clauseLayoutStyle;
+
 function spacingAfterDocxTwips(clause) {
-  const level = normalizeSpacingAfter(clause && clause.spacingAfter);
-  if (level === 'default') return 0;
-  if (typeof contourBreakDocxTwips === 'function') return contourBreakDocxTwips(level);
-  const px = CONTOUR_PAGE && CONTOUR_PAGE.breakPx && CONTOUR_PAGE.breakPx[level];
-  return px ? Math.round(px * 15) : 0;
+  const px = clauseSpacingAfterPx(clause);
+  if (px <= 0) return 0;
+  if (typeof contourPxToDocxTwips === 'function') return contourPxToDocxTwips(px);
+  return Math.round(px * 15);
 }
 window.spacingAfterDocxTwips = spacingAfterDocxTwips;
+
+function contourIndentDocxTwipsForClause(clause) {
+  const px = clauseIndentPx(clause);
+  if (typeof contourPxToDocxTwips === 'function') return contourPxToDocxTwips(px);
+  return Math.round(px * 15);
+}
+window.contourIndentDocxTwipsForClause = contourIndentDocxTwipsForClause;
 
 function spacingAfterFromBlankLineCount(blankCount) {
   if (blankCount >= 2) return 'large';
@@ -144,7 +246,10 @@ function parseLayoutPasteLines(text) {
       return;
     }
     if (contentLines.length) {
-      contentLines[contentLines.length - 1].spacingAfter = spacingAfterFromBlankLineCount(blankRun);
+      const level = spacingAfterFromBlankLineCount(blankRun);
+      contentLines[contentLines.length - 1].spacingAfter = level;
+      const spPx = spacingAfterPxFromLevel(level);
+      if (spPx > 0) contentLines[contentLines.length - 1].spacingAfterPx = spPx;
     }
     blankRun = 0;
     contentLines.push({ text: String(line).trim(), spacingAfter: 'default', indent: 0 });
@@ -168,18 +273,43 @@ function wordLayoutLinesToPlainText(lines) {
 }
 window.wordLayoutLinesToPlainText = wordLayoutLinesToPlainText;
 
-function applyWordIndentLevels(contentLines, importIndent) {
+function extractParagraphSpacingPx(style) {
+  const mb = readStyleLength(style, 'margin-bottom');
+  const mt = readStyleLength(style, 'margin-top');
+  const msoMb = readStyleLength(style, 'mso-margin-bottom-alt');
+  const lh = readStyleLength(style, 'line-height');
+  return Math.max(mb + mt, msoMb, lh > 0 ? lh : 0);
+}
+
+function blankRunSpacingPx(blankRun, blankItems) {
+  const preset = spacingAfterPxFromLevel(spacingAfterFromBlankLineCount(blankRun));
+  if (blankRun <= 0) return 0;
+  let measured = 0;
+  (blankItems || []).forEach(item => { measured += item.spacingPx || 0; });
+  if (measured > preset) return Math.round(measured);
+  return preset;
+}
+
+function preserveWordIndentPx(contentLines, importIndent) {
   if (!contentLines || !contentLines.length) return;
   if (importIndent === false) {
-    contentLines.forEach(l => { l.indent = 0; });
+    contentLines.forEach(l => {
+      l.indentPx = 0;
+      l.indent = 0;
+    });
     return;
   }
   const pxVals = contentLines.map(l => l.indentPx || 0);
   const minPx = Math.min(...pxVals);
   contentLines.forEach(l => {
     const rel = Math.max(0, (l.indentPx || 0) - minPx);
-    l.indent = rel < WORD_INDENT_MIN_PX ? 0 : Math.round(rel / WORD_IMPORT_INDENT_STEP_PX);
+    l.indentPx = rel < WORD_INDENT_MIN_PX ? 0 : Math.round(rel);
+    l.indent = 0;
   });
+}
+
+function applyWordIndentLevels(contentLines, importIndent) {
+  preserveWordIndentPx(contentLines, importIndent);
 }
 
 function assessWordIndentImport(contentLines) {
@@ -188,21 +318,8 @@ function assessWordIndentImport(contentLines) {
   }
   const pxVals = contentLines.map(l => l.indentPx || 0);
   const minPx = Math.min(...pxVals);
-  const rel = pxVals.map(v => Math.max(0, v - minPx));
-  const hasIndent = rel.some(v => v >= WORD_INDENT_MIN_PX);
-  if (!hasIndent) return { hasIndent: false, ambiguous: false };
-
-  let offGrid = 0;
-  let indentedCount = 0;
-  rel.forEach(v => {
-    if (v < WORD_INDENT_MIN_PX) return;
-    indentedCount++;
-    const rem = v % WORD_IMPORT_INDENT_STEP_PX;
-    const dist = Math.min(rem, WORD_IMPORT_INDENT_STEP_PX - rem);
-    if (dist > WORD_INDENT_GRID_TOLERANCE_PX) offGrid++;
-  });
-  const ambiguous = offGrid > 0 && offGrid >= Math.max(1, Math.ceil(indentedCount / 2));
-  return { hasIndent: true, ambiguous };
+  const hasIndent = pxVals.some(v => Math.max(0, v - minPx) >= WORD_INDENT_MIN_PX);
+  return { hasIndent, ambiguous: false };
 }
 
 function getWordIndentImportPreference() {
@@ -241,8 +358,7 @@ function resolveWordIndentImport(meta, cb) {
   }
   const yes = confirm(
     'Import contour indentation from Word?\n\n'
-    + 'Some paragraph indents could not be mapped cleanly to Aleph contour levels.\n'
-    + 'Choose OK to import the nearest contour levels, or Cancel to ignore indentation.'
+    + 'Choose OK to preserve Word paragraph indents as pixel layout, or Cancel to ignore indentation.'
   );
   setWordIndentImportPreference(yes ? 'yes' : 'ignore');
   cb(yes);
@@ -264,12 +380,22 @@ function clearLastWordLayoutPasteMeta() {
 }
 window.clearLastWordLayoutPasteMeta = clearLastWordLayoutPasteMeta;
 
+function mergeLayoutFieldsIntoLine(tl, src) {
+  const out = Object.assign({}, tl);
+  if (src.indentPx != null) out.indentPx = src.indentPx;
+  if (src.spacingAfterPx != null) out.spacingAfterPx = src.spacingAfterPx;
+  if (src.alignment) out.alignment = src.alignment;
+  if (src.spacingAfter) out.spacingAfter = src.spacingAfter;
+  if (src.indent != null) out.indent = src.indent;
+  return out;
+}
+
 function mergeWordIndentIntoLines(textLines, meta, importIndent) {
   if (!importIndent || !meta || !Array.isArray(meta.lines) || !meta.lines.length) {
     return textLines;
   }
   if (textLines.length === meta.lines.length) {
-    return textLines.map((tl, i) => Object.assign({}, tl, { indent: meta.lines[i].indent || 0 }));
+    return textLines.map((tl, i) => mergeLayoutFieldsIntoLine(tl, meta.lines[i]));
   }
   const byText = new Map();
   meta.lines.forEach(l => {
@@ -278,7 +404,7 @@ function mergeWordIndentIntoLines(textLines, meta, importIndent) {
   });
   return textLines.map(tl => {
     const match = byText.get(normalizePasteLineKey(tl.text));
-    return match ? Object.assign({}, tl, { indent: match.indent || 0 }) : tl;
+    return match ? mergeLayoutFieldsIntoLine(tl, match) : tl;
   });
 }
 window.mergeWordIndentIntoLines = mergeWordIndentIntoLines;
@@ -316,34 +442,50 @@ function parseWordHtmlLayoutLines(html, opts) {
     blocks.forEach(el => {
       const txt = (el.textContent || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
       const style = el.getAttribute('style') || '';
+      const rtl = paragraphIsRtl(el, docRtl);
       if (!txt) {
-        rawItems.push({ blank: true });
+        rawItems.push({ blank: true, spacingPx: extractParagraphSpacingPx(style) || 22 });
         return;
       }
       const leadingBlanks = readMarginTopBlankCount(style);
-      for (let i = 0; i < leadingBlanks; i++) rawItems.push({ blank: true });
+      for (let i = 0; i < leadingBlanks; i++) {
+        rawItems.push({ blank: true, spacingPx: extractParagraphSpacingPx(style) || 22 });
+      }
       rawItems.push({
         text: txt,
-        indentPx: extractParagraphIndentPx(el, paragraphIsRtl(el, docRtl)),
+        indentPx: extractParagraphIndentPx(el, rtl),
+        alignment: rtl ? 'rtl' : 'ltr',
+        trailingSpacingPx: extractParagraphSpacingPx(style),
       });
     });
 
     const contentLines = [];
     let blankRun = 0;
+    let blankItems = [];
     rawItems.forEach(item => {
       if (item.blank) {
         blankRun++;
+        blankItems.push(item);
         return;
       }
       if (contentLines.length) {
-        contentLines[contentLines.length - 1].spacingAfter = spacingAfterFromBlankLineCount(blankRun);
+        const prev = contentLines[contentLines.length - 1];
+        const spPx = blankRunSpacingPx(blankRun, blankItems);
+        if (spPx > 0) {
+          prev.spacingAfterPx = spPx;
+          const presets = [[18, 'small'], [40, 'medium'], [72, 'large']];
+          const match = presets.find(([v]) => Math.abs(v - spPx) < 2);
+          prev.spacingAfter = match ? match[1] : 'default';
+        }
       }
       blankRun = 0;
+      blankItems = [];
       contentLines.push({
         text: item.text,
         spacingAfter: 'default',
         indentPx: item.indentPx || 0,
         indent: 0,
+        alignment: item.alignment || (docRtl ? 'rtl' : 'ltr'),
       });
     });
 
@@ -381,9 +523,19 @@ function buildVersesFromLayoutPaste(text, ref, language, refs, layoutLines) {
   function clauseFromLine(line) {
     const words = tokenizeClauseWords(line.text.split(/\s+/).filter(Boolean), language);
     if (!words.length) return null;
-    const clause = { indent: Math.max(0, Math.round(line.indent || 0)), words, ann: {} };
-    const level = normalizeSpacingAfter(line.spacingAfter);
-    if (level !== 'default') clause.spacingAfter = level;
+    const clause = { words, ann: {} };
+    if (typeof line.indentPx === 'number' && !Number.isNaN(line.indentPx)) {
+      setClauseIndentPx(clause, line.indentPx);
+    } else {
+      clause.indent = Math.max(0, Math.round(line.indent || 0));
+    }
+    if (typeof line.spacingAfterPx === 'number' && line.spacingAfterPx > 0) {
+      setClauseSpacingAfterPx(clause, line.spacingAfterPx);
+    } else {
+      const level = normalizeSpacingAfter(line.spacingAfter);
+      if (level !== 'default') clause.spacingAfter = level;
+    }
+    if (line.alignment === 'rtl' || line.alignment === 'ltr') clause.alignment = line.alignment;
     return clause;
   }
 
@@ -549,10 +701,29 @@ window.parallelVerseRefBarHtml = parallelVerseRefBarHtml;
 
 function copyClauseLayoutFields(fromClause, toClause) {
   if (!fromClause || !toClause) return;
-  toClause.indent = fromClause.indent || 0;
-  const level = normalizeSpacingAfter(fromClause.spacingAfter);
-  if (level === 'default') delete toClause.spacingAfter;
-  else toClause.spacingAfter = level;
+  if (typeof fromClause.indentPx === 'number') {
+    setClauseIndentPx(toClause, fromClause.indentPx);
+  } else {
+    toClause.indent = fromClause.indent || 0;
+    delete toClause.indentPx;
+  }
+  if (typeof fromClause.spacingAfterPx === 'number') {
+    setClauseSpacingAfterPx(toClause, fromClause.spacingAfterPx);
+  } else {
+    const level = normalizeSpacingAfter(fromClause.spacingAfter);
+    if (level === 'default') {
+      delete toClause.spacingAfter;
+      delete toClause.spacingAfterPx;
+    } else {
+      toClause.spacingAfter = level;
+      delete toClause.spacingAfterPx;
+    }
+  }
+  if (fromClause.alignment === 'rtl' || fromClause.alignment === 'ltr') {
+    toClause.alignment = fromClause.alignment;
+  } else {
+    delete toClause.alignment;
+  }
 }
 window.copyClauseLayoutFields = copyClauseLayoutFields;
 
@@ -573,8 +744,13 @@ function setSelectedClauseSpacingAfter(level) {
   markUndo();
   const clause = state.verses[loc.v].clauses[loc.c];
   const norm = normalizeSpacingAfter(level);
-  if (norm === 'default') delete clause.spacingAfter;
-  else clause.spacingAfter = norm;
+  if (norm === 'default') {
+    delete clause.spacingAfter;
+    delete clause.spacingAfterPx;
+  } else {
+    clause.spacingAfter = norm;
+    setClauseSpacingAfterPx(clause, spacingAfterPxFromLevel(norm));
+  }
   syncStateBundle();
   if (autosaveReady) autoSaveProject();
   render();
