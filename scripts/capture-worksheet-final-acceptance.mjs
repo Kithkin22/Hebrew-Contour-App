@@ -43,7 +43,7 @@ async function unlock(page) {
     await page.click('#appPasswordSubmit');
   }
   await page.waitForFunction(
-    () => typeof restoreProjectPayload === 'function' && typeof buildContourExportDocument === 'function',
+    () => typeof restoreProjectPayload === 'function' && typeof captureLiveContourSheetSnapshot === 'function',
     { timeout: 30000 }
   );
 }
@@ -129,23 +129,19 @@ async function loadProjectAndEnrich(page, jsonPath) {
 }
 
 async function capturePreview(page, browser) {
-  const previewHtml = await page.evaluate((ws) => {
+  const previewHtml = await page.evaluate(async (ws) => {
     const settings = normalizeWorksheetExportOptions(ws);
     if (typeof refreshLiveEditorOverlaysForExport === 'function') refreshLiveEditorOverlaysForExport();
-    return buildContourExportDocument({
-      worksheetSettings: settings,
-      includePrintButton: false,
-      docTitle: '\u200B',
-    });
+    const capture = await captureLiveContourSheetSnapshot(settings);
+    if (!capture) throw new Error('snapshot capture failed');
+    return buildSnapshotWorksheetDocument(capture, settings);
   }, WS);
 
   const ctx = await browser.newContext({ viewport: { width: 900, height: 1200 } });
   const p = await ctx.newPage();
   await p.setContent(previewHtml, { waitUntil: 'networkidle' });
-  await p.waitForFunction(() => document.body.classList.contains('contour-worksheet-applied'), { timeout: 8000 }).catch(() => {});
   await p.waitForTimeout(300);
-  const root = p.locator('.contour-export-worksheet-print-root');
-  const target = (await root.count()) ? root : p.locator('.contour-document-sheet--export');
+  const target = p.locator('.contour-snapshot-img');
   await target.screenshot({ path: path.join(OUT, '02-worksheet-preview.png') });
   await ctx.close();
   return previewHtml;
@@ -169,7 +165,7 @@ async function capturePdf(previewHtml, browser) {
     const fp = await fallback.newPage();
     await fp.setContent(previewHtml, { waitUntil: 'networkidle' });
     await fp.waitForTimeout(300);
-    const root = fp.locator('.contour-export-worksheet-print-root');
+    const root = fp.locator('.contour-snapshot-img-wrap');
     await root.screenshot({ path: pngPath });
     await fallback.close();
   }
@@ -185,7 +181,7 @@ h1{font-size:18px;margin:0 0 4px} p{font-size:13px;color:#94a3b8;margin:0 0 16px
 .panel h2{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin:0 0 6px;text-align:center}
 .panel img{width:100%;border:1px solid #334155;border-radius:6px;background:#fff;display:block}
 </style></head><body>
-<h1>Job 19 — Editor | Preview | PDF (v80 acceptance @ 100%)</h1>
+<h1>Job 19 — Editor | Preview | PDF (snapshot @ 100%)</h1>
 <p>Project: Job-Exegesis-Draft.json · Outer + nested units · 1 arc · colored words · Passage title only</p>
 <div class="row">
 <div class="panel"><h2>Live Aleph Editor</h2><img src="01-editor-aleph.png"></div>

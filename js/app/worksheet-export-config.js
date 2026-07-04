@@ -1,4 +1,4 @@
-/* Worksheet PDF export — paper, margin, scale, and include presets */
+/* Worksheet PDF export — paper, margin, scale presets for snapshot placement on Letter. */
 
 const WORKSHEET_PAPER = {
   letter: { widthIn: 8.5, heightIn: 11, cssSize: 'letter' },

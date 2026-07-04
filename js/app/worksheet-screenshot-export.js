@@ -1,20 +1,9 @@
-/* Screenshot-based Worksheet PDF — captures live contour pane as image (WYSIWYG). */
-
-function inlineNodeStyles(src, dst) {
-  if (!(src instanceof Element) || !(dst instanceof Element)) return;
-  const cs = getComputedStyle(src);
-  let style = '';
-  for (let i = 0; i < cs.length; i++) {
-    const prop = cs[i];
-    style += `${prop}:${cs.getPropertyValue(prop)};`;
-  }
-  dst.setAttribute('style', style);
-  const srcKids = src.children;
-  const dstKids = dst.children;
-  for (let i = 0; i < srcKids.length; i++) {
-    if (dstKids[i]) inlineNodeStyles(srcKids[i], dstKids[i]);
-  }
-}
+/* Aleph Worksheet PDF — canonical frozen snapshot of the Contour page.
+ *
+ * The Contour page is the source of truth. Export captures the live rendered
+ * worksheet exactly as displayed (Hebrew, RTL, colors, unit frames, arcs,
+ * spacing, indentation) and places that image on Letter. No HTML rebuild.
+ */
 
 function loadHtml2CanvasFromCdn() {
   if (window.html2canvas) return Promise.resolve(window.html2canvas);
@@ -23,68 +12,88 @@ function loadHtml2CanvasFromCdn() {
     s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
     s.crossOrigin = 'anonymous';
     s.onload = () => (window.html2canvas ? resolve(window.html2canvas) : reject(new Error('html2canvas missing')));
-    s.onerror = () => reject(new Error('Could not load screenshot library.'));
+    s.onerror = () => reject(new Error('Could not load snapshot library.'));
     document.head.appendChild(s);
   });
 }
 
-async function captureElementToPng(el) {
-  const w = el.offsetWidth || 816;
-  const h = Math.max(el.scrollHeight, el.offsetHeight, 1);
-  const clone = el.cloneNode(true);
-  inlineNodeStyles(el, clone);
-  clone.style.width = w + 'px';
-  clone.style.minHeight = '0';
-  clone.style.height = 'auto';
-  clone.style.margin = '0';
-  clone.style.boxShadow = 'none';
+function prepareLiveSheetForSnapshot(sheet, wsOpts) {
+  wsOpts = wsOpts || {};
+  const restores = [];
+  const push = (fn) => restores.push(fn);
 
-  const host = document.createElement('div');
-  host.style.cssText = `position:fixed;left:-24000px;top:0;width:${w}px;background:#fff;overflow:visible`;
-  host.appendChild(clone);
-  document.body.appendChild(host);
-
-  try {
-    try {
-      const html2canvas = await loadHtml2CanvasFromCdn();
-      const scale = Math.min(2, window.devicePixelRatio || 1.5);
-      const canvas = await html2canvas(clone, {
-        width: w,
-        height: h,
-        scale,
-        backgroundColor: '#ffffff',
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-      });
-      return { dataUrl: canvas.toDataURL('image/png'), sheetW: w, sheetH: h };
-    } catch (cdnErr) {
-      const wrapper = document.createElement('div');
-      wrapper.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-      wrapper.style.cssText = `width:${w}px;height:${h}px;background:#fff`;
-      wrapper.appendChild(clone.cloneNode(true));
-      const xhtml = new XMLSerializer().serializeToString(wrapper);
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%">${xhtml}</foreignObject></svg>`;
-      const img = new Image();
-      const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
-      const scale = 2;
-      const canvas = document.createElement('canvas');
-      canvas.width = w * scale;
-      canvas.height = h * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0, w, h);
-      return { dataUrl: canvas.toDataURL('image/png'), sheetW: w, sheetH: h };
-    }
-  } finally {
-    host.remove();
+  const titleEl = sheet.querySelector('#contourPassageTitle, .contour-passage-title');
+  if (titleEl && !wsOpts.includePassageTitle) {
+    const prev = titleEl.style.display;
+    titleEl.style.display = 'none';
+    push(() => { titleEl.style.display = prev; });
   }
+
+  const metaNodes = [];
+  const insertMeta = (html) => {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = html;
+    const node = wrap.firstElementChild;
+    if (!node) return;
+    const anchor = sheet.querySelector('.contour-passage-title') || sheet.querySelector('#editor');
+    if (anchor) anchor.insertAdjacentElement('beforebegin', node);
+    else sheet.insertAdjacentElement('afterbegin', node);
+    metaNodes.push(node);
+  };
+
+  if (wsOpts.includeDate) {
+    const d = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    insertMeta(`<div class="contour-worksheet-meta">${typeof esc === 'function' ? esc(d) : d}</div>`);
+  }
+  if (wsOpts.includeExportTimestamp) {
+    const ts = new Date().toLocaleString(undefined, {
+      year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
+    insertMeta(`<div class="contour-worksheet-meta contour-worksheet-meta--timestamp">${typeof esc === 'function' ? esc(ts) : ts}</div>`);
+  }
+  if (wsOpts.includeProjectName) {
+    let name = 'Untitled Project';
+    if (typeof getCurrentProjectRecord === 'function') {
+      const rec = getCurrentProjectRecord();
+      if (rec && rec.name) name = rec.name;
+    } else if (typeof defaultProjectName === 'function') {
+      name = defaultProjectName();
+    }
+    insertMeta(`<div class="contour-worksheet-meta">${typeof esc === 'function' ? esc(name) : name}</div>`);
+  }
+  if (metaNodes.length) {
+    push(() => metaNodes.forEach((n) => n.remove()));
+  }
+
+  if (!wsOpts.includeArcs) {
+    sheet.querySelectorAll('#arcSvg, .contour-export-arc-svg').forEach((el) => {
+      const prev = el.style.display;
+      el.style.display = 'none';
+      push(() => { el.style.display = prev; });
+    });
+  }
+  if (!wsOpts.includeUnitFrames) {
+    sheet.querySelectorAll('svg.inclusio-frame-svg, .contour-export-inclusio-svg').forEach((el) => {
+      const prev = el.style.display;
+      el.style.display = 'none';
+      push(() => { el.style.display = prev; });
+    });
+  }
+
+  return () => restores.forEach((fn) => { try { fn(); } catch (e) { /* ignore */ } });
 }
 
-async function captureWorksheetContourScreenshot(wsOpts) {
+function stripSnapshotCloneUi(root, wsOpts) {
+  if (typeof stripLiveEditorInteractionClasses === 'function') {
+    stripLiveEditorInteractionClasses(root);
+  }
+  if (wsOpts && wsOpts.includeTextColors === false && typeof stripLiveEditorTextColors === 'function') {
+    stripLiveEditorTextColors(root);
+  }
+  root.querySelectorAll('.comment-marker').forEach((el) => el.remove());
+}
+
+async function captureLiveContourSheetSnapshot(wsOpts) {
   wsOpts = typeof normalizeWorksheetExportOptions === 'function'
     ? normalizeWorksheetExportOptions(wsOpts || {})
     : (wsOpts || {});
@@ -93,32 +102,53 @@ async function captureWorksheetContourScreenshot(wsOpts) {
     refreshLiveEditorOverlaysForExport();
   }
 
-  const sheetHtml = typeof cloneLiveEditorForExport === 'function'
-    ? cloneLiveEditorForExport(wsOpts)
-    : null;
-  if (!sheetHtml) return null;
+  const liveSheet = document.querySelector('#contourPageZoomStage .contour-document-sheet');
+  if (!liveSheet) return null;
 
-  const host = document.createElement('div');
-  host.setAttribute('aria-hidden', 'true');
-  host.style.cssText = 'position:fixed;left:-24000px;top:0;z-index:-1;pointer-events:none;background:#fff;overflow:visible';
-  host.innerHTML = sheetHtml;
-  document.body.appendChild(host);
-
-  const sheet = host.querySelector('.contour-document-sheet');
-  if (!sheet) {
-    host.remove();
-    return null;
-  }
+  const restore = prepareLiveSheetForSnapshot(liveSheet, wsOpts);
 
   try {
     await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-    return await captureElementToPng(sheet);
+
+    const w = liveSheet.offsetWidth || (window.CONTOUR_PAGE && window.CONTOUR_PAGE.letterWidthPx) || 816;
+    const h = Math.max(liveSheet.scrollHeight, liveSheet.offsetHeight, 1);
+    const pixelScale = Math.min(3, Math.max(2, window.devicePixelRatio || 2));
+
+    const html2canvas = await loadHtml2CanvasFromCdn();
+    const canvas = await html2canvas(liveSheet, {
+      scale: pixelScale,
+      backgroundColor: '#ffffff',
+      logging: false,
+      useCORS: true,
+      allowTaint: true,
+      width: w,
+      height: h,
+      scrollX: 0,
+      scrollY: -window.scrollY,
+      onclone: (_doc, clone) => {
+        stripSnapshotCloneUi(clone, wsOpts);
+        clone.style.boxShadow = 'none';
+        clone.style.margin = '0';
+      },
+    });
+
+    return {
+      dataUrl: canvas.toDataURL('image/png'),
+      sheetW: w,
+      sheetH: h,
+      pixelScale,
+    };
   } finally {
-    host.remove();
+    restore();
   }
 }
 
-function buildScreenshotWorksheetDocument(capture, wsOpts) {
+/** @deprecated alias */
+async function captureWorksheetContourScreenshot(wsOpts) {
+  return captureLiveContourSheetSnapshot(wsOpts);
+}
+
+function buildSnapshotWorksheetDocument(capture, wsOpts) {
   if (!capture || !capture.dataUrl) return null;
   wsOpts = typeof normalizeWorksheetExportOptions === 'function'
     ? normalizeWorksheetExportOptions(wsOpts || {})
@@ -138,35 +168,40 @@ function buildScreenshotWorksheetDocument(capture, wsOpts) {
   const css = `@page{size:${pageSize};margin:0}`
     + '*{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
     + 'html,body{margin:0;padding:0;background:#fff}'
-    + 'body.contour-screenshot-worksheet{font-family:Arial,Helvetica,sans-serif}'
-    + '.contour-screenshot-print-hint{font-size:13px;color:#64748b;margin:0 0 12px 0;max-width:640px;line-height:1.45}'
-    + '.contour-screenshot-print-hint strong{color:#b45309}'
-    + `.contour-screenshot-page{width:${layout.pageW}px;min-height:${layout.pageH}px;padding:${layout.marginPx}px;background:#fff;page-break-after:avoid;page-break-inside:avoid}`
-    + `.contour-screenshot-img-wrap{width:${layout.areaW}px;max-height:${layout.areaH}px;overflow:hidden}`
-    + `.contour-screenshot-img{display:block;width:${imgW}px;height:${imgH}px}`
+    + 'body.contour-snapshot-worksheet{font-family:Arial,Helvetica,sans-serif}'
+    + '.contour-snapshot-print-hint{font-size:13px;color:#64748b;margin:0 0 12px 0;max-width:640px;line-height:1.45}'
+    + '.contour-snapshot-print-hint strong{color:#b45309}'
+    + `.contour-snapshot-page{width:${layout.pageW}px;min-height:${layout.pageH}px;padding:${layout.marginPx}px;background:#fff;page-break-after:avoid;page-break-inside:avoid}`
+    + `.contour-snapshot-img-wrap{width:${layout.areaW}px;max-height:${layout.areaH}px;overflow:hidden}`
+    + `.contour-snapshot-img{display:block;width:${imgW}px;height:${imgH}px;image-rendering:auto}`
     + '@media print{'
     + 'html,body{margin:0!important;padding:0!important;width:8.5in;height:11in}'
-    + `.contour-screenshot-page{width:8.5in!important;height:11in!important;min-height:11in;padding:${marginIn}in!important;overflow:hidden;transform:none!important}`
-    + `.contour-screenshot-img-wrap{width:calc(8.5in - ${marginIn * 2}in)!important;max-height:calc(11in - ${marginIn * 2}in)!important}`
-    + `.contour-screenshot-img{width:100%!important;height:auto!important;max-height:calc(11in - ${marginIn * 2}in)!important;object-fit:contain;object-position:top left;transform:none!important}`
-    + 'button,.contour-screenshot-print-hint{display:none!important}'
+    + `.contour-snapshot-page{width:8.5in!important;height:11in!important;min-height:11in;padding:${marginIn}in!important;overflow:hidden;transform:none!important}`
+    + `.contour-snapshot-img-wrap{width:calc(8.5in - ${marginIn * 2}in)!important;max-height:calc(11in - ${marginIn * 2}in)!important}`
+    + `.contour-snapshot-img{width:100%!important;height:auto!important;max-height:calc(11in - ${marginIn * 2}in)!important;object-fit:contain;object-position:top left;transform:none!important}`
+    + 'button,.contour-snapshot-print-hint{display:none!important}'
     + '}';
 
-  const hint = '<p class="contour-screenshot-print-hint">'
-    + '<strong>Safari:</strong> set <strong>Scale to 100%</strong> and turn off <strong>Print headers and footers</strong>. '
-    + 'This worksheet is a screenshot of your contour pane — it matches the editor exactly.'
+  const hint = '<p class="contour-snapshot-print-hint">'
+    + '<strong>Before saving PDF:</strong> set print scale to <strong>100%</strong> and turn off '
+    + '<strong>headers and footers</strong>. This page is a frozen snapshot of your Contour worksheet.'
     + '</p>';
 
   return '<!doctype html><html><head><meta charset="utf-8"><title>\u200B</title><style>' + css + '</style></head>'
-    + '<body class="contour-screenshot-worksheet">'
+    + '<body class="contour-snapshot-worksheet">'
     + hint
     + '<button type="button" onclick="window.print()" style="margin-bottom:14px;padding:8px 14px">Print / Save as PDF</button>'
-    + `<div class="contour-screenshot-page"><div class="contour-screenshot-img-wrap">`
-    + `<img class="contour-screenshot-img" src="${capture.dataUrl}" width="${imgW}" height="${imgH}" alt="Contour worksheet">`
+    + `<div class="contour-snapshot-page"><div class="contour-snapshot-img-wrap">`
+    + `<img class="contour-snapshot-img" src="${capture.dataUrl}" width="${imgW}" height="${imgH}" alt="Contour worksheet snapshot">`
     + '</div></div></body></html>';
 }
 
-async function exportScreenshotWorksheetPdf(settings, opts) {
+/** @deprecated alias */
+function buildScreenshotWorksheetDocument(capture, wsOpts) {
+  return buildSnapshotWorksheetDocument(capture, wsOpts);
+}
+
+async function exportWorksheetPdfSnapshot(settings, opts) {
   opts = opts || {};
   settings = typeof normalizeWorksheetExportOptions === 'function'
     ? normalizeWorksheetExportOptions(settings)
@@ -178,18 +213,18 @@ async function exportScreenshotWorksheetPdf(settings, opts) {
 
   let capture = null;
   try {
-    capture = await captureWorksheetContourScreenshot(settings);
+    capture = await captureLiveContourSheetSnapshot(settings);
   } catch (e) {
     console.error(e);
-    alert('Screenshot capture failed. Check your network connection and try again.');
+    alert('Could not capture the Contour page. Check your connection and try again.');
     return;
   }
   if (!capture) {
-    alert('Could not capture the contour page.');
+    alert('Could not capture the Contour page.');
     return;
   }
 
-  const docHtml = buildScreenshotWorksheetDocument(capture, settings);
+  const docHtml = buildSnapshotWorksheetDocument(capture, settings);
   if (!docHtml) {
     alert('Could not build worksheet PDF.');
     return;
@@ -203,6 +238,9 @@ async function exportScreenshotWorksheetPdf(settings, opts) {
   }
 }
 
+window.captureLiveContourSheetSnapshot = captureLiveContourSheetSnapshot;
 window.captureWorksheetContourScreenshot = captureWorksheetContourScreenshot;
+window.buildSnapshotWorksheetDocument = buildSnapshotWorksheetDocument;
 window.buildScreenshotWorksheetDocument = buildScreenshotWorksheetDocument;
-window.exportScreenshotWorksheetPdf = exportScreenshotWorksheetPdf;
+window.exportWorksheetPdfSnapshot = exportWorksheetPdfSnapshot;
+window.exportScreenshotWorksheetPdf = exportWorksheetPdfSnapshot;

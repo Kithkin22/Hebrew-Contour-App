@@ -47,6 +47,10 @@
   cursor: pointer;
 }
 
+.worksheet-wizard-tagline {
+  margin: -4px 0 10px 0;
+}
+
 .worksheet-wizard-checks {
   display: flex;
   flex-direction: column;

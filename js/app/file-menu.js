@@ -257,33 +257,11 @@ function exportContourPdf(opts){
 }
 
 function exportWorksheetPdf(settings, opts) {
-  opts = opts || {};
-  settings = typeof normalizeWorksheetExportOptions === 'function'
-    ? normalizeWorksheetExportOptions(settings)
-    : (settings || {});
-  if (!state.verses.length) { alert('Create or generate text first.'); return; }
-  if (typeof exportScreenshotWorksheetPdf === 'function') {
-    exportScreenshotWorksheetPdf(settings, opts);
+  if (typeof exportWorksheetPdfSnapshot === 'function') {
+    exportWorksheetPdfSnapshot(settings, opts);
     return;
   }
-  if (typeof refreshLiveEditorOverlaysForExport === 'function') refreshLiveEditorOverlaysForExport();
-  const fname = askExportFilename(suggestedExportBase('contour-editor'), 'pdf');
-  if (!fname) return;
-  const printMeta = preparePrintFilename(fname);
-  let docHtml = '';
-  try {
-    docHtml = typeof buildContourExportDocument === 'function' ? buildContourExportDocument({
-      includePrintButton: true,
-      docTitle: '\u200B',
-      paneState: state,
-      worksheetSettings: settings,
-    }) : null;
-  } catch (e) {
-    alert('Could not prepare contour PDF export. Try reloading the project.');
-    return;
-  }
-  if (!docHtml) { alert('Create or generate text first.'); return; }
-  openPdfPrintWindow(docHtml, { title: '\u200B', oldTitle: printMeta.oldTitle, filenameHint: printMeta.title });
+  alert('Worksheet export is unavailable. Please reload the app.');
 }
 window.exportWorksheetPdf = exportWorksheetPdf;
 

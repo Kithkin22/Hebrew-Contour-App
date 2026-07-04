@@ -110,33 +110,19 @@
       previewWrap.style.setProperty('--worksheet-preview-scale', String(scale));
     }
 
-    const showScreenshotPreview = () => {
-      if (typeof buildScreenshotWorksheetDocument !== 'function' || typeof captureWorksheetContourScreenshot !== 'function') {
+    const showSnapshotPreview = () => {
+      if (typeof buildSnapshotWorksheetDocument !== 'function' || typeof captureLiveContourSheetSnapshot !== 'function') {
         return false;
       }
-      captureWorksheetContourScreenshot(settings).then((capture) => {
+      captureLiveContourSheetSnapshot(settings).then((capture) => {
         if (!capture) return;
-        const html = buildScreenshotWorksheetDocument(capture, settings);
+        const html = buildSnapshotWorksheetDocument(capture, settings);
         if (html) frame.srcdoc = html;
       }).catch(() => {});
       return true;
     };
 
-    if (showScreenshotPreview()) return;
-
-    if (typeof buildContourExportDocument !== 'function') return;
-    let html = '';
-    try {
-      html = buildContourExportDocument({
-        worksheetSettings: settings,
-        includePrintButton: false,
-        worksheetLayout: layout,
-        docTitle: '\u200B',
-      });
-    } catch (e) {
-      return;
-    }
-    if (html) frame.srcdoc = html;
+    if (showSnapshotPreview()) return;
   }
 
   function showWorksheetPdfWizard(preset) {
