@@ -285,41 +285,43 @@ async function main() {
       const openWord = document.querySelector('.word[data-v="0"][data-c="1"][data-w="0"]');
       const closeWord = document.querySelector('.word[data-v="0"][data-c="3"][data-w="0"]');
       const firstClause = document.querySelector('.clause[data-v="0"][data-c="0"]');
+      const spanClause1 = document.querySelector('.clause[data-v="0"][data-c="1"]');
+      const spanClause3 = document.querySelector('.clause[data-v="0"][data-c="3"]');
       const rails = [...document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail:not(.inclusio-frame-rail-preview)')];
       const vertical = rails.filter((l) => Math.abs(+l.getAttribute('x2') - +l.getAttribute('x1')) < 0.01);
-      if (!ed || !openWord || !closeWord || !vertical.length) {
+      if (!ed || !openWord || !closeWord || !vertical.length || !spanClause1 || !spanClause3) {
         return { ok: false, reason: 'missing elements' };
       }
       const scale = typeof getArcOverlayScale === 'function' ? getArcOverlayScale() : 1;
       const er = ed.getBoundingClientRect();
-      const openTop = (openWord.getBoundingClientRect().top - er.top) / scale;
-      const closeBottom = (closeWord.getBoundingClientRect().bottom - er.top) / scale;
+      const spanTop = (spanClause1.getBoundingClientRect().top - er.top) / scale;
+      const spanBottom = (spanClause3.getBoundingClientRect().bottom - er.top) / scale;
       const clauseTop = firstClause
         ? (firstClause.getBoundingClientRect().top - er.top) / scale
-        : openTop;
+        : spanTop;
       const y1 = Math.min(...vertical.map((l) => +l.getAttribute('y1')));
       const y2 = Math.max(...vertical.map((l) => +l.getAttribute('y2')));
       const anchorPad = (window.INCLUSIO_UNIT_FRAME && window.INCLUSIO_UNIT_FRAME.anchorPad) || 10;
-      const startsNearOpen = y1 <= openTop - anchorPad * 0.5 && y1 >= openTop - anchorPad * 1.75;
-      const endsNearClose = y2 >= closeBottom + anchorPad * 0.5 && y2 <= closeBottom + anchorPad * 1.75;
+      const startsNearSpan = y1 <= spanTop - anchorPad * 0.5 && y1 >= spanTop - anchorPad * 1.75;
+      const endsNearSpan = y2 >= spanBottom + anchorPad * 0.5 && y2 <= spanBottom + anchorPad * 1.75;
       const shorterThanFullPassage = y1 > clauseTop + 2;
       return {
-        ok: startsNearOpen && endsNearClose && shorterThanFullPassage,
+        ok: startsNearSpan && endsNearSpan && shorterThanFullPassage,
         y1,
         y2,
-        openTop,
-        closeBottom,
+        spanTop,
+        spanBottom,
         clauseTop,
         anchorPad,
-        startsNearOpen,
-        endsNearClose,
+        startsNearSpan,
+        endsNearSpan,
         shorterThanFullPassage,
       };
     });
     record(
       'anchor-vertical-align',
       anchorAlign.ok,
-      `y1=${anchorAlign.y1?.toFixed?.(1)}, openTop=${anchorAlign.openTop?.toFixed?.(1)}, y2=${anchorAlign.y2?.toFixed?.(1)}, closeBottom=${anchorAlign.closeBottom?.toFixed?.(1)}`
+      `y1=${anchorAlign.y1?.toFixed?.(1)}, spanTop=${anchorAlign.spanTop?.toFixed?.(1)}, y2=${anchorAlign.y2?.toFixed?.(1)}, spanBottom=${anchorAlign.spanBottom?.toFixed?.(1)}`
     );
 
     const colorManual = await page.evaluate(() => {

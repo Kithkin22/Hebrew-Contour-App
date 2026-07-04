@@ -71,10 +71,43 @@ function inclusioAnchorWordsBounds(anchor, paneState, pane) {
 }
 window.inclusioAnchorWordsBounds = inclusioAnchorWordsBounds;
 
+/** Clauses touched by a loc range — full line boxes for vertical alignment. */
+function inclusioClausesBoundsForRange(rangeStart, rangeEnd, paneState, pane) {
+  if (!rangeStart || !rangeEnd || !paneState?.verses?.length) return null;
+  const ed = typeof inclusioEditorRoot === 'function' ? inclusioEditorRoot(pane) : document.getElementById('editor');
+  if (!ed) return null;
+  const scale = typeof inclusioEditorScale === 'function' ? inclusioEditorScale() : 1;
+  const er = ed.getBoundingClientRect();
+  const verses = paneState.verses;
+  let top = Infinity;
+  let bottom = -Infinity;
+  let found = false;
+  verses.forEach((v, vi) => v.clauses.forEach((c, ci) => {
+    let clauseHit = false;
+    c.words.forEach((w, wi) => {
+      if (typeof isMaqafConnector === 'function' && isMaqafConnector(w)) return;
+      if (locInRangeInVerses({ v: vi, c: ci, w: wi }, rangeStart, rangeEnd, verses)) clauseHit = true;
+    });
+    if (!clauseHit) return;
+    const el = ed.querySelector(`:scope .clause[data-v="${vi}"][data-c="${ci}"]`);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    top = Math.min(top, r.top);
+    bottom = Math.max(bottom, r.bottom);
+    found = true;
+  }));
+  if (!found) return null;
+  return {
+    top: (top - er.top) / scale,
+    bottom: (bottom - er.top) / scale,
+  };
+}
+window.inclusioClausesBoundsForRange = inclusioClausesBoundsForRange;
+
 /**
  * Unit bounds: one expanded rectangle around the literary unit.
- * Vertical from opening/closing anchor words; horizontal from word union.
- * Rails attach to these edges (padding applied once here).
+ * Vertical and horizontal from the full anchor span (all words between opening and closing).
+ * Top/bottom snap to contour line boxes so frames clear vowel points and line rhythm.
  */
 function inclusioUnitBounds(inc, paneState, pane) {
   const item = typeof migrateInclusioItem === 'function' ? migrateInclusioItem(inc) : inc;
@@ -83,14 +116,15 @@ function inclusioUnitBounds(inc, paneState, pane) {
   if (!open || !close || !paneState?.verses?.length) return null;
   const ed = typeof inclusioEditorRoot === 'function' ? inclusioEditorRoot(pane) : document.getElementById('editor');
   if (!ed) return null;
-  const openWords = inclusioAnchorWordsBounds(item.openingAnchor, paneState, pane);
-  const closeWords = inclusioAnchorWordsBounds(item.closingAnchor, paneState, pane);
   const spanWords = inclusioWordsBoundsForRange(open.start, close.end, paneState, pane);
-  if (!openWords || !closeWords || !spanWords) return null;
+  const clauseBounds = inclusioClausesBoundsForRange(open.start, close.end, paneState, pane);
+  if (!spanWords) return null;
   const pad = INCLUSIO_FRAME_PADDING;
+  const textTop = clauseBounds ? Math.min(spanWords.top, clauseBounds.top) : spanWords.top;
+  const textBottom = spanWords.bottom;
   return {
-    top: openWords.top - pad.top,
-    bottom: closeWords.bottom + pad.bottom,
+    top: textTop - pad.top,
+    bottom: textBottom + pad.bottom,
     left: spanWords.left - pad.left,
     right: spanWords.right + pad.right,
     width: Math.max(ed.scrollWidth, ed.offsetWidth, 1),
