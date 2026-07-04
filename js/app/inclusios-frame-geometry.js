@@ -245,7 +245,7 @@ function inclusioUnitBounds(inc, paneState, pane) {
     const nextTop = inclusioNextClauseTop(edgeLines.lastClause.v, edgeLines.lastClause.c, paneState, pane);
     if (nextTop != null) bottom = Math.min(bottom, nextTop - 2);
   }
-  bottom = Math.max(bottom, textBottom);
+  bottom = Math.max(bottom, spanWords.bottom);
   const contentH = Math.max(ed.scrollHeight, ed.offsetHeight, bottom + pad.bottom, 1);
   return {
     top: textTop - pad.top,
@@ -277,6 +277,7 @@ function inclusioBoundsNestWithin(outer, inner) {
 /** Bracket rails per unit; nested frames inset inside parents, siblings stay independent. */
 function computeInclusioBracketRails(entries, maxNest, contentW) {
   const gap = INCLUSIO_UNIT_FRAME.nestRailGap;
+  const minTextGap = Math.min(INCLUSIO_FRAME_PADDING.left, INCLUSIO_FRAME_PADDING.right) * 0.5;
   const placed = [];
   const out = [];
 
@@ -298,6 +299,25 @@ function computeInclusioBracketRails(entries, maxNest, contentW) {
     if (xR - xL < 12) {
       xL = bounds.left;
       xR = bounds.right;
+    }
+
+    const wordL = bounds.left + INCLUSIO_FRAME_PADDING.left;
+    const wordR = bounds.right - INCLUSIO_FRAME_PADDING.right;
+    if (wordL - xL < minTextGap) {
+      xL = wordL - minTextGap;
+      placed.forEach((parent) => {
+        if (!inclusioRailsOverlapVertically(parent, { y1, y2 })) return;
+        if (!inclusioBoundsNestWithin(parent.bounds, bounds)) return;
+        if (parent.xL > xL - gap) parent.xL = xL - gap;
+      });
+    }
+    if (xR - wordR < minTextGap) {
+      xR = wordR + minTextGap;
+      placed.forEach((parent) => {
+        if (!inclusioRailsOverlapVertically(parent, { y1, y2 })) return;
+        if (!inclusioBoundsNestWithin(parent.bounds, bounds)) return;
+        if (parent.xR < xR + gap) parent.xR = xR + gap;
+      });
     }
 
     const rail = { xL, xR, y1, y2, level, bounds };
