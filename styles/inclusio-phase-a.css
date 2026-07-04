@@ -1,4 +1,4 @@
-/* Inclusio Phase A — editor, legend registry, quiet brackets */
+/* Inclusio Phase A — editor, legend registry, margin-only frames */
 
 #inclusioPanel {
   margin: 0;
@@ -44,6 +44,27 @@
   gap: 8px;
   align-items: center;
   margin-bottom: 4px;
+}
+
+.inclusio-color-row {
+  align-items: center;
+}
+
+.inclusio-color-row .inclusio-color-preset {
+  min-width: 3.5rem;
+}
+
+.inclusio-custom-color {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 6px;
+}
+
+.inclusio-custom-color input[type="color"] {
+  width: 2rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid var(--ui-line, #d8e1ea);
 }
 
 .inclusio-readonly {
@@ -101,15 +122,18 @@
   color: #9a3412;
 }
 
-.inclusio-frame-rail.inclusio-frame-rail-preview {
-  stroke-dasharray: 8 5;
-  opacity: 0.6;
+/* Margin gutter — reserve space for frame layers without shifting zoom controls */
+#editor.contour-document-page.has-inclusio-frames {
+  padding-left: calc(18px + var(--inclusio-margin-gutter, 0px)) !important;
 }
 
-body.dark-mode svg.inclusio-frame-svg .inclusio-frame-rail-preview {
-  opacity: 0.72;
+#editor.contour-document-page.lang-hebrew.has-inclusio-frames,
+.lang-hebrew#editor.contour-document-page.has-inclusio-frames {
+  padding-right: calc(var(--contour-hebrew-anchor-inset, 2.5rem) + var(--inclusio-margin-gutter, 0px)) !important;
 }
 
+/* SVG margin rails — never intercept pointer events */
+svg.inclusio-frame-svg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -121,66 +145,53 @@ body.dark-mode svg.inclusio-frame-svg .inclusio-frame-rail-preview {
 
 .inclusio-frame-rail {
   vector-effect: non-scaling-stroke;
+  transition: opacity 0.12s, stroke-width 0.12s;
+}
+
+.inclusio-frame-rail.inclusio-frame-rail-hot {
+  opacity: 1 !important;
+  stroke-width: 3px;
+}
+
+.inclusio-frame-rail.inclusio-frame-rail-preview {
+  stroke-dasharray: 8 5;
+  opacity: 0.55;
 }
 
 body.dark-mode svg.inclusio-frame-svg .inclusio-frame-rail {
-  opacity: 0.85;
+  opacity: 0.88;
 }
 
-/* Strong visible inclusio endpoint brackets */
-.word.inclusio-bracket.bracket-start::before,
-.word.inclusio-bracket.bracket-end::after {
-  font-weight: 700;
-  opacity: 1;
-  font-size: 1.15em;
-  color: var(--bracket-color, #4b5563);
-  text-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
+body.dark-mode svg.inclusio-frame-svg .inclusio-frame-rail-preview {
+  opacity: 0.65;
 }
 
-/* Quiet span shading between anchors */
-.word.inclusio-span {
-  background: rgba(107, 114, 128, 0.08);
-  box-shadow: inset 0 -2px 0 rgba(107, 114, 128, 0.22);
+/* Hide endpoint bracket glyphs in live editor — frames live in margin SVG only */
+#editor .word.inclusio-bracket.bracket-start::before,
+#editor .word.inclusio-bracket.bracket-end::after {
+  content: none !important;
 }
 
-.word.inclusio-span-start {
-  border-left: 3px solid var(--bracket-color, #6B7280);
-  padding-left: 4px;
-  margin-left: 1px;
-}
-
-.word.inclusio-span-end {
-  border-right: 3px solid var(--bracket-color, #6B7280);
-  padding-right: 4px;
-  margin-right: 1px;
-}
-
-.lang-hebrew .word.inclusio-span-start {
-  border-left: none;
-  border-right: 3px solid var(--bracket-color, #6B7280);
-  padding-left: 3px;
-  padding-right: 4px;
-  margin-left: 0;
-  margin-right: 1px;
-}
-
-.lang-hebrew .word.inclusio-span-end {
-  border-right: none;
-  border-left: 3px solid var(--bracket-color, #6B7280);
-  padding-right: 3px;
-  padding-left: 4px;
-  margin-right: 0;
-  margin-left: 1px;
-}
-
+/* Anchor-word highlight only (no span washes) */
 .word.inclusio-registry-hover {
   background: rgba(49, 94, 251, 0.14);
   box-shadow: inset 0 0 0 1px rgba(49, 94, 251, 0.28);
+  border-radius: 2px;
 }
 
 .word.inclusio-anchor-active {
   background: rgba(49, 94, 251, 0.1);
   box-shadow: inset 0 0 0 1px rgba(49, 94, 251, 0.35);
+  border-radius: 2px;
+}
+
+/* Export / print may still show quiet endpoint brackets */
+.export-body .word.inclusio-bracket.bracket-start::before,
+.export-body .word.inclusio-bracket.bracket-end::after {
+  font-weight: 600;
+  opacity: 0.85;
+  font-size: 1.05em;
+  color: var(--bracket-color, #4b5563);
 }
 
 /* Legend subsection — Inclusios registry */
@@ -237,6 +248,16 @@ body.dark-mode svg.inclusio-frame-svg .inclusio-frame-rail {
   align-items: baseline;
 }
 
+.inclusio-registry-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid;
+  border-radius: 2px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .inclusio-registry-marker {
   font-weight: 700;
   flex-shrink: 0;
@@ -244,6 +265,11 @@ body.dark-mode svg.inclusio-frame-svg .inclusio-frame-rail {
 
 .inclusio-registry-label {
   font-weight: 600;
+}
+
+.inclusio-registry-style {
+  font-size: 11px;
+  text-transform: capitalize;
 }
 
 .inclusio-registry-span {
@@ -288,18 +314,6 @@ body.dark-mode .inclusio-anchor-block {
 body.dark-mode .word.inclusio-registry-hover,
 body.dark-mode .word.inclusio-anchor-active {
   background: rgba(120, 160, 255, 0.18);
-}
-
-body.dark-mode .word.inclusio-span {
-  background: rgba(156, 163, 175, 0.14);
-  box-shadow: inset 0 -2px 0 rgba(156, 163, 175, 0.35);
-}
-
-body.dark-mode .word.inclusio-bracket.bracket-start::before,
-body.dark-mode .word.inclusio-bracket.bracket-end::after {
-  color: var(--bracket-color, #d1d5db);
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-  opacity: 1;
 }
 
 body.dark-mode .inclusio-workflow-status {

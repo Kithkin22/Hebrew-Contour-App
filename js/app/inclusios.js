@@ -3,6 +3,27 @@ let inclusioPhraseDraft = null; /* { side: 'opening'|'closing', loc } */
 let inclusioRegistryHoverId = null;
 let inclusioDraw = { active: false, isDragging: false, start: null, current: null };
 
+const INCLUSIO_COLOR_PRESETS = [
+  { name: 'Gray', value: '#6B7280' },
+  { name: 'Blue', value: '#315efb' },
+  { name: 'Red', value: '#b02a2a' },
+  { name: 'Green', value: '#3c763d' },
+  { name: 'Brown', value: '#8a6d3b' },
+];
+
+const INCLUSIO_FRAME_WEIGHTS = [
+  { value: 'thin', label: 'Thin' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'thick', label: 'Thick' },
+];
+
+const INCLUSIO_FRAME_GUTTER = {
+  textGap: 14,
+  layerStep: 20,
+  edgePad: 10,
+  capLen: 14,
+};
+
 const RELATIONSHIP_BASIS_OPTIONS = [
   { value: '', label: '— unset —' },
   { value: 'exact_word', label: 'Exact word' },
@@ -187,20 +208,64 @@ function ensureInclusioFrameSvg(ed) {
   return svg;
 }
 
-function drawInclusioEnvelopeRail(svg, bounds, inc, level, opts) {
+function inclusioFrameStrokeWidth(inc, level) {
+  const preset = { thin: 1.25, medium: 2, thick: 2.75 };
+  if (inc.frameWeight && preset[inc.frameWeight]) return preset[inc.frameWeight];
+  return Math.max(1.25, 2.75 - (level || 0) * 0.55);
+}
+
+function inclusioMaxNestLevel(spans) {
+  return (spans || []).reduce((m, s) => Math.max(m, s.inc.nestLevel || 0), 0);
+}
+
+function inclusioRailXPositions(bounds, level, maxNest, contentW) {
+  const outward = INCLUSIO_FRAME_GUTTER.textGap + Math.max(0, maxNest - (level || 0)) * INCLUSIO_FRAME_GUTTER.layerStep;
+  return {
+    xL: Math.max(INCLUSIO_FRAME_GUTTER.edgePad, bounds.left - outward),
+    xR: Math.min(contentW - INCLUSIO_FRAME_GUTTER.edgePad, bounds.right + outward),
+    outward,
+  };
+}
+
+function inclusioAnchorMidY(anchor, paneState, pane) {
+  const ord = anchorRangeOrdered(anchor);
+  if (!ord) return null;
+  const ed = inclusioEditorRoot(pane);
+  if (!ed) return null;
+  const el = document.querySelector(inclusioWordSelector(ord.start, pane));
+  if (!el) return null;
+  const scale = inclusioEditorScale();
+  const er = ed.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  return (r.top + r.height / 2 - er.top) / scale;
+}
+
+function syncInclusioEditorGutter(paneState) {
+  const ed = document.getElementById('editor');
+  if (!ed) return;
+  const spans = computeInclusioNestLevels(paneState?.inclusios || [], paneState?.verses || []);
+  const visible = spans.filter(s => s.inc.showMarginEnvelope !== false && s.inc.openingAnchor && s.inc.closingAnchor);
+  const maxNest = inclusioMaxNestLevel(spans);
+  const gutter = visible.length ? 40 + maxNest * INCLUSIO_FRAME_GUTTER.layerStep + INCLUSIO_FRAME_GUTTER.textGap : 0;
+  if (gutter) ed.style.setProperty('--inclusio-margin-gutter', `${gutter}px`);
+  else ed.style.removeProperty('--inclusio-margin-gutter');
+  ed.classList.toggle('has-inclusio-frames', visible.length > 0);
+}
+
+function drawInclusioEnvelopeRail(svg, bounds, inc, level, maxNest, paneState, pane, opts) {
   opts = opts || {};
-  const inset = 8 + (level || 0) * 6;
-  const strokeWidth = Math.max(1.5, 3 - (level || 0) * 0.45);
-  const opacity = opts.preview ? 0.55 : Math.max(0.55, 1 - (level || 0) * 0.12);
   const color = inc.color || '#6B7280';
-  const xL = Math.max(4, bounds.left - inset);
-  const xR = Math.min(bounds.width - 4, bounds.right + inset);
-  const y1 = Math.max(0, bounds.top - 3);
-  const y2 = Math.min(bounds.height, bounds.bottom + 3);
-  const cap = 10 + (level || 0) * 2;
-  const mkLine = (x1, y1v, x2, y2v) => {
+  const strokeWidth = inclusioFrameStrokeWidth(inc, level);
+  const opacity = opts.preview ? 0.5 : Math.max(0.5, 0.9 - (level || 0) * 0.1);
+  const { xL, xR } = inclusioRailXPositions(bounds, level, maxNest, bounds.width);
+  const y1 = Math.max(0, bounds.top - 2);
+  const y2 = Math.min(bounds.height, bounds.bottom + 2);
+  const cap = INCLUSIO_FRAME_GUTTER.capLen;
+  const openY = inclusioAnchorMidY(inc.openingAnchor, paneState, pane);
+  const closeY = inclusioAnchorMidY(inc.closingAnchor, paneState, pane);
+  const mkLine = (x1, y1v, x2, y2v, extraCls) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('class', opts.preview ? 'inclusio-frame-rail inclusio-frame-rail-preview' : 'inclusio-frame-rail');
+    line.setAttribute('class', `${opts.preview ? 'inclusio-frame-rail inclusio-frame-rail-preview' : 'inclusio-frame-rail'}${extraCls ? ' ' + extraCls : ''}`);
     line.setAttribute('data-inc-id', inc.id || '');
     line.setAttribute('x1', String(x1));
     line.setAttribute('y1', String(y1v));
@@ -217,6 +282,14 @@ function drawInclusioEnvelopeRail(svg, bounds, inc, level, opts) {
   mkLine(xR - cap, y1, xR, y1);
   mkLine(xL, y2, xL + cap, y2);
   mkLine(xR - cap, y2, xR, y2);
+  if (openY != null) {
+    mkLine(xL, openY, xL + cap, openY, 'inclusio-frame-endcap');
+    mkLine(xR - cap, openY, xR, openY, 'inclusio-frame-endcap');
+  }
+  if (closeY != null && closeY !== openY) {
+    mkLine(xL, closeY, xL + cap, closeY, 'inclusio-frame-endcap');
+    mkLine(xR - cap, closeY, xR, closeY, 'inclusio-frame-endcap');
+  }
 }
 
 function renderInclusioFrameOverlay(paneState, pane) {
@@ -227,6 +300,7 @@ function renderInclusioFrameOverlay(paneState, pane) {
   if (!hasInclusios && !hasPreview) {
     const old = ed.querySelector(':scope > svg.inclusio-frame-svg');
     if (old) old.remove();
+    if (!pane) syncInclusioEditorGutter(paneState);
     return;
   }
   const svg = ensureInclusioFrameSvg(ed);
@@ -241,17 +315,22 @@ function renderInclusioFrameOverlay(paneState, pane) {
   svg.style.height = contentH + 'px';
   if (hasInclusios) {
     const spans = computeInclusioNestLevels(paneState.inclusios, paneState.verses);
+    const maxNest = inclusioMaxNestLevel(spans);
     spans.sort((a, b) => (a.inc.nestLevel || 0) - (b.inc.nestLevel || 0));
     spans.forEach(({ inc }) => {
       if (inc.showMarginEnvelope === false) return;
       if (!inc.openingAnchor || !inc.closingAnchor) return;
       const bounds = inclusioEnvelopeBounds(inc, paneState, pane);
       if (!bounds) return;
-      drawInclusioEnvelopeRail(svg, bounds, inc, inc.nestLevel || 0);
+      drawInclusioEnvelopeRail(svg, bounds, inc, inc.nestLevel || 0, maxNest, paneState, pane);
     });
   }
   if (hasPreview) {
     drawInclusioDragPreview(svg, inclusioDraw.start, inclusioDraw.current, paneState);
+  }
+  if (!pane) {
+    syncInclusioEditorGutter(paneState);
+    applyInclusioFrameHighlight();
   }
 }
 
@@ -340,6 +419,9 @@ function migrateInclusioItem(item) {
   }
   if (!inc.id) inc.id = 'inc' + Date.now();
   if (!inc.color) inc.color = '#6B7280';
+  if (inc.frameWeight && !INCLUSIO_FRAME_WEIGHTS.some(w => w.value === inc.frameWeight)) {
+    delete inc.frameWeight;
+  }
   if (inc.showMarginEnvelope == null) inc.showMarginEnvelope = true;
   if (inc.theme == null) inc.theme = inc.theme || '';
   if (inc.evidence == null) inc.evidence = inc.evidence || '';
@@ -513,7 +595,14 @@ function drawInclusioDragPreview(svg, startLoc, endLoc, paneState) {
   if (!preview.openingAnchor || !preview.closingAnchor) return;
   const bounds = inclusioEnvelopeBounds(preview, paneState, null);
   if (!bounds) return;
-  drawInclusioEnvelopeRail(svg, bounds, preview, 0, { preview: true });
+  drawInclusioEnvelopeRail(svg, bounds, preview, 0, 0, paneState, null, { preview: true });
+}
+
+function applyInclusioFrameHighlight() {
+  const id = inclusioRegistryHoverId || state.activeInclusioId;
+  document.querySelectorAll('svg.inclusio-frame-svg line.inclusio-frame-rail').forEach(line => {
+    line.classList.toggle('inclusio-frame-rail-hot', !!(id && line.getAttribute('data-inc-id') === id));
+  });
 }
 
 function addInclusioFromLocs(startLoc, endLoc) {
@@ -678,36 +767,24 @@ function syncInclusioWordMarkers(paneState) {
   const verses = st.verses;
   st.inclusios.forEach(item => {
     const color = item.color || '#6B7280';
-    const applyAnchor = (anchor, side) => {
+    const markAnchor = (anchor, side) => {
       const ord = anchorRangeOrdered(anchor);
       if (!ord) return;
-      let started = false;
-      verses.forEach((v, vi) => v.clauses.forEach((c, ci) => c.words.forEach((w, wi) => {
-        const l = { v: vi, c: ci, w: wi };
-        if (!locInRangeInVerses(l, ord.start, ord.end, verses) || isMaqafConnector(w)) return;
-        w.inclusioId = item.id;
-        w.inclusioColor = color;
-        w.inclusioAnchorSide = side;
-        if (side === 'opening' && !started && locEqual(l, ord.start)) {
-          w.bracketStart = true;
-          w.bracketColor = color;
-          w.bracketColorSource = 'inclusio';
-          w.bracketSource = 'inclusio';
-          w.inclusioRole = 'opening-start';
-          started = true;
-        } else if (side === 'closing' && locEqual(l, ord.end)) {
-          w.bracketEnd = true;
-          w.bracketColor = color;
-          w.bracketColorSource = 'inclusio';
-          w.bracketSource = 'inclusio';
-          w.inclusioRole = 'closing-end';
-        } else {
-          w.inclusioRole = side === 'opening' ? 'opening' : 'closing';
-        }
-      })));
+      const l = side === 'opening' ? ord.start : ord.end;
+      const w = verses[l.v]?.clauses[l.c]?.words[l.w];
+      if (!w || isMaqafConnector(w)) return;
+      w.inclusioId = item.id;
+      w.inclusioColor = color;
+      w.inclusioAnchorSide = side;
+      w.inclusioRole = side === 'opening' ? 'opening-start' : 'closing-end';
+      w.bracketColor = color;
+      w.bracketColorSource = 'inclusio';
+      w.bracketSource = 'inclusio';
+      if (side === 'opening') w.bracketStart = true;
+      else w.bracketEnd = true;
     };
-    if (item.openingAnchor) applyAnchor(item.openingAnchor, 'opening');
-    if (item.closingAnchor) applyAnchor(item.closingAnchor, 'closing');
+    if (item.openingAnchor) markAnchor(item.openingAnchor, 'opening');
+    if (item.closingAnchor) markAnchor(item.closingAnchor, 'closing');
   });
 }
 
@@ -750,17 +827,19 @@ function applyInclusioRegistryHighlight() {
   document.querySelectorAll('.word.inclusio-registry-hover,.word.inclusio-anchor-active').forEach(el => {
     el.classList.remove('inclusio-registry-hover', 'inclusio-anchor-active');
   });
+  applyInclusioFrameHighlight();
   const id = inclusioRegistryHoverId || state.activeInclusioId;
   if (!id) return;
+  const item = state.inclusios.find(x => x.id === id);
+  if (!item) return;
   const cls = inclusioRegistryHoverId ? 'inclusio-registry-hover' : 'inclusio-anchor-active';
   const activePane = typeof isParallelActive === 'function' && isParallelActive() ? stateBundle.activePane : null;
-  const paneState = activePane != null ? stateBundle.panes[activePane] : state;
-  document.querySelectorAll('.word').forEach(el => {
+  document.querySelectorAll('.word.inclusio-bracket').forEach(el => {
     if (activePane != null && el.dataset.pane != null && +el.dataset.pane !== activePane) return;
     const vi = +el.dataset.v;
     const ci = +el.dataset.c;
     const wi = +el.dataset.w;
-    const w = paneState.verses[vi]?.clauses[ci]?.words[wi];
+    const w = state.verses[vi]?.clauses[ci]?.words[wi];
     if (w && w.inclusioId === id) el.classList.add(cls);
   });
 }
@@ -783,9 +862,21 @@ function renderInclusioEditor() {
   });
   html += '</select></label>';
   html += '<label class="small">Label <input id="inclusioLabelInput" value="' + esc(active?.label || '') + '"></label>';
-  html += '<label class="small">Color <input id="inclusioColorInput" type="color" value="' + esc(active?.color || '#6B7280') + '"></label>';
-  html += '<label class="small inclusio-envelope-toggle"><input type="checkbox" id="inclusioEnvelopeToggle"' + (active?.showMarginEnvelope !== false ? ' checked' : '') + '> Show margin envelope</label>';
   html += '</div>';
+  html += '<div class="inclusio-field-row inclusio-color-row"><span class="small"><strong>Frame color</strong></span>';
+  INCLUSIO_COLOR_PRESETS.forEach(p => {
+    const sel = (active?.color || '#6B7280').toLowerCase() === p.value.toLowerCase();
+    html += `<button type="button" class="btn small inclusio-color-preset${sel ? ' primary' : ''}" data-inc-color="${esc(p.value)}" title="${esc(p.name)}">${esc(p.name)}</button>`;
+  });
+  html += '<label class="small inclusio-custom-color">Custom <input id="inclusioColorInput" type="color" value="' + esc(active?.color || '#6B7280') + '"></label>';
+  html += '</div>';
+  html += '<label class="small">Frame weight <select id="inclusioFrameWeightSelect">';
+  html += `<option value=""${!active?.frameWeight ? ' selected' : ''}>Auto (by nest level)</option>`;
+  INCLUSIO_FRAME_WEIGHTS.forEach(w => {
+    html += `<option value="${esc(w.value)}"${active?.frameWeight === w.value ? ' selected' : ''}>${esc(w.label)}</option>`;
+  });
+  html += '</select></label>';
+  html += '<label class="small inclusio-envelope-toggle"><input type="checkbox" id="inclusioEnvelopeToggle"' + (active?.showMarginEnvelope !== false ? ' checked' : '') + '> Show margin envelope</label>';
 
   html += '<div class="inclusio-anchor-block">';
   html += '<div class="inclusio-field-row"><strong class="small">Opening Anchor</strong>';
@@ -837,8 +928,22 @@ function renderInclusioEditor() {
     };
   };
   bindField('#inclusioLabelInput', (item, el) => { item.label = el.value; });
-  bindField('#inclusioColorInput', (item, el) => { item.color = el.value; renderInclusioEditor(); syncInclusioWordMarkers(); if (typeof renderInclusioFrameOverlays === 'function') renderInclusioFrameOverlays(); });
-  bindField('#inclusioEnvelopeToggle', (item, el) => { item.showMarginEnvelope = !!el.checked; if (typeof renderInclusioFrameOverlays === 'function') renderInclusioFrameOverlays(); });
+  bindField('#inclusioColorInput', (item, el) => {
+    item.color = el.value;
+    renderInclusioEditor();
+    syncInclusioWordMarkers();
+    scheduleInclusioFrameRedraw();
+  });
+  bindField('#inclusioFrameWeightSelect', (item, el) => {
+    item.frameWeight = el.value || null;
+    if (!item.frameWeight) delete item.frameWeight;
+    renderInclusioRegistry();
+    scheduleInclusioFrameRedraw();
+  });
+  bindField('#inclusioEnvelopeToggle', (item, el) => {
+    item.showMarginEnvelope = !!el.checked;
+    scheduleInclusioFrameRedraw();
+  });
   bindField('#inclusioThemeInput', (item, el) => { item.theme = el.value; });
   bindField('#inclusioBasisSelect', (item, el) => { item.relationshipBasis = el.value || null; });
   bindField('#inclusioEvidenceInput', (item, el) => { item.evidence = el.value; });
@@ -852,6 +957,19 @@ function renderInclusioEditor() {
   if (oSet) oSet.onclick = () => setInclusioAnchor('opening');
   const cSet = box.querySelector('#setInclusioClosing');
   if (cSet) cSet.onclick = () => setInclusioAnchor('closing');
+  box.querySelectorAll('.inclusio-color-preset').forEach(btn => {
+    btn.onclick = () => {
+      const item = activeInclusio();
+      if (!item) return;
+      markUndo();
+      item.color = btn.dataset.incColor;
+      syncInclusioWordMarkers();
+      autoSaveProject();
+      renderInclusioEditor();
+      renderInclusioRegistry();
+      scheduleInclusioFrameRedraw();
+    };
+  });
 }
 
 function renderInclusioRegistry() {
@@ -879,9 +997,12 @@ function renderInclusioRegistry() {
     const theme = (inc.theme || '').trim();
     const basis = relationshipBasisLabel(inc.relationshipBasis);
     const meta = [theme && `Theme: ${theme}`, basis && basis !== '— unset —' && `Basis: ${basis}`].filter(Boolean).join(' · ');
+    const weight = inc.frameWeight || (inc.nestLevel > 0 ? 'thin' : 'medium');
     html += `<div class="inclusio-registry-row${active ? ' active' : ''}" data-inc-id="${esc(inc.id)}" tabindex="0" role="button">`;
-    html += `<div class="inclusio-registry-row-head"><span class="inclusio-registry-marker" style="color:${esc(inc.color || '#315efb')}">[${letter}]</span>`;
+    html += `<div class="inclusio-registry-row-head"><span class="inclusio-registry-swatch" style="border-color:${esc(inc.color || '#6B7280')}" title="Frame color"></span>`;
+    html += `<span class="inclusio-registry-marker" style="color:${esc(inc.color || '#6B7280')}">[${letter}]</span>`;
     html += `<span class="inclusio-registry-label">${esc(inc.label || ('Inclusio ' + letter))}</span>`;
+    html += `<span class="inclusio-registry-style muted small">${esc(weight)}</span>`;
     html += `<span class="inclusio-registry-span muted">${esc(span)}</span></div>`;
     html += `<div class="inclusio-registry-detail small"><span>Opening: <span class="inclusio-registry-hebrew">${esc(openText)}</span></span>`;
     html += `<span>Closing: <span class="inclusio-registry-hebrew">${esc(closeText)}</span></span></div>`;

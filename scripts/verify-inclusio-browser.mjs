@@ -155,6 +155,35 @@ async function main() {
     record('arc-mutual-exclusion', draw.arcMutual, `arc/inclusio draw modes exclusive=${draw.arcMutual}`);
     record('no-pasted-passage-title', draw.noPlaceholderTitle, `placeholder title hidden=${draw.noPlaceholderTitle}`);
 
+    const margin = await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      parseText('אֶ֣לֶף בֵּ֑ית גִּמֶל דָּלֶת', 'Margin test', false, { skipRender: true });
+      state.inclusios = [];
+      clearInclusioWordMarkers();
+      addInclusioFromLocs({ v: 0, c: 0, w: 0 }, { v: 0, c: 0, w: 3 });
+      render();
+      const ed = document.getElementById('editor');
+      const word = document.querySelector('#editor .word[data-v="0"][data-c="0"][data-w="1"]');
+      const rail = document.querySelector('#editor svg.inclusio-frame-svg line.inclusio-frame-rail');
+      if (!ed || !word || !rail) return { ok: false, reason: 'missing elements' };
+      const wBox = word.getBoundingClientRect();
+      const x1 = +rail.getAttribute('x1');
+      const x2 = +rail.getAttribute('x2');
+      const railLeft = Math.min(x1, x2);
+      const railRight = Math.max(x1, x2);
+      const edRect = ed.getBoundingClientRect();
+      const scale = typeof getArcOverlayScale === 'function' ? getArcOverlayScale() : 1;
+      const railScreenL = edRect.left + railLeft * scale;
+      const railScreenR = edRect.left + railRight * scale;
+      const clearsText = railScreenR <= wBox.left || railScreenL >= wBox.right;
+      const noSpanWash = !document.querySelector('#editor .word.inclusio-span');
+      const gutter = ed.classList.contains('has-inclusio-frames');
+      const hiddenBrackets = !getComputedStyle(word, '::before').content || getComputedStyle(word, '::before').content === 'none';
+      return { ok: clearsText && noSpanWash && gutter, clearsText, noSpanWash, gutter, rails: document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail').length };
+    });
+    record('margin-clears-text', margin.ok, `clears=${margin.clearsText}, noSpan=${margin.noSpanWash}, gutter=${margin.gutter}, rails=${margin.rails}`);
+
     const pass = results.every((r) => r.pass);
     console.log(`\n${pass ? 'ALL PASSED' : 'SOME FAILED'} (${results.filter((r) => r.pass).length}/${results.length})`);
     process.exit(pass ? 0 : 1);
