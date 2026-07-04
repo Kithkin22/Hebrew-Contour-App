@@ -28,13 +28,133 @@ function inclusioWordElement(l, ed, pane) {
   return ed.querySelector(`:scope ${sel}`) || document.querySelector(sel);
 }
 
+function inclusioMeasureScale(ed) {
+  const inner = ed?.closest?.('.contour-page-zoom-inner');
+  if (inner) {
+    const t = getComputedStyle(inner).transform;
+    if (t && t !== 'none') {
+      const sx = new DOMMatrix(t).a;
+      if (sx > 0 && Number.isFinite(sx)) return sx;
+    }
+  }
+  return typeof inclusioEditorScale === 'function' ? inclusioEditorScale() : 1;
+}
+
+/** Layout-space rect of el relative to editor root (stable under page zoom). */
+function inclusioRectRelativeToEditor(el, ed) {
+  if (!el || !ed) return null;
+  const scale = inclusioMeasureScale(ed);
+  const er = ed.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  return {
+    top: (r.top - er.top) / scale,
+    bottom: (r.bottom - er.top) / scale,
+    left: (r.left - er.left) / scale,
+    right: (r.right - er.left) / scale,
+  };
+}
+
+/** Clauses in document order that intersect a loc range. */
+function inclusioClausesInRangeOrdered(rangeStart, rangeEnd, paneState) {
+  if (!rangeStart || !rangeEnd || !paneState?.verses?.length) return [];
+  const verses = paneState.verses;
+  const hits = [];
+  verses.forEach((v, vi) => v.clauses.forEach((c, ci) => {
+    const inRange = c.words.some((w, wi) => {
+      if (typeof isMaqafConnector === 'function' && isMaqafConnector(w)) return false;
+      return locInRangeInVerses({ v: vi, c: ci, w: wi }, rangeStart, rangeEnd, verses);
+    });
+    if (!inRange) return;
+    const rank = locRankInVerses({ v: vi, c: ci, w: 0 }, verses);
+    hits.push({ v: vi, c: ci, rank });
+  }));
+  hits.sort((a, b) => a.rank - b.rank);
+  return hits;
+}
+
+/** Word bounds for words of one clause that fall inside a loc range. */
+function inclusioClauseWordsBoundsInRange(vi, ci, rangeStart, rangeEnd, paneState, pane) {
+  const verses = paneState?.verses;
+  const clause = verses?.[vi]?.clauses?.[ci];
+  if (!clause?.words?.length) return null;
+  let firstW = null;
+  let lastW = null;
+  clause.words.forEach((w, wi) => {
+    if (typeof isMaqafConnector === 'function' && isMaqafConnector(w)) return;
+    if (!locInRangeInVerses({ v: vi, c: ci, w: wi }, rangeStart, rangeEnd, verses)) return;
+    if (firstW == null) firstW = wi;
+    lastW = wi;
+  });
+  if (firstW == null || lastW == null) return null;
+  return inclusioWordsBoundsForRange(
+    { v: vi, c: ci, w: firstW },
+    { v: vi, c: ci, w: lastW },
+    paneState,
+    pane
+  );
+}
+
+/** Word bounds for a single contour line (clause). */
+function inclusioClauseWordsBounds(vi, ci, paneState, pane) {
+  const clause = paneState?.verses?.[vi]?.clauses?.[ci];
+  if (!clause?.words?.length) return null;
+  let lastW = clause.words.length - 1;
+  while (lastW > 0 && typeof isMaqafConnector === 'function' && isMaqafConnector(clause.words[lastW])) lastW--;
+  return inclusioWordsBoundsForRange(
+    { v: vi, c: ci, w: 0 },
+    { v: vi, c: ci, w: lastW },
+    paneState,
+    pane
+  );
+}
+
+/** First/last contour line tops and bottoms for a span. */
+function inclusioEdgeLineBounds(rangeStart, rangeEnd, paneState, pane) {
+  const ed = typeof inclusioEditorRoot === 'function' ? inclusioEditorRoot(pane) : document.getElementById('editor');
+  const clauses = inclusioClausesInRangeOrdered(rangeStart, rangeEnd, paneState);
+  if (!ed || !clauses.length) return null;
+  const first = clauses[0];
+  const last = clauses[clauses.length - 1];
+  const firstWords = inclusioClauseWordsBoundsInRange(first.v, first.c, rangeStart, rangeEnd, paneState, pane);
+  const lastWords = inclusioClauseWordsBoundsInRange(last.v, last.c, rangeStart, rangeEnd, paneState, pane);
+  const firstClauseEl = ed.querySelector(`:scope .clause[data-v="${first.v}"][data-c="${first.c}"]`);
+  const lastClauseEl = ed.querySelector(`:scope .clause[data-v="${last.v}"][data-c="${last.c}"]`);
+  const firstClause = firstClauseEl ? inclusioRectRelativeToEditor(firstClauseEl, ed) : null;
+  const lastClause = lastClauseEl ? inclusioRectRelativeToEditor(lastClauseEl, ed) : null;
+  if (!firstWords && !firstClause) return null;
+  if (!lastWords && !lastClause) return null;
+  const firstLineTop = Math.min(
+    firstWords?.top ?? Infinity,
+    firstClause?.top ?? Infinity
+  );
+  const lastLineBottom = lastWords?.bottom ?? lastClause?.bottom ?? -Infinity;
+  if (!Number.isFinite(firstLineTop) || !Number.isFinite(lastLineBottom)) return null;
+  return { firstLineTop, lastLineBottom, lastClause: last };
+}
+window.inclusioEdgeLineBounds = inclusioEdgeLineBounds;
+
+function inclusioNextClauseTop(vi, ci, paneState, pane) {
+  const verses = paneState?.verses;
+  const ed = typeof inclusioEditorRoot === 'function' ? inclusioEditorRoot(pane) : document.getElementById('editor');
+  if (!verses?.length || !ed) return null;
+  let nv = vi;
+  let nc = ci + 1;
+  if (nc >= verses[vi].clauses.length) {
+    nv += 1;
+    nc = 0;
+  }
+  if (nv >= verses.length || !verses[nv]?.clauses?.[nc]) return null;
+  const el = ed.querySelector(`:scope .clause[data-v="${nv}"][data-c="${nc}"]`);
+  if (!el) return null;
+  const box = inclusioRectRelativeToEditor(el, ed);
+  return box ? box.top : null;
+}
+
 /** Union of word boxes for words in a loc range. */
 function inclusioWordsBoundsForRange(rangeStart, rangeEnd, paneState, pane) {
   if (!rangeStart || !rangeEnd || !paneState?.verses?.length) return null;
   const ed = typeof inclusioEditorRoot === 'function' ? inclusioEditorRoot(pane) : document.getElementById('editor');
   if (!ed) return null;
-  const scale = typeof inclusioEditorScale === 'function' ? inclusioEditorScale() : 1;
-  const er = ed.getBoundingClientRect();
   const verses = paneState.verses;
   let top = Infinity;
   let bottom = -Infinity;
@@ -47,20 +167,16 @@ function inclusioWordsBoundsForRange(rangeStart, rangeEnd, paneState, pane) {
     if (!locInRangeInVerses(l, rangeStart, rangeEnd, verses)) return;
     const el = inclusioWordElement(l, ed, pane);
     if (!el) return;
-    const r = el.getBoundingClientRect();
-    top = Math.min(top, r.top);
-    bottom = Math.max(bottom, r.bottom);
-    left = Math.min(left, r.left);
-    right = Math.max(right, r.right);
+    const box = inclusioRectRelativeToEditor(el, ed);
+    if (!box) return;
+    top = Math.min(top, box.top);
+    bottom = Math.max(bottom, box.bottom);
+    left = Math.min(left, box.left);
+    right = Math.max(right, box.right);
     found = true;
   })));
   if (!found) return null;
-  return {
-    top: (top - er.top) / scale,
-    bottom: (bottom - er.top) / scale,
-    left: (left - er.left) / scale,
-    right: (right - er.left) / scale,
-  };
+  return { top, bottom, left, right };
 }
 
 /** Union of word boxes for one anchor range (opening or closing phrase). */
@@ -76,8 +192,6 @@ function inclusioClausesBoundsForRange(rangeStart, rangeEnd, paneState, pane) {
   if (!rangeStart || !rangeEnd || !paneState?.verses?.length) return null;
   const ed = typeof inclusioEditorRoot === 'function' ? inclusioEditorRoot(pane) : document.getElementById('editor');
   if (!ed) return null;
-  const scale = typeof inclusioEditorScale === 'function' ? inclusioEditorScale() : 1;
-  const er = ed.getBoundingClientRect();
   const verses = paneState.verses;
   let top = Infinity;
   let bottom = -Infinity;
@@ -91,16 +205,14 @@ function inclusioClausesBoundsForRange(rangeStart, rangeEnd, paneState, pane) {
     if (!clauseHit) return;
     const el = ed.querySelector(`:scope .clause[data-v="${vi}"][data-c="${ci}"]`);
     if (!el) return;
-    const r = el.getBoundingClientRect();
-    top = Math.min(top, r.top);
-    bottom = Math.max(bottom, r.bottom);
+    const box = inclusioRectRelativeToEditor(el, ed);
+    if (!box) return;
+    top = Math.min(top, box.top);
+    bottom = Math.max(bottom, box.bottom);
     found = true;
   }));
   if (!found) return null;
-  return {
-    top: (top - er.top) / scale,
-    bottom: (bottom - er.top) / scale,
-  };
+  return { top, bottom };
 }
 window.inclusioClausesBoundsForRange = inclusioClausesBoundsForRange;
 
@@ -117,14 +229,20 @@ function inclusioUnitBounds(inc, paneState, pane) {
   const ed = typeof inclusioEditorRoot === 'function' ? inclusioEditorRoot(pane) : document.getElementById('editor');
   if (!ed) return null;
   const spanWords = inclusioWordsBoundsForRange(open.start, close.end, paneState, pane);
-  const clauseBounds = inclusioClausesBoundsForRange(open.start, close.end, paneState, pane);
+  const edgeLines = inclusioEdgeLineBounds(open.start, close.end, paneState, pane);
   if (!spanWords) return null;
   const pad = INCLUSIO_FRAME_PADDING;
-  const textTop = clauseBounds ? Math.min(spanWords.top, clauseBounds.top) : spanWords.top;
-  const textBottom = spanWords.bottom;
+  const textTop = edgeLines ? edgeLines.firstLineTop : spanWords.top;
+  const textBottom = edgeLines ? edgeLines.lastLineBottom : spanWords.bottom;
+  let bottom = textBottom + pad.bottom;
+  if (edgeLines?.lastClause) {
+    const nextTop = inclusioNextClauseTop(edgeLines.lastClause.v, edgeLines.lastClause.c, paneState, pane);
+    if (nextTop != null) bottom = Math.min(bottom, nextTop - 2);
+  }
+  bottom = Math.max(bottom, textBottom);
   return {
     top: textTop - pad.top,
-    bottom: textBottom + pad.bottom,
+    bottom,
     left: spanWords.left - pad.left,
     right: spanWords.right + pad.right,
     width: Math.max(ed.scrollWidth, ed.offsetWidth, 1),

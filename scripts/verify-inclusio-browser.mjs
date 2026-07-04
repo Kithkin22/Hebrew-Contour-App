@@ -278,24 +278,24 @@ async function main() {
       state.inclusios = [];
       clearInclusioWordMarkers();
       const openLoc = { v: 0, c: 1, w: 0 };
-      const closeLoc = { v: 0, c: 3, w: 0 };
+      const closeLoc = { v: 0, c: 4, w: 0 };
       addInclusioFromLocs(openLoc, closeLoc);
       render();
       const ed = document.getElementById('editor');
       const openWord = document.querySelector('.word[data-v="0"][data-c="1"][data-w="0"]');
-      const closeWord = document.querySelector('.word[data-v="0"][data-c="3"][data-w="0"]');
+      const closeWord = document.querySelector('.word[data-v="0"][data-c="4"][data-w="0"]');
       const firstClause = document.querySelector('.clause[data-v="0"][data-c="0"]');
       const spanClause1 = document.querySelector('.clause[data-v="0"][data-c="1"]');
-      const spanClause3 = document.querySelector('.clause[data-v="0"][data-c="3"]');
+      const spanClauseLast = document.querySelector('.clause[data-v="0"][data-c="4"]');
       const rails = [...document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail:not(.inclusio-frame-rail-preview)')];
       const vertical = rails.filter((l) => Math.abs(+l.getAttribute('x2') - +l.getAttribute('x1')) < 0.01);
-      if (!ed || !openWord || !closeWord || !vertical.length || !spanClause1 || !spanClause3) {
+      if (!ed || !openWord || !closeWord || !vertical.length || !spanClause1 || !spanClauseLast) {
         return { ok: false, reason: 'missing elements' };
       }
       const scale = typeof getArcOverlayScale === 'function' ? getArcOverlayScale() : 1;
       const er = ed.getBoundingClientRect();
       const spanTop = (spanClause1.getBoundingClientRect().top - er.top) / scale;
-      const spanBottom = (spanClause3.getBoundingClientRect().bottom - er.top) / scale;
+      const spanBottom = (spanClauseLast.getBoundingClientRect().bottom - er.top) / scale;
       const clauseTop = firstClause
         ? (firstClause.getBoundingClientRect().top - er.top) / scale
         : spanTop;
@@ -322,6 +322,49 @@ async function main() {
       'anchor-vertical-align',
       anchorAlign.ok,
       `y1=${anchorAlign.y1?.toFixed?.(1)}, spanTop=${anchorAlign.spanTop?.toFixed?.(1)}, y2=${anchorAlign.y2?.toFixed?.(1)}, spanBottom=${anchorAlign.spanBottom?.toFixed?.(1)}`
+    );
+
+    const lastLineEdge = await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      parseText(
+        'אֶ֣לֶף בֵּ֑ית גִּמֶל דָּלֶת\n'
+        + 'הֵא וָו זַיִן\n'
+        + 'חֵת טֵת יוֹד\n'
+        + 'כָּף לָמֶד מֵם\n'
+        + 'נוּן סָמֶךְ עַיִן',
+        'Last line edge',
+        false,
+        { preserveLayout: true, skipRender: true }
+      );
+      state.inclusios = [];
+      clearInclusioWordMarkers();
+      const lastC = 3;
+      const closeW = 0;
+      addInclusioFromLocs({ v: 0, c: 0, w: 0 }, { v: 0, c: lastC, w: closeW });
+      render();
+      const ed = document.getElementById('editor');
+      const closeWord = document.querySelector(`.word[data-v="0"][data-c="${lastC}"][data-w="${closeW}"]`);
+      const nextClause = document.querySelector('.clause[data-v="0"][data-c="4"]');
+      const rails = [...document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail:not(.inclusio-frame-rail-preview)')];
+      const vertical = rails.filter((l) => Math.abs(+l.getAttribute('x2') - +l.getAttribute('x1')) < 0.01);
+      if (!ed || !closeWord || !nextClause || !vertical.length) {
+        return { ok: false, reason: 'missing elements', closeW, lastC };
+      }
+      const scale = typeof getArcOverlayScale === 'function' ? getArcOverlayScale() : 1;
+      const er = ed.getBoundingClientRect();
+      const closeBottom = (closeWord.getBoundingClientRect().bottom - er.top) / scale;
+      const nextLineTop = (nextClause.getBoundingClientRect().top - er.top) / scale;
+      const y2 = Math.max(...vertical.map((l) => +l.getAttribute('y2')));
+      const pad = (window.INCLUSIO_FRAME_PADDING && window.INCLUSIO_FRAME_PADDING.bottom) || 10;
+      const endsNearClose = y2 >= closeBottom && y2 <= closeBottom + pad + 2;
+      const excludesNextLine = y2 < nextLineTop;
+      return { ok: endsNearClose && excludesNextLine, y2, closeBottom, nextLineTop, pad, endsNearClose, excludesNextLine };
+    });
+    record(
+      'last-line-bottom-edge',
+      lastLineEdge.ok,
+      `y2=${lastLineEdge.y2?.toFixed?.(1)}, closeBottom=${lastLineEdge.closeBottom?.toFixed?.(1)}, nextLineTop=${lastLineEdge.nextLineTop?.toFixed?.(1)}, reason=${lastLineEdge.reason || 'ok'}`
     );
 
     const colorManual = await page.evaluate(() => {
