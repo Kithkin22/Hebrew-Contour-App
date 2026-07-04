@@ -166,6 +166,11 @@ async function main() {
 
     await setDark(page, false);
     await setupNestedUnits(page);
+    await setZoom(page, '85');
+    await shot(page, 'light-02-nested-units-85.png', '#editorWrap');
+
+    await setZoom(page, '100');
+    await setupNestedUnits(page);
     await expandLegendUnits(page);
     await page.evaluate(() => {
       if (state.inclusios[1]) state.activeInclusioId = state.inclusios[1].id;
@@ -189,8 +194,32 @@ async function main() {
 
     for (const z of ['fit', '100', '85']) {
       await setZoom(page, z);
-      await shot(page, `light-zoom-${z}.png`, '#editorWrap');
+      await setupSingleUnit(page);
+      await shot(page, `light-zoom-${z}-single-unit.png`, '#editorWrap');
     }
+
+    await setZoom(page, '100');
+    await setupSingleUnit(page);
+    await shot(page, 'light-anchor-align.png', '#editorWrap');
+
+    const exportShot = await page.evaluate(() => {
+      const meta = { title: 'Job-19-contour.pdf', oldTitle: document.title };
+      const script = buildContourPrintScript(meta);
+      const html = buildContourExportDocument({
+        includePrintButton: true,
+        docTitle: meta.title,
+        printScript: script,
+      });
+      return { html };
+    });
+    const exportHtmlPath = path.join(OUT, 'export-preview.html');
+    fs.writeFileSync(exportHtmlPath, exportShot.html);
+    const exportPage = await browser.newPage({ viewport: { width: 1100, height: 1400 } });
+    await exportPage.goto(`file://${path.resolve(exportHtmlPath)}`, { waitUntil: 'networkidle' });
+    await exportPage.waitForTimeout(400);
+    await exportPage.screenshot({ path: path.join(OUT, 'export-pdf-preview.png'), fullPage: true });
+    console.log('saved', path.join(OUT, 'export-pdf-preview.png'));
+    await exportPage.close();
 
     const mockupSrc = path.join('docs/assets/inclusio-mockups', 'approved-bracket-geometry-mockup.png');
     const mockupDest = path.join(OUT, 'approved-bracket-geometry-reference.png');
@@ -201,7 +230,7 @@ async function main() {
     body{font-family:Inter,system-ui,sans-serif;margin:24px;background:#f1f5f9}
     .row{display:flex;gap:16px;flex-wrap:wrap} .card{background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:12px;max-width:48%}
     img{max-width:100%;height:auto} ul{font-size:13px;line-height:1.5}
-    </style></head><body><h1>Approved mockup vs implementation (v62)</h1>
+    </style></head><body><h1>Approved mockup vs implementation (v64)</h1>
     <div class="row"><div class="card"><h2>Approved bracket mockup</h2><img src="approved-bracket-geometry-reference.png"></div>
     <div class="card"><h2>Nested units (local)</h2><img src="light-02-nested-units.png"></div></div>
     <ul><li>More unit padding (36px) — frames hug literary units, not glyphs</li>

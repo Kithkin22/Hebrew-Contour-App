@@ -202,28 +202,71 @@ function exportContourHtml(){
   if(!html){alert('Create or generate text first.');return;}
   triggerDownload(new Blob([html],{type:'text/html;charset=utf-8'}),fname);
 }
+function buildContourPrintScript(printMeta) {
+  const title = JSON.stringify(printMeta.title);
+  const oldTitle = JSON.stringify(printMeta.oldTitle);
+  return '<script>document.title=' + title + ';'
+    + 'setTimeout(function(){'
+    + 'try{if(window.opener)window.opener.document.title=' + title + ';}catch(e){}'
+    + 'window.print();'
+    + '},300);'
+    + 'window.onafterprint=function(){try{if(window.opener)window.opener.document.title=' + oldTitle + ';}catch(e){}};'
+    + '<\/script>';
+}
+window.buildContourPrintScript = buildContourPrintScript;
+
+/** Open export HTML in a popup and trigger the system print / Save-as-PDF dialog. */
+function openPdfPrintWindow(html, printMeta) {
+  const win = window.open('', '_blank');
+  if (!win) {
+    alert('Popup blocked. Allow popups for this page, then try again.');
+    return null;
+  }
+  const meta = printMeta || { title: document.title, oldTitle: document.title };
+  try { win.document.open(); } catch (e) { /* older browsers */ }
+  win.document.write(html);
+  win.document.close();
+  try { win.document.title = meta.title; } catch (e) { /* ignore */ }
+  const restoreTitle = () => {
+    try { document.title = meta.oldTitle; } catch (e) { /* ignore */ }
+  };
+  const triggerPrint = () => {
+    try { win.focus(); } catch (e) { /* ignore */ }
+    try { win.print(); } catch (e) { /* ignore */ }
+  };
+  const schedulePrint = () => setTimeout(triggerPrint, 300);
+  try {
+    win.addEventListener('afterprint', restoreTitle, { once: true });
+  } catch (e) { /* ignore */ }
+  try {
+    if (win.document.readyState === 'complete') schedulePrint();
+    else win.addEventListener('load', schedulePrint, { once: true });
+  } catch (e) {
+    schedulePrint();
+  }
+  setTimeout(restoreTitle, 12000);
+  return win;
+}
+window.openPdfPrintWindow = openPdfPrintWindow;
+
 function exportContourPdf(opts){
   opts=opts||{};
   if(!opts.skipParallel&&isParallelActive()){exportContourPdfParallel();return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   const fname=askExportFilename(suggestedExportBase('contour-editor'),'pdf');if(!fname)return;
   const printMeta=preparePrintFilename(fname);
-  const win=window.open('', '_blank');
-  if(!win){alert('Popup blocked. Allow popups for this page, then try again.');return;}
   let docHtml='';
   try{
     docHtml=typeof buildContourExportDocument==='function'?buildContourExportDocument({
       includePrintButton:true,
-      docTitle:printMeta.title,
-      printScript:'<script>document.title='+JSON.stringify(printMeta.title)+';setTimeout(()=>{try{if(window.opener)window.opener.document.title='+JSON.stringify(printMeta.title)+';}catch(e){}} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title='+JSON.stringify(printMeta.oldTitle)+';}catch(e){}}<\/script>'
+      docTitle:printMeta.title
     }):null;
   }catch(e){
     alert('Could not prepare contour PDF export. Try reloading the project.');
     return;
   }
   if(!docHtml){alert('Create or generate text first.');return;}
-  win.document.write(docHtml);
-  win.document.close();
+  openPdfPrintWindow(docHtml, printMeta);
 }
 
 const crcTable=(()=>{let c,t=[];for(let n=0;n<256;n++){c=n;for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
@@ -234,14 +277,12 @@ function makeZip(files){let enc=new TextEncoder(),parts=[],central=[],offset=0;f
 function openTablePdfPrintWindow(tableHtml,exportTitle){
   const fname=askExportFilename(suggestedExportBase('contour-table'),'pdf');if(!fname)return;
   const printMeta=preparePrintFilename(fname);
-  const win=window.open('', '_blank');
-  if(!win){alert('Popup blocked. Allow popups for this page, then try again.');return;}
   const isGreek=state.language==='greek';
   const textDir=isGreek?'ltr':'rtl';
   const textAlign=isGreek?'left':'right';
   const textFont=isGreek?"'SBL Greek','Gentium Plus','Times New Roman',serif":"'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif";
-  win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${xmlEscape(printMeta.title)}</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}table{border-collapse:collapse;width:100%;background:white;direction:ltr;text-align:left}th,td{border:1px solid #999;padding:7px;vertical-align:top}th{background:#eee}.ann-ltr{direction:ltr;text-align:left}.heb{direction:${textDir};text-align:${textAlign};font-size:20px;font-family:${textFont}}.greek{direction:ltr;text-align:left;font-size:20px;font-family:${textFont}}.parallel-table-title{margin:18px 0 8px 0;font-size:18px}@page{margin:0.6in}@media print{button{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button><div class="export-title">${xmlEscape(exportTitle||state.ref||'Contour Table')}</div>${tableHtml}<script>document.title=${JSON.stringify(printMeta.title)};setTimeout(()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.title)};}catch(e){} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title=${JSON.stringify(printMeta.oldTitle)};}catch(e){}}<\/script></body></html>`);
-  win.document.close();
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${xmlEscape(printMeta.title)}</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}table{border-collapse:collapse;width:100%;background:white;direction:ltr;text-align:left}th,td{border:1px solid #999;padding:7px;vertical-align:top}th{background:#eee}.ann-ltr{direction:ltr;text-align:left}.heb{direction:${textDir};text-align:${textAlign};font-size:20px;font-family:${textFont}}.greek{direction:ltr;text-align:left;font-size:20px;font-family:${textFont}}.parallel-table-title{margin:18px 0 8px 0;font-size:18px}@page{margin:0.6in}@media print{button{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button><div class="export-title">${xmlEscape(exportTitle||state.ref||'Contour Table')}</div>${tableHtml}</body></html>`;
+  openPdfPrintWindow(html, printMeta);
 }
 function exportTablePdf(opts){
   opts=opts||{};

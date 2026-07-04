@@ -566,10 +566,34 @@ function inclusioColorForNestLevel(level) {
 }
 
 function applyDefaultUnitColor(item, paneState) {
-  if (!item || !paneState?.verses) return;
+  if (!item || item.colorManual || !paneState?.verses) return;
   const spans = computeInclusioNestLevels(paneState.inclusios || [], paneState.verses);
   const mine = spans.find(s => s.inc.id === item.id);
   if (mine) item.color = inclusioColorForNestLevel(mine.inc.nestLevel);
+}
+
+function applyUnitColor(item, color, manual) {
+  if (!item) return;
+  markUndo();
+  item.color = color;
+  if (manual) item.colorManual = true;
+  syncInclusioWordMarkers();
+  autoSaveProject();
+  renderInclusioEditor();
+  renderInclusioRegistry();
+  scheduleInclusioFrameRedraw();
+}
+
+function resetUnitColor(item) {
+  if (!item) return;
+  markUndo();
+  delete item.colorManual;
+  applyDefaultUnitColor(item, state);
+  syncInclusioWordMarkers();
+  autoSaveProject();
+  renderInclusioEditor();
+  renderInclusioRegistry();
+  scheduleInclusioFrameRedraw();
 }
 
 function inclusioDefaultColor() {
@@ -843,12 +867,17 @@ function renderInclusioEditor() {
   html += '</select></label>';
   html += '<label class="small">Label <input id="inclusioLabelInput" value="' + esc(active?.label || '') + '"></label>';
   html += '</div>';
-  html += '<div class="inclusio-field-row inclusio-color-row"><span class="small"><strong>Unit frame color</strong></span>';
+  html += '<div class="inclusio-field-row inclusio-color-row"><span class="small"><strong>Unit frame color</strong></span></div>';
+  html += '<div class="row inclusio-color-toolbar">';
   INCLUSIO_COLOR_PRESETS.forEach(p => {
     const sel = (active?.color || inclusioColorForNestLevel(0)).toLowerCase() === p.value.toLowerCase();
-    html += `<button type="button" class="btn small inclusio-color-preset${sel ? ' primary' : ''}" data-inc-color="${esc(p.value)}" title="${esc(p.name)}">${esc(p.name)}</button>`;
+    html += `<button type="button" class="btn small inclusio-color-preset${sel ? ' primary' : ''}" data-inc-color="${esc(p.value)}" title="${esc(p.name)}" style="border-left:4px solid ${esc(p.value)}">${esc(p.name)}</button>`;
   });
-  html += '<label class="small inclusio-custom-color">Custom <input id="inclusioColorInput" type="color" value="' + esc(active?.color || inclusioColorForNestLevel(0)) + '"></label>';
+  html += '</div>';
+  html += '<div class="row inclusio-color-toolbar">';
+  html += '<label class="small inclusio-custom-color">Custom <input id="inclusioColorInput" type="color" value="' + esc(active?.color || inclusioColorForNestLevel(0)) + '" style="width:48px;height:34px;padding:2px"></label>';
+  html += '<button type="button" class="btn small" id="inclusioApplyColor">Apply Color</button>';
+  html += '<button type="button" class="btn small" id="inclusioResetColor">Reset Color</button>';
   html += '</div>';
   html += '<label class="small">Frame weight <select id="inclusioFrameWeightSelect">';
   html += `<option value=""${!active?.frameWeight ? ' selected' : ''}>Auto (by nest level)</option>`;
@@ -911,12 +940,6 @@ function renderInclusioEditor() {
     };
   };
   bindField('#inclusioLabelInput', (item, el) => { item.label = el.value; renderInclusioRegistry(); });
-  bindField('#inclusioColorInput', (item, el) => {
-    item.color = el.value;
-    renderInclusioEditor();
-    syncInclusioWordMarkers();
-    scheduleInclusioFrameRedraw();
-  });
   bindField('#inclusioFrameWeightSelect', (item, el) => {
     item.frameWeight = el.value || null;
     if (!item.frameWeight) delete item.frameWeight;
@@ -944,15 +967,20 @@ function renderInclusioEditor() {
     btn.onclick = () => {
       const item = activeInclusio();
       if (!item) return;
-      markUndo();
-      item.color = btn.dataset.incColor;
-      syncInclusioWordMarkers();
-      autoSaveProject();
-      renderInclusioEditor();
-      renderInclusioRegistry();
-      scheduleInclusioFrameRedraw();
+      applyUnitColor(item, btn.dataset.incColor, true);
     };
   });
+  const applyBtn = box.querySelector('#inclusioApplyColor');
+  if (applyBtn) {
+    applyBtn.onclick = () => {
+      const item = activeInclusio();
+      const picker = box.querySelector('#inclusioColorInput');
+      if (!item || !picker) return;
+      applyUnitColor(item, picker.value, true);
+    };
+  }
+  const resetBtn = box.querySelector('#inclusioResetColor');
+  if (resetBtn) resetBtn.onclick = () => resetUnitColor(activeInclusio());
 }
 
 function renderInclusioRegistry() {

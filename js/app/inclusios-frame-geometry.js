@@ -1,43 +1,36 @@
-/* Inclusio unit-frame geometry — per-unit brackets, distinct nested rails */
+/* Inclusio unit-frame geometry — anchor-aligned vertical bounds, word-block horizontal rails */
+const INCLUSIO_FRAME_PADDING = {
+  top: 10,
+  bottom: 10,
+  left: 44,
+  right: 57,
+};
+window.INCLUSIO_FRAME_PADDING = INCLUSIO_FRAME_PADDING;
+
 const INCLUSIO_UNIT_FRAME = {
-  textPad: 12,
-  unitPad: 36,
+  ...INCLUSIO_FRAME_PADDING,
   nestRailGap: 40,
-  edgePad: 10,
   capLen: 12,
   /* legacy aliases used by gutter sync */
-  marginBase: 36,
+  marginBase: INCLUSIO_FRAME_PADDING.left,
   marginStep: 40,
+  anchorPad: INCLUSIO_FRAME_PADDING.top,
+  unitPad: 0,
+  textPad: 0,
 };
 window.INCLUSIO_UNIT_FRAME = INCLUSIO_UNIT_FRAME;
 
-function inclusioClauseInRange(vi, ci, open, close, verses) {
-  const clause = verses[vi]?.clauses[ci];
-  if (!clause) return false;
-  for (let wi = 0; wi < clause.words.length; wi++) {
-    if (typeof isMaqafConnector === 'function' && isMaqafConnector(clause.words[wi])) continue;
-    const l = { v: vi, c: ci, w: wi };
-    if (locInRangeInVerses(l, open.start, close.end, verses)) return true;
-  }
-  return false;
+function inclusioWordElement(l, ed, pane) {
+  if (!ed || !l) return null;
+  const sel = typeof inclusioWordSelector === 'function'
+    ? inclusioWordSelector(l, pane)
+    : `.word[data-v="${l.v}"][data-c="${l.c}"][data-w="${l.w}"]`;
+  return ed.querySelector(`:scope ${sel}`) || document.querySelector(sel);
 }
 
-function inclusioClauseElement(vi, ci, ed, pane) {
-  if (!ed) return null;
-  const sel = `.clause[data-v="${vi}"][data-c="${ci}"]`;
-  if (pane != null) {
-    const scoped = ed.querySelector(`${sel}`);
-    if (scoped) return scoped;
-  }
-  return ed.querySelector(`:scope ${sel}`) || ed.querySelector(sel);
-}
-
-/** Union of spanned clause line boxes in editor coordinates (not per-word). */
-function inclusioUnitBounds(inc, paneState, pane) {
-  const item = typeof migrateInclusioItem === 'function' ? migrateInclusioItem(inc) : inc;
-  const open = anchorRangeOrdered(item?.openingAnchor);
-  const close = anchorRangeOrdered(item?.closingAnchor);
-  if (!open || !close || !paneState?.verses?.length) return null;
+/** Union of word boxes for words in a loc range. */
+function inclusioWordsBoundsForRange(rangeStart, rangeEnd, paneState, pane) {
+  if (!rangeStart || !rangeEnd || !paneState?.verses?.length) return null;
   const ed = typeof inclusioEditorRoot === 'function' ? inclusioEditorRoot(pane) : document.getElementById('editor');
   if (!ed) return null;
   const scale = typeof inclusioEditorScale === 'function' ? inclusioEditorScale() : 1;
@@ -48,9 +41,11 @@ function inclusioUnitBounds(inc, paneState, pane) {
   let left = Infinity;
   let right = -Infinity;
   let found = false;
-  verses.forEach((v, vi) => v.clauses.forEach((c, ci) => {
-    if (!inclusioClauseInRange(vi, ci, open, close, verses)) return;
-    const el = inclusioClauseElement(vi, ci, ed, pane);
+  verses.forEach((v, vi) => v.clauses.forEach((c, ci) => c.words.forEach((w, wi) => {
+    if (typeof isMaqafConnector === 'function' && isMaqafConnector(w)) return;
+    const l = { v: vi, c: ci, w: wi };
+    if (!locInRangeInVerses(l, rangeStart, rangeEnd, verses)) return;
+    const el = inclusioWordElement(l, ed, pane);
     if (!el) return;
     const r = el.getBoundingClientRect();
     top = Math.min(top, r.top);
@@ -58,14 +53,46 @@ function inclusioUnitBounds(inc, paneState, pane) {
     left = Math.min(left, r.left);
     right = Math.max(right, r.right);
     found = true;
-  }));
+  })));
   if (!found) return null;
-  const pad = INCLUSIO_UNIT_FRAME.textPad;
   return {
-    top: (top - er.top) / scale - pad,
-    bottom: (bottom - er.top) / scale + pad,
-    left: (left - er.left) / scale - pad,
-    right: (right - er.left) / scale + pad,
+    top: (top - er.top) / scale,
+    bottom: (bottom - er.top) / scale,
+    left: (left - er.left) / scale,
+    right: (right - er.left) / scale,
+  };
+}
+
+/** Union of word boxes for one anchor range (opening or closing phrase). */
+function inclusioAnchorWordsBounds(anchor, paneState, pane) {
+  const ord = typeof anchorRangeOrdered === 'function' ? anchorRangeOrdered(anchor) : null;
+  if (!ord) return null;
+  return inclusioWordsBoundsForRange(ord.start, ord.end, paneState, pane);
+}
+window.inclusioAnchorWordsBounds = inclusioAnchorWordsBounds;
+
+/**
+ * Unit bounds: one expanded rectangle around the literary unit.
+ * Vertical from opening/closing anchor words; horizontal from word union.
+ * Rails attach to these edges (padding applied once here).
+ */
+function inclusioUnitBounds(inc, paneState, pane) {
+  const item = typeof migrateInclusioItem === 'function' ? migrateInclusioItem(inc) : inc;
+  const open = anchorRangeOrdered(item?.openingAnchor);
+  const close = anchorRangeOrdered(item?.closingAnchor);
+  if (!open || !close || !paneState?.verses?.length) return null;
+  const ed = typeof inclusioEditorRoot === 'function' ? inclusioEditorRoot(pane) : document.getElementById('editor');
+  if (!ed) return null;
+  const openWords = inclusioAnchorWordsBounds(item.openingAnchor, paneState, pane);
+  const closeWords = inclusioAnchorWordsBounds(item.closingAnchor, paneState, pane);
+  const spanWords = inclusioWordsBoundsForRange(open.start, close.end, paneState, pane);
+  if (!openWords || !closeWords || !spanWords) return null;
+  const pad = INCLUSIO_FRAME_PADDING;
+  return {
+    top: openWords.top - pad.top,
+    bottom: closeWords.bottom + pad.bottom,
+    left: spanWords.left - pad.left,
+    right: spanWords.right + pad.right,
     width: Math.max(ed.scrollWidth, ed.offsetWidth, 1),
     height: Math.max(ed.scrollHeight, ed.offsetHeight, 1),
   };
@@ -74,7 +101,6 @@ window.inclusioUnitBounds = inclusioUnitBounds;
 
 /** Independent bracket rails per inclusio; nested frames stay inside parents with a clear gap. */
 function computeInclusioBracketRails(entries, maxNest, contentW) {
-  const unitPad = INCLUSIO_UNIT_FRAME.unitPad;
   const gap = INCLUSIO_UNIT_FRAME.nestRailGap;
   const placed = [];
   const out = [];
@@ -83,12 +109,12 @@ function computeInclusioBracketRails(entries, maxNest, contentW) {
     const bounds = entry.bounds;
     const level = entry.level || 0;
     const layerOut = Math.max(0, (maxNest || 0) - level) * gap;
-    let xL = bounds.left - unitPad - layerOut;
-    let xR = bounds.right + unitPad + layerOut;
+    let xL = bounds.left - layerOut;
+    let xR = bounds.right + layerOut;
     const y1 = Math.max(0, bounds.top);
     const y2 = Math.min(bounds.height, bounds.bottom);
-    const textFloorL = bounds.left - unitPad;
-    const textCeilR = bounds.right + unitPad;
+    const textFloorL = bounds.left;
+    const textCeilR = bounds.right;
 
     placed.forEach((parent) => {
       const needL = parent.xL + gap;
@@ -122,7 +148,7 @@ function drawInclusioUnitFrame(svg, bounds, inc, level, maxNest, opts, railOverr
   const strokeWidth = (inc.frameWeight && preset[inc.frameWeight])
     ? preset[inc.frameWeight]
     : Math.max(1.25, 2.75 - (level || 0) * 0.55);
-  const opacity = opts.preview ? 0.5 : Math.max(0.5, 0.95 - (level || 0) * 0.1);
+  const opacity = opts.preview ? 0.5 : Math.max(0.5, 0.95 - (level || 0) * 0.55);
   const rail = railOverride || computeInclusioBracketRails(
     [{ bounds, level: level || 0 }],
     maxNest || 0,

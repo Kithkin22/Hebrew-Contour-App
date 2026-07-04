@@ -50,7 +50,14 @@
   align-items: center;
 }
 
-.inclusio-color-row .inclusio-color-preset {
+.inclusio-color-toolbar {
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.inclusio-color-toolbar .inclusio-color-preset {
   min-width: 3.5rem;
 }
 
