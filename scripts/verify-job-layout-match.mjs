@@ -136,7 +136,7 @@ async function main() {
         exportHasMd: exportHtml.includes('layout-break-md'),
         exportHasLg: exportHtml.includes('layout-break-lg'),
         exportHasSm: exportHtml.includes('layout-break-sm'),
-        exportHasIndent: exportHtml.includes('margin-right:36px') || exportHtml.includes('margin-right:72px'),
+        exportHasIndent: exportHtml.includes('margin-right:30px') || exportHtml.includes('margin-right:60px'),
         docx480: docx.includes('w:spacing w:after="480"'),
         docx960: docx.includes('w:spacing w:after="960"'),
         docxIndent: docx.includes('w:ind w:right="720"') || docx.includes('w:ind w:right="1440"'),
@@ -165,8 +165,8 @@ async function main() {
 
     const mdMargin = unit.margins.find((m) => m.cls.includes('layout-break-md'));
     record('editor-md-margin', mdMargin && mdMargin.mb >= 24, `medium margin-bottom=${mdMargin?.mb}px`);
-    const indentedMargin = unit.margins.find((m) => m.mr >= 36);
-    record('editor-indent-margin', !!indentedMargin, `margin-right=${indentedMargin?.mr}px`);
+    const indentedMargin = unit.margins.find((m) => m.mr >= 28);
+    record('editor-indent-margin', !!indentedMargin && indentedMargin.mr >= 28, `margin-right=${indentedMargin?.mr}px`);
 
     // Screenshot of editor state
     await page.evaluate((wordHtml) => {

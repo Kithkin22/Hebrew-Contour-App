@@ -4,6 +4,7 @@
   --contour-letter-width: 816px;   /* 8.5in @ 96dpi */
   --contour-letter-margin: 96px;   /* 1in margins */
   --contour-letter-min-height: 1056px; /* 11in @ 96dpi */
+  --contour-hebrew-anchor-inset: 32px; /* nudge RTL anchor left vs Word */
 }
 
 #editorWrap.contour-document-surface {
@@ -45,7 +46,18 @@
   margin: 0 0 24px 0 !important;
 }
 
+#contourPassageTitle .contour-passage-title-text {
+  unicode-bidi: isolate;
+  direction: ltr;
+}
+
 #contourPassageTitle.contour-passage-title[hidden] {
+  display: none !important;
+}
+
+/* Single-verse paste: passage title bar replaces in-editor verse ref (prevents RTL scramble) */
+.contour-document-sheet--titled.contour-document-sheet--single-verse #editor .verse-ref,
+.contour-document-sheet--titled.contour-document-sheet--single-verse #editor .contour-passage-title {
   display: none !important;
 }
 
@@ -70,6 +82,8 @@
   direction: rtl;
   text-align: right;
   width: 100%;
+  padding-right: var(--contour-hebrew-anchor-inset);
+  box-sizing: border-box;
 }
 
 .contour-passage-title,

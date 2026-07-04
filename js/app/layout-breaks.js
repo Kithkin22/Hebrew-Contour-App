@@ -50,6 +50,11 @@ function spacingAfterFromBlankLineCount(blankCount) {
 window.spacingAfterFromBlankLineCount = spacingAfterFromBlankLineCount;
 
 const WORD_CONTOUR_INDENT_PX = 36;
+/** Editor/export pixel width per stored indent level (presentation calibration). */
+const CONTOUR_DISPLAY_INDENT_PX = 30;
+window.contourDisplayIndentPx = function contourDisplayIndentPx() {
+  return CONTOUR_DISPLAY_INDENT_PX;
+};
 const WORD_IMPORT_INDENT_STEP_PX = 48;
 const WORD_INDENT_IMPORT_PREF_KEY = 'hc-import-word-indent';
 const WORD_INDENT_MIN_PX = 18;
@@ -480,18 +485,45 @@ window.passageRefForDisplay = passageRefForDisplay;
 
 function syncContourPassageTitle() {
   const el = document.getElementById('contourPassageTitle');
+  const sheet = document.querySelector('.contour-document-sheet');
   if (!el) return;
   const ref = passageRefForDisplay();
+  const singleVerse = !!(state && state.verses && state.verses.length === 1);
   if (!state || !state.verses || !state.verses.length || !ref) {
     el.hidden = true;
-    el.textContent = '';
+    el.replaceChildren();
+    if (sheet) {
+      sheet.classList.remove('contour-document-sheet--titled', 'contour-document-sheet--single-verse');
+    }
     return;
   }
-  el.textContent = formatPassageTitleDisplay(ref);
+  const text = formatPassageTitleDisplay(ref);
+  el.replaceChildren();
+  const bdi = document.createElement('bdi');
+  bdi.className = 'contour-passage-title-text';
+  bdi.dir = 'ltr';
+  bdi.textContent = text;
+  el.appendChild(bdi);
   el.hidden = false;
   if (typeof applyLtrAnnotationInput === 'function') applyLtrAnnotationInput(el);
+  if (sheet) {
+    sheet.classList.add('contour-document-sheet--titled');
+    sheet.classList.toggle('contour-document-sheet--single-verse', singleVerse);
+  }
 }
 window.syncContourPassageTitle = syncContourPassageTitle;
+
+function finalizeDocumentPagePresentation() {
+  const ed = document.getElementById('editor');
+  if (!ed || !ed.classList.contains('contour-document-page') || !state.verses.length) return;
+  const layout = typeof getLanguageLayout === 'function' ? getLanguageLayout() : null;
+  if (typeof applyDocumentPageEditorTypography === 'function') {
+    applyDocumentPageEditorTypography(ed, layout);
+  }
+  if (typeof syncContourPassageTitle === 'function') syncContourPassageTitle();
+  ed.querySelectorAll('.contour-passage-title, .verse-ref').forEach((node) => node.remove());
+}
+window.finalizeDocumentPagePresentation = finalizeDocumentPagePresentation;
 
 function contourPassageTitleHtml(ref) {
   if (!ref || !String(ref).trim()) return '';

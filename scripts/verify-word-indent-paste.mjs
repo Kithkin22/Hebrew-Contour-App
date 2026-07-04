@@ -88,7 +88,7 @@ async function main() {
         marginRights,
         reloadedIndents,
         plainIndents,
-        exportHasIndent: buildContourEditorHtmlFromState(true).includes('margin-right:36px')
+        exportHasIndent: buildContourEditorHtmlFromState(true).includes('margin-right:30px')
           || buildContourEditorHtmlFromState(true).includes('margin-right:72px'),
       };
     }, WORD_HTML);
