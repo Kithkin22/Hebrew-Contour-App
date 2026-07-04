@@ -259,7 +259,9 @@ function exportContourPdf(opts){
   try{
     docHtml=typeof buildContourExportDocument==='function'?buildContourExportDocument({
       includePrintButton:true,
-      docTitle:printMeta.title
+      docTitle:printMeta.title,
+      paneState:state,
+      fitOnePage:!!opts.fitOnePage,
     }):null;
   }catch(e){
     alert('Could not prepare contour PDF export. Try reloading the project.');
@@ -301,3 +303,4 @@ document.getElementById('detectLegendEntries').onclick=detectUsedLegendEntries;
 document.getElementById('clearLegendEntries').onclick=()=>{if(confirm('Clear all legend entries?')){state.legend=[];renderLegendEditor();autoSaveProject();}};
 document.getElementById('contourDocxExport').onclick=exportContourDocx;
 document.getElementById('contourPdfExport').onclick=exportContourPdf;
+document.getElementById('contourPdfExportFit').onclick=()=>exportContourPdf({fitOnePage:true});

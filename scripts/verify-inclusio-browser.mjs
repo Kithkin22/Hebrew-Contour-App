@@ -620,15 +620,37 @@ async function main() {
       if (typeof openPdfPrintWindow !== 'function') {
         return { ok: false, reason: 'missing openPdfPrintWindow' };
       }
+      ensureArcs();
+      if (!state.arcs.length && state.verses.length >= 2) {
+        state.arcs.push({
+          id: 'arc-1',
+          start: { v: 0, c: 0, w: 0 },
+          end: { v: 1, c: 0, w: 0 },
+          color: '#0b61d8',
+          label: 'Test arc',
+        });
+      }
       const meta = { title: 'test-contour.pdf', oldTitle: 'Hebrew Contour' };
       const html = typeof buildContourExportDocument === 'function'
         ? buildContourExportDocument({
           includePrintButton: true,
           docTitle: meta.title,
+          paneState: state,
+        })
+        : '';
+      const fitHtml = typeof buildContourExportDocument === 'function'
+        ? buildContourExportDocument({
+          includePrintButton: true,
+          docTitle: meta.title,
+          paneState: state,
+          fitOnePage: true,
         })
         : '';
       if (!html || html.length < 500) return { ok: false, reason: 'export html too short' };
       if (!html.includes('window.print()')) return { ok: false, reason: 'missing print button' };
+      const hasArcOverlay = html.includes('contour-export-arc-svg') && html.includes('arc-path');
+      const hasFrameOverlay = html.includes('contour-export-inclusio-svg') && html.includes('inclusio-frame-rail');
+      const hasFitScript = fitHtml.includes('fitOnePage') && fitHtml.includes('contour-export-fit');
       let printed = false;
       const oldOpen = window.open;
       window.open = function () {
@@ -649,9 +671,26 @@ async function main() {
         window.open = oldOpen;
       }
       const docx = typeof contourDocxXml === 'function' ? contourDocxXml() : '';
-      return { ok: printed, htmlLen: html.length, docxOk: docx.length > 200 };
+      return {
+        ok: printed && hasArcOverlay && hasFrameOverlay && hasFitScript,
+        htmlLen: html.length,
+        docxOk: docx.length > 200,
+        hasArcOverlay,
+        hasFrameOverlay,
+        hasFitScript,
+        reason: !hasArcOverlay ? 'missing arc overlay'
+          : !hasFrameOverlay ? 'missing frame overlay'
+          : !hasFitScript ? 'missing fit-one-page script'
+          : !printed ? 'print not triggered' : '',
+      };
     });
-    record('export-pdf-script', exportPdf.ok, exportPdf.ok ? `printTriggered, htmlLen=${exportPdf.htmlLen}` : exportPdf.reason);
+    record(
+      'export-pdf-script',
+      exportPdf.ok,
+      exportPdf.ok
+        ? `printTriggered, htmlLen=${exportPdf.htmlLen}, arcs=${exportPdf.hasArcOverlay}, frames=${exportPdf.hasFrameOverlay}, fit=${exportPdf.hasFitScript}`
+        : exportPdf.reason || 'export failed'
+    );
 
     const pass = results.every((r) => r.pass);
     console.log(`\n${pass ? 'ALL PASSED' : 'SOME FAILED'} (${results.filter((r) => r.pass).length}/${results.length})`);

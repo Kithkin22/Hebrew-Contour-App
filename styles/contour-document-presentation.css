@@ -120,7 +120,7 @@ body.dark-mode #editorWrap.contour-document-surface .contour-document-sheet {
 
 .contour-page-zoom-inner {
   transform: scale(var(--contour-page-zoom, 1));
-  transform-origin: top center;
+  transform-origin: top left;
   backface-visibility: hidden;
 }
 

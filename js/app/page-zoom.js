@@ -195,6 +195,7 @@
     stage.style.height = Math.ceil(pageH * scale) + 'px';
     stage.style.minHeight = '';
     inner.style.width = pageW + 'px';
+    inner.style.height = pageH + 'px';
   }
 
   function refreshPageZoomStageLayout() {
@@ -284,7 +285,7 @@
 
     if (opts.focal && wrap && oldScale !== scale) {
       adjustScrollForZoom(wrap, opts.focal.x, opts.focal.y, oldScale, scale);
-    } else if (mode === 'fit' && !opts.skipFitScroll) {
+    } else if (!opts.skipFitScroll) {
       scrollFitPageIntoView();
     } else {
       clampEditorWrapScroll(wrap);

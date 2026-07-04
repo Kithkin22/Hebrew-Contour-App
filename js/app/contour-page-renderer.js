@@ -140,6 +140,7 @@ function contourPageExportCss(opts) {
     + '.legend-preview-word{font-family:' + contourScriptFontFamily(false) + ';font-size:20px}'
     + '.legend-preview-greek{font-family:' + contourScriptFontFamily(true) + ';font-size:20px}'
     + '.comment-marker{display:inline-block;direction:ltr;font-family:Arial,Helvetica,sans-serif;font-size:.58em;color:#b02a2a;background:transparent;border:0;padding:0;margin:0 1px;vertical-align:super;line-height:1;font-weight:bold}'
+    + (typeof contourExportOverlayCss === 'function' ? contourExportOverlayCss() : '')
     + '@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}button{display:none}}';
 }
 window.contourPageExportCss = contourPageExportCss;
@@ -184,11 +185,17 @@ function buildContourPageBodyHtml(forExport) {
 function buildContourPageShellHtml(bodyHtml, opts) {
   opts = opts || {};
   const isGreek = opts.isGreek != null ? opts.isGreek : (typeof state !== 'undefined' && state.language === 'greek');
-  const langCls = isGreek ? 'lang-greek' : 'lang-hebrew';
   const titleHtml = opts.includeTitle === false ? '' : buildContourPassageTitleExportHtml();
+  const bodyWrapHtml = opts.includeOverlays !== false
+    && typeof buildContourExportBodyWrapHtml === 'function'
+    ? buildContourExportBodyWrapHtml(bodyHtml, opts)
+    : (() => {
+      const langCls = isGreek ? 'lang-greek' : 'lang-hebrew';
+      return `<div class="contour-export-body-wrap"><div class="contour-page-body ${langCls}" dir="ltr">${bodyHtml || ''}</div></div>`;
+    })();
   return `<div class="contour-document-sheet contour-document-sheet--export">`
     + titleHtml
-    + `<div class="contour-page-body ${langCls}" dir="ltr">${bodyHtml || ''}</div>`
+    + bodyWrapHtml
     + '</div>';
 }
 window.buildContourPageShellHtml = buildContourPageShellHtml;
@@ -204,10 +211,16 @@ function buildContourExportDocument(opts) {
   const inclusiosHtml = typeof inclusiosHtmlForExport === 'function' ? inclusiosHtmlForExport() : '';
   const commentsHtml = typeof commentsHtmlForExport === 'function' ? commentsHtmlForExport() : '';
   const arcsHtml = typeof arcsHtmlForExport === 'function' ? arcsHtmlForExport() : '';
-  const pageShell = buildContourPageShellHtml(bodyHtml, { isGreek });
+  const pageShell = buildContourPageShellHtml(bodyHtml, {
+    isGreek,
+    paneState: opts.paneState || (typeof state !== 'undefined' ? state : null),
+  });
   const css = contourPageExportCss({ isGreek });
   const printBtn = opts.includePrintButton
     ? '<button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button>'
+    : '';
+  const fitScript = typeof buildContourExportFitScript === 'function'
+    ? buildContourExportFitScript(!!opts.fitOnePage)
     : '';
   const printScript = opts.printScript || '';
   return '<!doctype html><html><head><meta charset="utf-8"><title>' + pageTitle + '</title><style>' + css + '</style></head><body>'
@@ -217,6 +230,7 @@ function buildContourExportDocument(opts) {
     + pageShell
     + commentsHtml
     + arcsHtml
+    + fitScript
     + printScript
     + '</body></html>';
 }

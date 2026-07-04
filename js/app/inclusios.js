@@ -163,6 +163,7 @@ function inclusioWordSelector(l, pane) {
 }
 
 function inclusioEditorRoot(pane) {
+  if (window.__contourExportRoot) return window.__contourExportRoot;
   if (pane != null) {
     return document.querySelector(`.parallel-pane-arc-wrap[data-pane="${pane}"] .parallel-verse-body`);
   }

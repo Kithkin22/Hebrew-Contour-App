@@ -267,6 +267,47 @@ async function main() {
       `words=${zoomToggle.lastWords}, visible=${zoomToggle.lastVisible}, mode=${zoomToggle.mode}, scale=${zoomToggle.scale}`
     );
 
+    const customClip = await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      const lines = Array.from({ length: 30 }, (_, i) =>
+        `<p dir=RTL style='margin-right:${(i % 4) * 36}pt;text-align:right'>שׁוֹרָה ${i + 1} טֶקְסְט עִבְרִי לְבִדּוּק זוּם</p>`
+      ).join('');
+      const wordHtml = `<html><body dir=RTL>${lines}</body></html>`;
+      const parsed = parseWordHtmlLayoutLines(wordHtml, { isRtl: true });
+      parseText(parsed.text, 'Job 19 Contour', false, { preserveLayout: true, layoutLines: parsed.lines });
+      render();
+      setPageZoomScale(0.52, { skipPersist: true });
+      const first = document.querySelector('#editor .word');
+      const last = document.querySelector('#editor .word:last-of-type');
+      const wrap = document.getElementById('editorWrap');
+      const stage = document.getElementById('contourPageZoomStage');
+      const inner = stage?.querySelector('.contour-page-zoom-inner');
+      const wr = wrap?.getBoundingClientRect();
+      const fr = first?.getBoundingClientRect();
+      const lr = last?.getBoundingClientRect();
+      const stageRect = stage?.getBoundingClientRect();
+      const origin = inner ? getComputedStyle(inner).transformOrigin : '';
+      const firstVisible = fr && wr && fr.width > 0 && fr.bottom > wr.top + 2 && fr.top < wr.bottom - 2
+        && fr.left >= wr.left - 4 && fr.right <= wr.right + 4;
+      const lastVisible = lr && wr && lr.bottom > wr.top + 2 && lr.top < wr.bottom - 2;
+      const stageAligned = stageRect && fr && fr.left >= stageRect.left - 4 && fr.right <= stageRect.right + 4;
+      const gapTop = fr && wr ? fr.top - wr.top : 999;
+      return {
+        scale: getPageZoomScaleValue(),
+        origin,
+        firstVisible,
+        lastVisible,
+        stageAligned,
+        gapTop,
+      };
+    });
+    record(
+      'custom-52-no-clip',
+      customClip.scale > 0.5 && customClip.firstVisible && customClip.lastVisible && customClip.stageAligned && customClip.gapTop < 220,
+      `scale=${customClip.scale}, first=${customClip.firstVisible}, last=${customClip.lastVisible}, aligned=${customClip.stageAligned}, gapTop=${customClip.gapTop?.toFixed?.(1)}, origin=${customClip.origin}`
+    );
+
     const pass = results.every((r) => r.pass);
     console.log(`\n${pass ? 'ALL PASSED' : 'SOME FAILED'} (${results.filter((r) => r.pass).length}/${results.length})`);
     process.exit(pass ? 0 : 1);

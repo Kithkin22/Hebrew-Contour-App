@@ -1,4 +1,4 @@
-const CACHE_NAME = 'contour-app-pwa-v72';
+const CACHE_NAME = 'contour-app-pwa-v73';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -33,6 +33,7 @@ const APP_ASSETS = [
   './js/app/project-header.js',
   './js/app/file-menu.js',
   './js/app/arcs.js',
+  './js/app/contour-export-overlays.js',
   './js/app/keyboard.js',
   './js/app/annotations.js',
   './js/app/theme.js',
