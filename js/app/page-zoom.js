@@ -8,16 +8,71 @@
     return '100';
   }
 
+  function getEditorFitViewport() {
+    const wrap = document.getElementById('editorWrap');
+    if (!wrap) return null;
+
+    const cs = getComputedStyle(wrap);
+    const padL = parseFloat(cs.paddingLeft) || 0;
+    const padR = parseFloat(cs.paddingRight) || 0;
+    const padT = parseFloat(cs.paddingTop) || 0;
+    const padB = parseFloat(cs.paddingBottom) || 0;
+    const PAGE_PAD = 16;
+
+    const wrapRect = wrap.getBoundingClientRect();
+    let availW = wrap.clientWidth - padL - padR - PAGE_PAD * 2;
+
+    let availH;
+    if (wrap.clientHeight > 0 && wrap.scrollHeight > wrap.clientHeight + 1) {
+      availH = wrap.clientHeight - padT - padB - PAGE_PAD * 2;
+    } else {
+      const port = wrap.closest('.contour-with-comments')
+        || wrap.closest('#singleEditorSection')
+        || wrap.closest('.main-workspace')
+        || wrap;
+      const portRect = port.getBoundingClientRect();
+      const bottom = Math.min(portRect.bottom, window.innerHeight);
+      availH = bottom - wrapRect.top - padT - padB - PAGE_PAD * 2;
+    }
+
+    return {
+      width: Math.max(120, availW),
+      height: Math.max(160, availH),
+    };
+  }
+
+  function getPageLayoutSize(sheet) {
+    const letterW = (window.CONTOUR_PAGE && window.CONTOUR_PAGE.letterWidthPx) || 816;
+    const letterMinH = (window.CONTOUR_PAGE && window.CONTOUR_PAGE.letterHeightPx) || 1056;
+    const pageW = sheet.offsetWidth || letterW;
+    const pageH = Math.max(sheet.offsetHeight, sheet.scrollHeight, letterMinH);
+    return { pageW, pageH };
+  }
+
   function computeFitPageZoom() {
     const wrap = document.getElementById('editorWrap');
     const sheet = document.querySelector('.contour-document-sheet');
-    if (!wrap || !sheet) return 1;
-    const availW = Math.max(240, wrap.clientWidth - 40);
-    const availH = Math.max(320, wrap.clientHeight - 48);
-    const sw = sheet.offsetWidth || 816;
-    const sh = Math.max(sheet.offsetHeight, sheet.scrollHeight, 1056);
-    const scale = Math.min(1, availW / sw, availH / sh);
-    return Math.max(0.45, Math.round(scale * 1000) / 1000);
+    const viewport = getEditorFitViewport();
+    if (!wrap || !sheet || !viewport) return 1;
+
+    const { pageW, pageH } = getPageLayoutSize(sheet);
+    const scaleW = viewport.width / pageW;
+    const scaleH = viewport.height / pageH;
+    const scale = Math.min(1, scaleW, scaleH);
+    return Math.max(0.2, Math.round(scale * 1000) / 1000);
+  }
+
+  function scrollFitPageIntoView() {
+    scrollContourEditorToTop();
+    const wrap = document.getElementById('editorWrap');
+    const stage = document.getElementById('contourPageZoomStage');
+    if (!wrap || !stage) return;
+    wrap.scrollLeft = Math.max(0, (wrap.scrollWidth - wrap.clientWidth) / 2);
+    try {
+      stage.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'auto' });
+    } catch (_) {
+      stage.scrollIntoView(true);
+    }
   }
 
   function getPageZoomScale(mode) {
@@ -66,6 +121,7 @@
     syncStageLayoutAfterZoom(stage, scale);
     updatePageZoomControls(mode, scale);
     if (!opts.skipPersist && typeof syncPageZoomPref === 'function') syncPageZoomPref(mode);
+    if (mode === 'fit') scrollFitPageIntoView();
     if (typeof scheduleArcOverlayRedraw === 'function') scheduleArcOverlayRedraw();
   }
 
@@ -101,6 +157,8 @@
   window.setPageZoomMode = setPageZoomMode;
   window.getPageZoomMode = getPageZoomMode;
   window.scrollContourEditorToTop = scrollContourEditorToTop;
+  window.computeFitPageZoom = computeFitPageZoom;
+  window.getEditorFitViewport = getEditorFitViewport;
 
   document.addEventListener('DOMContentLoaded', () => {
     bindPageZoomControls();
