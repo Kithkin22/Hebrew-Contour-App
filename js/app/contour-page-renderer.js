@@ -98,10 +98,20 @@ function contourPageExportCss(opts) {
   const bodySel = '.contour-page-body';
   const sheetSel = '.contour-document-sheet.contour-document-sheet--export';
   const worksheet = !!opts.worksheet;
+  const paperSpec = typeof worksheetPaperSpec === 'function'
+    ? worksheetPaperSpec(opts.paper || 'letter')
+    : { cssSize: 'letter', widthIn: 8.5, heightIn: 11 };
+  const pageRule = worksheet
+    ? `@page{size:${paperSpec.cssSize};margin:0}`
+    : '@page{margin:0.6in}';
+  const worksheetHostCss = worksheet
+    ? `.contour-export-worksheet-host{width:${paperSpec.widthIn}in;height:${paperSpec.heightIn}in}`
+    : '';
 
   return contourPageCssVarsBlock()
     + 'body{margin:0;padding:24px;background:#fff;color:#222;font-family:Arial,Helvetica,sans-serif}'
-    + (worksheet ? '@page{size:letter;margin:0}' : '@page{margin:0.6in}')
+    + pageRule
+    + worksheetHostCss
     + (worksheet
       ? `${sheetSel}{direction:ltr;text-align:left;width:auto;min-height:0;`
         + 'margin:0;padding:20px 28px;box-sizing:border-box;background:#fff}'
@@ -183,6 +193,40 @@ function buildContourPassageTitleExportHtml() {
 }
 window.buildContourPassageTitleExportHtml = buildContourPassageTitleExportHtml;
 
+function buildWorksheetTitleExportHtml(wsOpts) {
+  wsOpts = wsOpts || {};
+  let html = '';
+  if (wsOpts.includePassageTitle) html += buildContourPassageTitleExportHtml();
+  if (wsOpts.includeDate) {
+    const d = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    html += `<div class="contour-worksheet-meta">${typeof esc === 'function' ? esc(d) : d}</div>`;
+  }
+  if (wsOpts.includeProjectName) {
+    let name = 'Untitled Project';
+    if (typeof getCurrentProjectRecord === 'function') {
+      const rec = getCurrentProjectRecord();
+      if (rec && rec.name) name = rec.name;
+    } else if (typeof defaultProjectName === 'function') {
+      name = defaultProjectName();
+    }
+    html += `<div class="contour-worksheet-meta">${typeof esc === 'function' ? esc(name) : name}</div>`;
+  }
+  return html;
+}
+window.buildWorksheetTitleExportHtml = buildWorksheetTitleExportHtml;
+
+function stripExportTextColors(html) {
+  if (!html) return html;
+  return html.replace(/\sstyle="([^"]*)"/g, (match, styles) => {
+    const cleaned = styles.split(';').filter((s) => {
+      const t = s.trim().toLowerCase();
+      return t && !t.startsWith('color:') && !t.startsWith('background-color:') && !t.startsWith('background:');
+    }).join(';');
+    return cleaned ? ` style="${cleaned}"` : '';
+  });
+}
+window.stripExportTextColors = stripExportTextColors;
+
 function buildContourPageBodyHtml(forExport) {
   if (typeof buildContourEditorHtmlFromState !== 'function') return '';
   return buildContourEditorHtmlFromState(!!forExport);
@@ -191,8 +235,19 @@ function buildContourPageBodyHtml(forExport) {
 function buildContourPageShellHtml(bodyHtml, opts) {
   opts = opts || {};
   const isGreek = opts.isGreek != null ? opts.isGreek : (typeof state !== 'undefined' && state.language === 'greek');
-  const titleHtml = opts.includeTitle === false ? '' : buildContourPassageTitleExportHtml();
-  const bodyWrapHtml = opts.includeOverlays !== false
+  let titleHtml = '';
+  if (opts.includeTitle !== false) {
+    if (opts.worksheetTitle) {
+      titleHtml = typeof buildWorksheetTitleExportHtml === 'function'
+        ? buildWorksheetTitleExportHtml(opts.worksheetTitle)
+        : buildContourPassageTitleExportHtml();
+    } else {
+      titleHtml = buildContourPassageTitleExportHtml();
+    }
+  }
+  const includeOverlays = opts.includeOverlays !== false
+    && (opts.includeUnitFrames !== false || opts.includeArcs !== false);
+  const bodyWrapHtml = includeOverlays
     && typeof buildContourExportBodyWrapHtml === 'function'
     ? buildContourExportBodyWrapHtml(bodyHtml, opts)
     : (() => {
@@ -209,31 +264,67 @@ window.buildContourPageShellHtml = buildContourPageShellHtml;
 function buildContourExportDocument(opts) {
   opts = opts || {};
   const isGreek = opts.isGreek != null ? opts.isGreek : (typeof state !== 'undefined' && state.language === 'greek');
-  const worksheet = opts.worksheet === true || (opts.worksheet !== false && !!opts.fitOnePage);
-  const includeSupplement = !!opts.includeSupplement;
-  const bodyHtml = opts.bodyHtml != null ? opts.bodyHtml : buildContourPageBodyHtml(true);
+  const hasWsSettings = !!opts.worksheetSettings;
+  const wsOpts = hasWsSettings && typeof normalizeWorksheetExportOptions === 'function'
+    ? normalizeWorksheetExportOptions(opts.worksheetSettings)
+    : null;
+  const worksheet = wsOpts ? wsOpts.fitOnePage : (opts.worksheet === true);
+  const includeSupplementLegacy = !!opts.includeSupplement;
+  let bodyHtml = opts.bodyHtml != null ? opts.bodyHtml : buildContourPageBodyHtml(true);
   if (!bodyHtml) return null;
+  if (wsOpts && !wsOpts.includeTextColors && typeof stripExportTextColors === 'function') {
+    bodyHtml = stripExportTextColors(bodyHtml);
+  }
   const titleText = contourPassageTitleForExport() || (state && state.ref) || 'Contour Export';
   const pageTitle = typeof xmlEscape === 'function' ? xmlEscape(opts.docTitle || titleText) : (opts.docTitle || titleText);
-  const legendHtml = includeSupplement && typeof legendHtmlForExport === 'function' ? legendHtmlForExport() : '';
-  const inclusiosHtml = includeSupplement && typeof inclusiosHtmlForExport === 'function' ? inclusiosHtmlForExport() : '';
-  const commentsHtml = includeSupplement && typeof commentsHtmlForExport === 'function' ? commentsHtmlForExport() : '';
-  const arcsHtml = includeSupplement && typeof arcsHtmlForExport === 'function' ? arcsHtmlForExport() : '';
-  const pageShell = buildContourPageShellHtml(bodyHtml, {
+
+  let legendHtml = '';
+  let inclusiosHtml = '';
+  let commentsHtml = '';
+  let notesHtml = '';
+  let arcsHtml = '';
+  if (wsOpts) {
+    if (wsOpts.includeLegend && typeof legendHtmlForExport === 'function') legendHtml = legendHtmlForExport();
+    if (wsOpts.includeLegend && typeof inclusiosHtmlForExport === 'function') inclusiosHtml = inclusiosHtmlForExport();
+    if (wsOpts.includeComments && typeof commentsHtmlForExport === 'function') commentsHtml = commentsHtmlForExport();
+    if (wsOpts.includeNotes && typeof notesHtmlForExport === 'function') notesHtml = notesHtmlForExport();
+    if (wsOpts.includeLegend && wsOpts.includeArcs && typeof arcsHtmlForExport === 'function') arcsHtml = arcsHtmlForExport();
+  } else if (includeSupplementLegacy) {
+    legendHtml = typeof legendHtmlForExport === 'function' ? legendHtmlForExport() : '';
+    inclusiosHtml = typeof inclusiosHtmlForExport === 'function' ? inclusiosHtmlForExport() : '';
+    commentsHtml = typeof commentsHtmlForExport === 'function' ? commentsHtmlForExport() : '';
+    arcsHtml = typeof arcsHtmlForExport === 'function' ? arcsHtmlForExport() : '';
+  }
+
+  const shellOpts = {
     isGreek,
     paneState: opts.paneState || (typeof state !== 'undefined' ? state : null),
     includeTitle: opts.includeTitle !== false,
     worksheet,
-  });
-  const css = contourPageExportCss({ isGreek, worksheet });
+    includeUnitFrames: wsOpts ? wsOpts.includeUnitFrames : true,
+    includeArcs: wsOpts ? wsOpts.includeArcs : true,
+  };
+  if (wsOpts) {
+    shellOpts.worksheetTitle = wsOpts;
+    shellOpts.includeTitle = wsOpts.includePassageTitle || wsOpts.includeDate || wsOpts.includeProjectName;
+  }
+  const pageShell = buildContourPageShellHtml(bodyHtml, shellOpts);
+  const cssOpts = { isGreek, worksheet };
+  if (worksheet && wsOpts) {
+    cssOpts.paper = wsOpts.paper;
+    cssOpts.margins = wsOpts.margins;
+  } else if (worksheet) {
+    cssOpts.paper = opts.paper || 'letter';
+  }
+  const css = contourPageExportCss(cssOpts);
   const printBtn = opts.includePrintButton
     ? '<button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button>'
     : '';
   const layoutScript = worksheet && typeof buildContourWorksheetScript === 'function'
-    ? buildContourWorksheetScript()
+    ? buildContourWorksheetScript(wsOpts || { paper: opts.paper || 'letter', margins: opts.margins || 'normal' })
     : '';
   const printScript = opts.printScript || '';
-  const legendBlock = legendHtml + inclusiosHtml + commentsHtml + arcsHtml;
+  const legendBlock = legendHtml + inclusiosHtml + commentsHtml + notesHtml + arcsHtml;
   return '<!doctype html><html><head><meta charset="utf-8"><title>' + pageTitle + '</title><style>' + css + '</style></head><body>'
     + printBtn
     + pageShell

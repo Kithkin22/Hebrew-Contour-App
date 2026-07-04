@@ -60,7 +60,7 @@ function resetCustomColumnsOnPanes(panes){ensureStateBundle();syncStateBundle();
 function pickExportScope(exportKind){initExportScopeModal();const run=scope=>runScopedExport(exportKind,scope);if(!isParallelActive()){run({panes:[stateBundle.activePane],mode:'single'});return;}const left=stateBundle.panes[0].verses.length;const right=stateBundle.panes[1].verses.length;if(!left&&!right){alert('Create or generate text first.');return;}const modal=document.getElementById('exportScopeModal');if(!modal){run({panes:left&&right?[0,1]:left?[0]:[1],mode:'both'});return;}_exportScopeKind=exportKind;setPaneScopeModalCopy();modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
 function runScopedExport(kind,scope){if(!scope)return;switch(kind){case 'contour-docx':runContourDocxExport(scope);break;case 'contour-pdf':runContourPdfExport(scope);break;case 'table-docx':runTableDocxExport(scope);break;case 'table-pdf':runTablePdfExport(scope);break;}}
 function runContourDocxExport(scope){const panes=scope.panes;const base=suggestedExportBase('contour-editor');if(panes.length===1){withPaneExport(panes[0],()=>exportContourDocx({skipParallel:true}));return;}let body='';panes.forEach((p,i)=>{if(i)body+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';body+=extractDocxBody(contourDocxXmlForPane(p));});const fname=askExportFilename(base,'docx');if(!fname)return;downloadDocxZip(docxZipFiles(wrapDocxBody(body)),fname);}
-function runContourPdfExport(scope){if(scope.panes.length===1){withPaneExport(scope.panes[0],()=>exportContourPdf({skipParallel:true}));return;}alert('For PDF, export each passage separately (Left / Right) or use Word export for both passages.');}
+function runContourPdfExport(scope){if(scope.panes.length===1){withPaneExport(scope.panes[0],()=>openWorksheetPdfWizard({skipParallel:true}));return;}alert('For PDF, export each passage separately (Left / Right) or use Word export for both passages.');}
 function runTableDocxExport(scope){const panes=scope.panes;const base=suggestedExportBase('contour-table');if(panes.length===1){withPaneExport(panes[0],()=>{const fname=askExportFilename(base,'docx');if(!fname)return;downloadDocxZip(docxZipFiles(wrapDocxBody(extractDocxBody(docxXml()))),fname);});return;}let body='';panes.forEach((p,i)=>{if(i)body+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';body+=extractDocxBody(docxXmlForPane(p));});const fname=askExportFilename(base,'docx');if(!fname)return;downloadDocxZip(docxZipFiles(wrapDocxBody(body)),fname);}
 function runTablePdfExport(scope){if(scope.panes.length===1){withPaneExport(scope.panes[0],()=>exportTablePdf({skipParallel:true}));return;}const tableHtml=getTableHtmlForExport(scope);if(!tableHtml){alert('Create or generate text first.');return;}openTablePdfPrintWindow(tableHtml,getExportTitleForScope(scope,'Contour Table'));}
 function withPaneExport(pane,fn){const savedPane=stateBundle.activePane;bindActivePane(pane);try{return fn();}finally{syncStateBundle();bindActivePane(savedPane);}}
@@ -214,7 +214,7 @@ function locOK(l,pane){if(pane!=null||(l&&l.pane!=null))return locOKInPane(l,pan
 function normalizeHebrewWord(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f\u0591-\u05C7]/g,'').replace(/[־־]/g,'').replace(/[.,;:!?()\[\]{}"'׳״·;⸀⸂⸃]/g,'').toLowerCase().trim();}
 function selectedWordKey(){return locOK(state.selected)?normalizeHebrewWord(state.verses[state.selected.v].clauses[state.selected.c].words[state.selected.w].text):'';}function forEachMatchingWord(key,cb){if(!key)return;state.verses.forEach((v,vi)=>v.clauses.forEach((c,ci)=>c.words.forEach((w,wi)=>{if(isMaqafConnector(w))return;if(normalizeHebrewWord(w.text)===key)cb(w);})));}
 function clearWordSelection(opts){opts=opts||{};if(!state||!locOK(state.selected))return false;state.selected=null;if(typeof hideCommentPopover==='function')hideCommentPopover();if(typeof resetWordInspector==='function')resetWordInspector();syncStateBundle();if(opts.render!==false){render();if(typeof updateSaveStatus==='function'&&!opts.skipStatus)updateSaveStatus('');}return true;}
-function isContourPageBackgroundClick(target){if(!target||!target.closest)return false;if(target.closest('.word,.comment-marker,.parallel-verse-ref-pick,.parallel-verse-remove,.parallel-nudge-btn,button,a,input,textarea,select,[contenteditable],label,.top-menu-card,.hc-aleph-flyout,#modal.show,#manualInspectorModal.show,#exportScopeModal.show'))return false;if(target.closest('#arcSvg,.inclusio-frame-svg,.paneArcSvg,svg'))return false;return!!target.closest('#editor,#editorWrap,#contourPageZoomStage,.contour-document-sheet,.parallel-verse-body,.parallel-verse-cell-empty,.parallel-scroll-area');}
+function isContourPageBackgroundClick(target){if(!target||!target.closest)return false;if(target.closest('.word,.comment-marker,.parallel-verse-ref-pick,.parallel-verse-remove,.parallel-nudge-btn,button,a,input,textarea,select,[contenteditable],label,.top-menu-card,.hc-aleph-flyout,#modal.show,#manualInspectorModal.show,#exportScopeModal.show,#worksheetPdfModal.show'))return false;if(target.closest('#arcSvg,.inclusio-frame-svg,.paneArcSvg,svg'))return false;return!!target.closest('#editor,#editorWrap,#contourPageZoomStage,.contour-document-sheet,.parallel-verse-body,.parallel-verse-cell-empty,.parallel-scroll-area');}
 window.clearWordSelection=clearWordSelection;window.isContourPageBackgroundClick=isContourPageBackgroundClick;
 let commentAnchorStart=null;
 let commentsPanelCollapsed=true;
@@ -309,5 +309,17 @@ function renderCommentsPanel(){
 }
 
 function commentsHtmlForExport(){ensureComments();if(!state.comments.length)return '';let entries=state.comments.map((cm,idx)=>`<div class="export-comment"><div class="export-comment-anchor">[${idx+1}] ${esc(commentAnchorText(cm.start,cm.end)||'Anchor missing')}</div><div>${esc(cm.text).replace(/\n/g,'<br>')}</div></div>`).join('');return `<div class="export-comments"><h3>Comments</h3>${entries}</div>`;}
+
+function notesHtmlForExport(){
+  if(typeof clauseRows!=='function')return '';
+  const rows=clauseRows().filter(r=>r.notes&&String(r.notes).trim());
+  if(!rows.length)return '';
+  const entries=rows.map(r=>{
+    const ref=r.ref?`${esc(r.ref)} · `:'' ;
+    return `<div class="export-note"><div class="export-note-ref">${ref}clause ${r.clause}</div><div>${esc(r.notes)}</div></div>`;
+  }).join('');
+  return `<div class="export-notes"><h3>Notes</h3>${entries}</div>`;
+}
+window.notesHtmlForExport=notesHtmlForExport;
 
 let autosaveReady=false;

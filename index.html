@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="styles/project-view-prefs.css?v=2">
 <link rel="stylesheet" href="styles/contour-document-presentation.css?v=5">
 <link rel="stylesheet" href="styles/contour-page.css?v=1">
+<link rel="stylesheet" href="styles/worksheet-pdf-wizard.css?v=1">
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
@@ -57,7 +58,7 @@
         <li role="none" class="file-menu-has-submenu">
           <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Export <span class="file-menu-chevron" aria-hidden="true">›</span></button>
           <ul class="file-submenu" role="menu">
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-pdf" role="menuitem">Contour as PDF</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-pdf" role="menuitem">Worksheet PDF</button></li>
             <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-word" role="menuitem">Contour as Word</button></li>
             <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-html" role="menuitem">Contour as HTML</button></li>
             <li role="none"><button type="button" class="file-menu-item" data-action="export-table-pdf" role="menuitem">Table as PDF</button></li>
@@ -184,8 +185,8 @@
     </div>
     <div class="row ann-export-source visually-hidden" aria-hidden="true">
       <button type="button" class="btn good" id="contourDocxExport" tabindex="-1">Export Contour to Word</button>
-      <button type="button" class="btn good" id="contourPdfExport" tabindex="-1">Export PDF</button>
-      <button type="button" class="btn" id="contourPdfExportLegend" tabindex="-1">Export PDF + Legend</button>
+      <button type="button" class="btn good" id="contourPdfExport" tabindex="-1">Worksheet PDF</button>
+      <button type="button" class="btn" id="contourPdfExportLegend" tabindex="-1">Worksheet PDF + Legend</button>
     </div>
     <div class="toolbar-section"><div class="row" id="colorToolbar">
       <strong class="small toolbar-label">Text color:</strong>
@@ -408,6 +409,66 @@
 </div>
 
 
+<div class="modal" id="worksheetPdfModal" aria-hidden="true" role="dialog" aria-labelledby="worksheetPdfModalTitle">
+  <div class="panel worksheet-wizard-panel">
+    <h3 id="worksheetPdfModalTitle">Worksheet PDF</h3>
+    <form id="worksheetPdfForm" class="worksheet-wizard-layout" onsubmit="return false">
+      <div class="worksheet-wizard-fields">
+        <div class="worksheet-wizard-section">
+          <strong>Page Layout</strong>
+          <div class="worksheet-wizard-checks">
+            <label><input type="checkbox" name="fitOnePage" checked> Fit to one page</label>
+          </div>
+        </div>
+        <div class="worksheet-wizard-section">
+          <strong>Paper</strong>
+          <div class="worksheet-wizard-options">
+            <label><input type="radio" name="paper" value="letter" checked> Letter</label>
+            <label><input type="radio" name="paper" value="a4"> A4</label>
+          </div>
+        </div>
+        <div class="worksheet-wizard-section">
+          <strong>Margins</strong>
+          <div class="worksheet-wizard-options">
+            <label><input type="radio" name="margins" value="narrow"> Narrow</label>
+            <label><input type="radio" name="margins" value="normal" checked> Normal</label>
+            <label><input type="radio" name="margins" value="wide"> Wide</label>
+          </div>
+        </div>
+        <div class="worksheet-wizard-section">
+          <strong>Include</strong>
+          <div class="worksheet-wizard-checks">
+            <label><input type="checkbox" name="includeUnitFrames" checked> Unit Frames</label>
+            <label><input type="checkbox" name="includeArcs" checked> Arcs</label>
+            <label><input type="checkbox" name="includeTextColors" checked> Text Colors</label>
+            <label><input type="checkbox" name="includeLegend"> Legend / Key</label>
+            <label><input type="checkbox" name="includeComments"> Comments</label>
+            <label><input type="checkbox" name="includeNotes"> Notes</label>
+          </div>
+        </div>
+        <div class="worksheet-wizard-section">
+          <strong>Title</strong>
+          <div class="worksheet-wizard-checks">
+            <label><input type="checkbox" name="includePassageTitle" checked> Passage Title</label>
+            <label><input type="checkbox" name="includeDate"> Date</label>
+            <label><input type="checkbox" name="includeProjectName"> Project Name</label>
+          </div>
+        </div>
+        <div class="worksheet-wizard-actions">
+          <button type="button" class="btn" id="worksheetPdfCancel">Cancel</button>
+          <button type="button" class="btn good" id="worksheetPdfExportBtn">Export Worksheet</button>
+        </div>
+      </div>
+      <div class="worksheet-wizard-preview-wrap">
+        <span class="worksheet-wizard-preview-label">Preview</span>
+        <div class="worksheet-wizard-preview">
+          <iframe id="worksheetPdfPreview" title="Worksheet preview" sandbox="allow-same-origin allow-scripts"></iframe>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal" id="exportScopeModal" aria-hidden="true" role="dialog" aria-labelledby="exportScopeTitle">
   <div class="panel help-panel">
     <h3 id="exportScopeTitle">Export which passage?</h3>
@@ -496,7 +557,9 @@
 <script src="js/app/project-header.js"></script>
 <script src="js/app/file-menu.js"></script>
 <script src="js/app/arcs.js"></script>
+<script src="js/app/worksheet-export-config.js"></script>
 <script src="js/app/contour-export-overlays.js"></script>
+<script src="js/app/worksheet-pdf-wizard.js"></script>
 <script src="js/app/keyboard.js"></script>
 <script src="js/app/annotations.js"></script>
 <script src="js/app/text-cleanup.js"></script>

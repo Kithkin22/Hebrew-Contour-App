@@ -253,27 +253,49 @@ function openPdfPrintWindow(html, printMeta) {
 window.openPdfPrintWindow = openPdfPrintWindow;
 
 function exportContourPdf(opts){
-  opts=opts||{};
-  if(!opts.skipParallel&&isParallelActive()){exportContourPdfParallel();return;}
-  if(!state.verses.length){alert('Create or generate text first.');return;}
-  const fname=askExportFilename(suggestedExportBase('contour-editor'),'pdf');if(!fname)return;
-  const printMeta=preparePrintFilename(fname);
-  let docHtml='';
-  try{
-    docHtml=typeof buildContourExportDocument==='function'?buildContourExportDocument({
-      includePrintButton:true,
-      docTitle:printMeta.title,
-      paneState:state,
-      worksheet:true,
-      includeSupplement:!!opts.includeSupplement,
-    }):null;
-  }catch(e){
+  openWorksheetPdfWizard(opts);
+}
+
+function exportWorksheetPdf(settings, opts) {
+  opts = opts || {};
+  settings = typeof normalizeWorksheetExportOptions === 'function'
+    ? normalizeWorksheetExportOptions(settings)
+    : (settings || {});
+  if (!state.verses.length) { alert('Create or generate text first.'); return; }
+  const fname = askExportFilename(suggestedExportBase('contour-editor'), 'pdf');
+  if (!fname) return;
+  const printMeta = preparePrintFilename(fname);
+  let docHtml = '';
+  try {
+    docHtml = typeof buildContourExportDocument === 'function' ? buildContourExportDocument({
+      includePrintButton: true,
+      docTitle: printMeta.title,
+      paneState: state,
+      worksheetSettings: settings,
+    }) : null;
+  } catch (e) {
     alert('Could not prepare contour PDF export. Try reloading the project.');
     return;
   }
-  if(!docHtml){alert('Create or generate text first.');return;}
+  if (!docHtml) { alert('Create or generate text first.'); return; }
   openPdfPrintWindow(docHtml, printMeta);
 }
+window.exportWorksheetPdf = exportWorksheetPdf;
+
+function openWorksheetPdfWizard(opts) {
+  opts = opts || {};
+  if (!opts.skipParallel && isParallelActive()) { exportContourPdfParallel(); return; }
+  if (!state.verses.length) { alert('Create or generate text first.'); return; }
+  if (typeof showWorksheetPdfWizard === 'function') {
+    showWorksheetPdfWizard(opts);
+    return;
+  }
+  exportWorksheetPdf(typeof WORKSHEET_EXPORT_DEFAULTS !== 'undefined' ? WORKSHEET_EXPORT_DEFAULTS : {
+    fitOnePage: true,
+    includeLegend: !!opts.includeLegend,
+  });
+}
+window.openWorksheetPdfWizard = openWorksheetPdfWizard;
 
 const crcTable=(()=>{let c,t=[];for(let n=0;n<256;n++){c=n;for(let k=0;k<8;k++)c=(c&1)?(0xedb88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
 function crc32(u8){let c=0xffffffff;for(let i=0;i<u8.length;i++)c=crcTable[(c^u8[i])&255]^(c>>>8);return (c^0xffffffff)>>>0;}
@@ -306,5 +328,5 @@ document.getElementById('addLegendEntry').onclick=()=>addLegend('highlight','#ff
 document.getElementById('detectLegendEntries').onclick=detectUsedLegendEntries;
 document.getElementById('clearLegendEntries').onclick=()=>{if(confirm('Clear all legend entries?')){state.legend=[];renderLegendEditor();autoSaveProject();}};
 document.getElementById('contourDocxExport').onclick=exportContourDocx;
-document.getElementById('contourPdfExport').onclick=exportContourPdf;
-document.getElementById('contourPdfExportLegend').onclick=()=>exportContourPdf({includeSupplement:true});
+document.getElementById('contourPdfExport').onclick=()=>openWorksheetPdfWizard();
+document.getElementById('contourPdfExportLegend').onclick=()=>openWorksheetPdfWizard({ includeLegend: true });

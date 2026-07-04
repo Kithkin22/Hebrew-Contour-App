@@ -171,14 +171,16 @@ function renderContourExportOverlaysInto(layer, ed, opts) {
   opts = opts || {};
   const isGreek = opts.isGreek != null ? opts.isGreek : (typeof state !== 'undefined' && state.language === 'greek');
   const paneState = opts.paneState || (typeof state !== 'undefined' ? state : null);
-  if (typeof ensureArcs === 'function') ensureArcs();
-  if (typeof ensureInclusios === 'function') ensureInclusios();
-  const arcs = (paneState && paneState.arcs) || [];
-  const arcSvg = buildExportArcSvgElement(ed, arcs, isGreek);
-  const incSvg = buildExportInclusioSvgElement(ed, paneState);
+  const includeArcs = opts.includeArcs !== false;
+  const includeUnitFrames = opts.includeUnitFrames !== false;
+  if (includeArcs && typeof ensureArcs === 'function') ensureArcs();
+  if (includeUnitFrames && typeof ensureInclusios === 'function') ensureInclusios();
+  const arcs = includeArcs ? ((paneState && paneState.arcs) || []) : [];
+  const arcSvg = includeArcs ? buildExportArcSvgElement(ed, arcs, isGreek) : null;
+  const incSvg = includeUnitFrames ? buildExportInclusioSvgElement(ed, paneState) : null;
   if (arcSvg) layer.appendChild(arcSvg);
   if (incSvg) layer.appendChild(incSvg);
-  return { arcSvg, incSvg, arcCount: arcs.length, frameCount: paneState?.inclusios?.length || 0 };
+  return { arcSvg, incSvg, arcCount: arcs.length, frameCount: includeUnitFrames ? (paneState?.inclusios?.length || 0) : 0 };
 }
 
 function buildContourExportBodyWrapHtml(bodyHtml, opts) {
@@ -216,20 +218,29 @@ function contourExportOverlayCss() {
     + '.contour-export-arc-svg .arc-path{fill:none;stroke-width:3;stroke-linecap:round;vector-effect:non-scaling-stroke}'
     + '.contour-export-arc-svg .arc-label{font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600}'
     + 'body.contour-export-worksheet{margin:0;padding:0;background:#fff}'
-    + '.contour-export-worksheet-host{width:8.5in;height:11in;margin:0 auto;box-sizing:border-box;page-break-after:always;overflow:visible}'
+    + '.contour-export-worksheet-host{margin:0 auto;box-sizing:border-box;page-break-after:always;overflow:visible}'
     + '.contour-export-worksheet-frame{display:flex;align-items:center;justify-content:center;overflow:visible}'
     + '.contour-export-worksheet-stage{transform-origin:top left;overflow:visible}'
     + '.contour-export-supplement-page{page-break-before:always;margin:0;padding:24px}'
     + '@media print{body.contour-export-worksheet{padding:0}.contour-export-worksheet-host{page-break-inside:avoid}.contour-export-supplement-page{page-break-before:always}}';
 }
 
-function buildContourWorksheetScript() {
+function buildContourWorksheetScript(opts) {
+  opts = opts || {};
+  const paper = typeof worksheetPaperSpec === 'function'
+    ? worksheetPaperSpec(opts.paper || 'letter')
+    : { widthIn: 8.5, heightIn: 11 };
+  const marginIn = typeof worksheetMarginIn === 'function'
+    ? worksheetMarginIn(opts.margins || 'normal')
+    : 1.15;
+  const cfg = JSON.stringify({ widthIn: paper.widthIn, heightIn: paper.heightIn, marginIn });
   return '<script>(function(){'
+    + 'var cfg=' + cfg + ';'
     + 'function layoutWorksheet(){'
     + 'if(document.body.classList.contains("contour-worksheet-applied"))return;'
     + 'var sheet=document.querySelector(".contour-document-sheet--export");'
     + 'if(!sheet)return;'
-    + 'var dpi=96,margin=1.15*dpi,pageW=8.5*dpi,pageH=11*dpi;'
+    + 'var dpi=96,margin=cfg.marginIn*dpi,pageW=cfg.widthIn*dpi,pageH=cfg.heightIn*dpi;'
     + 'var areaW=pageW-2*margin,areaH=pageH-2*margin;'
     + 'var w=Math.max(sheet.offsetWidth,sheet.scrollWidth,1);'
     + 'var h=Math.max(sheet.offsetHeight,sheet.scrollHeight,1);'
@@ -258,8 +269,8 @@ function buildContourWorksheetScript() {
     + '})();<\/script>';
 }
 
-function buildContourExportFitScript(fitOnePage) {
-  if (fitOnePage) return buildContourWorksheetScript();
+function buildContourExportFitScript(fitOnePage, opts) {
+  if (fitOnePage) return buildContourWorksheetScript(opts);
   return '';
 }
 
