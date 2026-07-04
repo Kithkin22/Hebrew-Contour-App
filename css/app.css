@@ -1692,6 +1692,23 @@ body.dark-mode #wiBdbLink{color:#6db5ff;}
   min-height:88px!important;
   box-sizing:border-box!important;
 }
+.top-menu-panel > #pasteLayoutStatus{
+  display:block!important;
+  font-size:12px!important;
+  line-height:1.45!important;
+  margin:6px 0 0!important;
+  color:var(--ui-muted,#64748b)!important;
+}
+.top-menu-panel > #pasteLayoutStatus[data-status="word-layout"]{
+  color:var(--ui-ok,#166534)!important;
+}
+.top-menu-panel > #pasteLayoutStatus[data-status="plain-only"],
+.top-menu-panel > #pasteLayoutStatus[data-status="cleared"]{
+  color:var(--ui-warn,#b45309)!important;
+}
+.top-menu-panel > #pasteLayoutStatus.hidden{
+  display:none!important;
+}
 .top-menu-panel > p.muted.small,
 .top-menu-panel > #saveStatus,
 .top-menu-panel > #wlcStatus{

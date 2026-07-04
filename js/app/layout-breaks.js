@@ -217,17 +217,39 @@ function extractParagraphIndentPx(el, isRtl) {
   const msoRight = readStyleLength(style, 'mso-para-margin-right');
   const msoLeft = readStyleLength(style, 'mso-para-margin-left');
 
+  let indent;
   if (isRtl) {
-    return Math.max(
+    indent = Math.max(
       marginRight + paddingRight + msoRight,
       marginLeft + paddingLeft + msoLeft,
       textIndent
     );
+  } else {
+    indent = Math.max(
+      marginLeft + paddingLeft + msoLeft,
+      marginRight + paddingRight + msoRight,
+      textIndent
+    );
+  }
+  if (indent > 0 || !el || typeof getComputedStyle !== 'function') return indent;
+  const cs = getComputedStyle(el);
+  const csMarginRight = parseCssLengthToPx(cs.marginRight);
+  const csMarginLeft = parseCssLengthToPx(cs.marginLeft);
+  const csPaddingRight = parseCssLengthToPx(cs.paddingRight);
+  const csPaddingLeft = parseCssLengthToPx(cs.paddingLeft);
+  let csTextIndent = parseCssLengthToPx(cs.textIndent);
+  if (csTextIndent < 0) csTextIndent = Math.abs(csTextIndent);
+  if (isRtl) {
+    return Math.max(
+      csMarginRight + csPaddingRight,
+      csMarginLeft + csPaddingLeft,
+      csTextIndent
+    );
   }
   return Math.max(
-    marginLeft + paddingLeft + msoLeft,
-    marginRight + paddingRight + msoRight,
-    textIndent
+    csMarginLeft + csPaddingLeft,
+    csMarginRight + csPaddingRight,
+    csTextIndent
   );
 }
 window.extractParagraphIndentPx = extractParagraphIndentPx;
@@ -380,6 +402,134 @@ function clearLastWordLayoutPasteMeta() {
 }
 window.clearLastWordLayoutPasteMeta = clearLastWordLayoutPasteMeta;
 
+let pendingPasteClipboardHtml = '';
+let pasteBoxProgrammaticUpdate = false;
+
+function setPasteBoxProgrammaticUpdate(flag) {
+  pasteBoxProgrammaticUpdate = !!flag;
+}
+window.setPasteBoxProgrammaticUpdate = setPasteBoxProgrammaticUpdate;
+
+function inspectPasteClipboard(html, plain, isRtl) {
+  const hasHtml = !!(html && String(html).trim());
+  const hasPlain = !!(plain && String(plain).trim());
+  let parsed = null;
+  if (hasHtml) parsed = parseWordHtmlLayoutLines(html, { isRtl });
+  const hasWordLayout = !!(parsed && parsed.hasIndent);
+  const hasWordSpacing = !!(parsed && parsed.lines && parsed.lines.some(l => {
+    const sp = l.spacingAfter || 'default';
+    return sp === 'medium' || sp === 'large' || (l.spacingAfterPx || 0) > 0;
+  }));
+  let statusKind = 'empty';
+  let statusMessage = '';
+  if (hasWordLayout) {
+    statusKind = 'word-layout';
+    statusMessage = 'Word layout detected';
+  } else if (hasHtml && parsed) {
+    statusKind = 'html-no-layout';
+    statusMessage = 'HTML detected but no Word layout';
+  } else if (hasPlain) {
+    statusKind = 'plain-only';
+    statusMessage = 'Plain text only — exact indentation cannot be imported';
+  }
+  return {
+    hasHtml,
+    hasPlain,
+    parsed,
+    hasWordLayout,
+    hasWordSpacing,
+    statusKind,
+    statusMessage,
+  };
+}
+window.inspectPasteClipboard = inspectPasteClipboard;
+
+function updatePasteLayoutStatus(message, kind) {
+  const el = document.getElementById('pasteLayoutStatus');
+  if (el) {
+    el.textContent = message || '';
+    el.dataset.status = kind || '';
+    el.classList.toggle('hidden', !message);
+  }
+}
+window.updatePasteLayoutStatus = updatePasteLayoutStatus;
+
+function capturePasteFromClipboard(html, plain, options) {
+  options = options || {};
+  const isRtl = options.isRtl !== false;
+  pendingPasteClipboardHtml = html || '';
+  const diag = inspectPasteClipboard(html, plain, isRtl);
+  if (diag.parsed && diag.parsed.text) setLastWordLayoutPasteMeta(diag.parsed);
+  else clearLastWordLayoutPasteMeta();
+  updatePasteLayoutStatus(diag.statusMessage, diag.statusKind);
+  return diag;
+}
+window.capturePasteFromClipboard = capturePasteFromClipboard;
+
+function markPasteBoxEditedByUser() {
+  if (pasteBoxProgrammaticUpdate) return;
+  if (!pendingPasteClipboardHtml && !lastWordLayoutPasteMeta) return;
+  pendingPasteClipboardHtml = '';
+  clearLastWordLayoutPasteMeta();
+  updatePasteLayoutStatus(
+    'Layout metadata cleared because pasted text was edited.',
+    'cleared'
+  );
+}
+window.markPasteBoxEditedByUser = markPasteBoxEditedByUser;
+
+function clearPendingPasteClipboard() {
+  pendingPasteClipboardHtml = '';
+  clearLastWordLayoutPasteMeta();
+  updatePasteLayoutStatus('', '');
+}
+window.clearPendingPasteClipboard = clearPendingPasteClipboard;
+
+function getStoredPasteClipboardHtml() {
+  return pendingPasteClipboardHtml;
+}
+window.getStoredPasteClipboardHtml = getStoredPasteClipboardHtml;
+
+function ensurePendingPasteLayoutMeta(isRtl) {
+  if (lastWordLayoutPasteMeta) return lastWordLayoutPasteMeta;
+  if (!pendingPasteClipboardHtml) return null;
+  const parsed = parseWordHtmlLayoutLines(pendingPasteClipboardHtml, { isRtl });
+  if (parsed && parsed.text) {
+    setLastWordLayoutPasteMeta(parsed);
+    return parsed;
+  }
+  return null;
+}
+window.ensurePendingPasteLayoutMeta = ensurePendingPasteLayoutMeta;
+
+function getPendingPasteLayoutLines(importIndent, isRtl) {
+  if (!pendingPasteClipboardHtml) return null;
+  const meta = ensurePendingPasteLayoutMeta(isRtl);
+  if (!meta || !meta.lines || !meta.lines.length) return null;
+  if (importIndent) return meta.lines.map(l => Object.assign({}, l));
+  return meta.lines.map(l => Object.assign({}, l, { indentPx: 0, indent: 0 }));
+}
+window.getPendingPasteLayoutLines = getPendingPasteLayoutLines;
+
+function formatPasteWithLayoutSummary(verseCount, meta, importIndent, usedStoredHtml) {
+  const parts = ['Imported ' + verseCount + ' line' + (verseCount === 1 ? '' : 's')];
+  if (usedStoredHtml && meta) {
+    parts.push('Word layout: detected');
+    parts.push('Imported indents: ' + (importIndent && meta.hasIndent ? 'yes' : 'no'));
+    const hasSpacing = meta.lines && meta.lines.some(l => {
+      const sp = l.spacingAfter || 'default';
+      return sp === 'medium' || sp === 'large' || (l.spacingAfterPx || 0) > 0;
+    });
+    parts.push('Imported spacing: ' + (hasSpacing ? 'yes' : 'no'));
+  } else {
+    parts.push('Word layout: not available');
+    parts.push('Imported indents: no');
+    parts.push('Imported spacing: no');
+  }
+  return parts.join(' · ');
+}
+window.formatPasteWithLayoutSummary = formatPasteWithLayoutSummary;
+
 function mergeLayoutFieldsIntoLine(tl, src) {
   const out = Object.assign({}, tl);
   if (src.indentPx != null) out.indentPx = src.indentPx;
@@ -420,11 +570,30 @@ function collectWordHtmlBlocks(doc) {
   return blocks;
 }
 
+function mountWordHtmlForParsing(html) {
+  if (typeof document === 'undefined' || !html) return null;
+  const host = document.createElement('div');
+  host.className = 'hc-word-paste-mount';
+  host.setAttribute('aria-hidden', 'true');
+  host.style.cssText = 'position:absolute;left:-9999px;top:0;width:816px;visibility:hidden;pointer-events:none;overflow:hidden;height:0';
+  host.innerHTML = html;
+  document.body.appendChild(host);
+  return host;
+}
+
+function unmountWordHtml(host) {
+  if (host && host.parentNode) host.parentNode.removeChild(host);
+}
+
 function parseWordHtmlLayoutLines(html, opts) {
   opts = opts || {};
   if (!html) return null;
+  let mount = null;
   try {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
+    mount = mountWordHtmlForParsing(html);
+    const doc = mount
+      ? { body: mount.querySelector('body') || mount }
+      : new DOMParser().parseFromString(html, 'text/html');
     if (!doc.body) return null;
     const bodyText = doc.body.textContent || '';
     const hasHebrew = /[\u0590-\u05FF]/.test(bodyText);
@@ -502,6 +671,8 @@ function parseWordHtmlLayoutLines(html, opts) {
     };
   } catch (e) {
     return null;
+  } finally {
+    unmountWordHtml(mount);
   }
 }
 window.parseWordHtmlLayoutLines = parseWordHtmlLayoutLines;
