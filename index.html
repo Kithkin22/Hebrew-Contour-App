@@ -278,7 +278,8 @@
     </div>
     <div class="card" id="inclusioPanel">
       <strong>Unit</strong>
-      <p class="muted inclusio-panel-hint">Drag from the opening word to the closing word to draw a unit frame (like arcs). Form controls below edit Theme, Relationship Basis, Evidence, and Notes. View all units in Legend / Key.</p>
+      <p class="muted inclusio-panel-hint">Define as many units as you need in this passage — each with its own frame, color, and anchors. Drag to draw a unit, or use <strong>New Unit</strong> then set anchors. Switch units below or in Legend / Key.</p>
+      <div id="unitSwitcher" class="unit-switcher row" aria-label="Units in this passage"></div>
       <div class="row inclusio-toolbar">
         <button class="btn primary" id="drawInclusioMode" type="button">Draw Unit</button>
         <button class="btn" id="newInclusio" type="button">New Unit</button>
@@ -286,6 +287,21 @@
         <button class="btn" id="setInclusioClosingStatic" type="button">Set Closing Anchor</button>
         <button class="btn danger" id="deleteActiveInclusio" type="button">Delete Unit</button>
         <button class="btn" id="clearInclusioMarkers" type="button">Clear All Units</button>
+      </div>
+      <div class="toolbar-section" id="unitColorToolbar">
+        <div class="row" id="unitColorToolbarRow">
+          <strong class="small toolbar-label">Unit frame color:</strong>
+          <button type="button" class="btn small unit-color-preset" data-unit-color="#64748B" style="border-left:4px solid #64748B">Slate</button>
+          <button type="button" class="btn small unit-color-preset" data-unit-color="#6B7C93" style="border-left:4px solid #6B7C93">Blue Gray</button>
+          <button type="button" class="btn small unit-color-preset" data-unit-color="#5C6F8A" style="border-left:4px solid #5C6F8A">Muted Blue</button>
+          <button type="button" class="btn small unit-color-preset" data-unit-color="#6B7355" style="border-left:4px solid #6B7355">Olive</button>
+          <button type="button" class="btn small unit-color-preset" data-unit-color="#7A4A52" style="border-left:4px solid #7A4A52">Burgundy</button>
+          <button type="button" class="btn small unit-color-preset" data-unit-color="#7A6550" style="border-left:4px solid #7A6550">Brown</button>
+          <label class="small">Custom <input id="unitColorInput" type="color" value="#64748B" style="width:48px;height:34px;padding:2px"></label>
+          <button type="button" class="btn small" id="applyUnitColorBtn">Apply</button>
+          <button type="button" class="btn small" id="resetUnitColorBtn">Reset</button>
+          <span id="unitColorStatus" class="muted small">Create or select a unit to change its frame color.</span>
+        </div>
       </div>
       <p class="small inclusio-workflow-status" id="inclusioWorkflowStatus" aria-live="polite">Select a Hebrew word, then set opening and closing anchors.</p>
       <div id="inclusioEditor" class="inclusio-editor small"></div>

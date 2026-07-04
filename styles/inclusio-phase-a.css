@@ -13,6 +13,26 @@
   line-height: 1.45;
 }
 
+.unit-switcher {
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-line, #e2e8f0);
+  border-radius: 8px;
+  background: var(--ui-surface-muted, #f8fafc);
+}
+
+.unit-switcher .unit-switcher-btn {
+  min-width: 3.25rem;
+}
+
+body.dark-mode .unit-switcher {
+  background: rgba(15, 23, 42, 0.45);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
 .inclusio-toolbar {
   gap: 8px;
   margin-bottom: 10px;
@@ -59,6 +79,19 @@
 
 .inclusio-color-toolbar .inclusio-color-preset {
   min-width: 3.5rem;
+}
+
+#unitColorToolbar .row {
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+#unitColorToolbar.unit-color-disabled .unit-color-preset,
+#unitColorToolbar.unit-color-disabled #applyUnitColorBtn,
+#unitColorToolbar.unit-color-disabled #resetUnitColorBtn,
+#unitColorToolbar.unit-color-disabled #unitColorInput {
+  opacity: 0.55;
 }
 
 .inclusio-custom-color {

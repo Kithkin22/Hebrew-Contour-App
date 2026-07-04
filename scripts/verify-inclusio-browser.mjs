@@ -352,6 +352,31 @@ async function main() {
       `stroke=${colorManual.ok}, reload=${colorManual.reloadOk}, registry=${colorManual.registryHasSwatch}`
     );
 
+    const multiUnits = await page.evaluate(() => {
+      ensureStateBundle();
+      state = stateBundle.panes[0];
+      parseText('אֶ֣לֶף בֵּ֑ית גִּמֶל דָּלֶת\nהֵא וָו זַיִן חֵת', 'Multi unit', false, { skipRender: true });
+      state.inclusios = [];
+      clearInclusioWordMarkers();
+      addInclusioFromLocs({ v: 0, c: 0, w: 0 }, { v: 0, c: 0, w: 1 });
+      addInclusioFromLocs({ v: 1, c: 0, w: 0 }, { v: 1, c: 0, w: 2 });
+      render();
+      const switcher = document.getElementById('unitSwitcher');
+      const buttons = switcher ? switcher.querySelectorAll('.unit-switcher-btn').length : 0;
+      const rails = document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail:not(.inclusio-frame-rail-preview)').length;
+      return {
+        ok: state.inclusios.length === 2 && buttons === 2 && rails >= 4,
+        count: state.inclusios.length,
+        buttons,
+        rails,
+      };
+    });
+    record(
+      'multiple-units-per-passage',
+      multiUnits.ok,
+      `units=${multiUnits.count}, switcher=${multiUnits.buttons}, rails=${multiUnits.rails}`
+    );
+
     const horizontalBalance = await page.evaluate(() => {
       ensureStateBundle();
       state = stateBundle.panes[0];

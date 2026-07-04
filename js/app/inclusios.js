@@ -343,9 +343,10 @@ function updateInclusioWorkflowStatus() {
   const el = document.getElementById('inclusioWorkflowStatus');
   if (!el) return;
   if (inclusioDraw.active) {
+    const n = state.inclusios?.length || 0;
     el.textContent = inclusioDraw.isDragging
-      ? 'Drawing… release on the closing word to create the unit frame.'
-      : 'Draw mode on: drag from the opening word to the closing word.';
+      ? 'Drawing… release on the closing word to add a unit frame.'
+      : `Draw mode on: drag opening → closing word. Each drag adds a new unit${n ? ` (${n} so far)` : ''}. Click Draw Unit again to exit.`;
     el.classList.remove('inclusio-status-warn');
     return;
   }
@@ -360,11 +361,14 @@ function updateInclusioWorkflowStatus() {
   const open = anchorDisplayLabel(item.openingAnchor);
   const close = anchorDisplayLabel(item.closingAnchor);
   const span = deriveInclusioSpan(item);
+  const total = state.inclusios.length;
   let rails = 0;
   const ed = inclusioEditorRoot(null);
   if (ed) rails = ed.querySelectorAll('svg.inclusio-frame-svg line.inclusio-frame-rail').length;
   const bracketN = document.querySelectorAll('#editor .word.inclusio-bracket.bracket-start, #editor .word.inclusio-bracket.bracket-end').length;
-  let msg = `Active: ${item.label || item.id}. Opening: ${open}. Closing: ${close}. Span: ${span}.`;
+  let msg = total > 1
+    ? `${total} units in this passage. Active: ${item.label || item.id}. Opening: ${open}. Closing: ${close}. Span: ${span}.`
+    : `Active: ${item.label || item.id}. Opening: ${open}. Closing: ${close}. Span: ${span}.`;
   if (item.openingAnchor && item.closingAnchor) {
     msg += rails >= 2 ? ` Frame rails: ${rails}.` : ' Frame pending — check margin envelope toggle.';
     if (bracketN < 2) msg += ' Endpoint brackets pending.';
@@ -530,6 +534,37 @@ function expandLegendInclusiosSection() {
   if (section) section.classList.remove('collapsed');
 }
 
+function renderUnitSwitcher() {
+  const box = document.getElementById('unitSwitcher');
+  if (!box) return;
+  ensureInclusios();
+  migrateAllInclusios();
+  const n = state.inclusios.length;
+  if (!n) {
+    box.innerHTML = '<span class="muted small">No units yet — use <strong>Draw Unit</strong> or <strong>New Unit</strong> to add one.</span>';
+    return;
+  }
+  let html = `<span class="small toolbar-label">Units (${n}):</span>`;
+  state.inclusios.forEach((inc, i) => {
+    const active = inc.id === state.activeInclusioId;
+    const label = esc(inc.label || unitDefaultLabel(i));
+    const color = inc.color || inclusioColorForNestLevel(inc.nestLevel || 0);
+    const ready = inc.openingAnchor && inc.closingAnchor;
+    html += `<button type="button" class="btn small unit-switcher-btn${active ? ' primary' : ''}" data-inc-id="${esc(inc.id)}" title="${ready ? 'Anchors set' : 'Anchors incomplete'}" style="border-left:3px solid ${esc(color)}">${label}${ready ? '' : ' *'}</button>`;
+  });
+  html += '<button type="button" class="btn small" id="unitSwitcherNew">+ New Unit</button>';
+  box.innerHTML = html;
+  box.querySelectorAll('.unit-switcher-btn').forEach((btn) => {
+    btn.onclick = () => {
+      state.activeInclusioId = btn.dataset.incId;
+      render();
+    };
+  });
+  const newBtn = box.querySelector('#unitSwitcherNew');
+  if (newBtn) newBtn.onclick = () => addInclusio();
+}
+window.renderUnitSwitcher = renderUnitSwitcher;
+
 function addInclusio() {
   markUndo();
   ensureInclusios();
@@ -579,7 +614,7 @@ function applyUnitColor(item, color, manual) {
   if (manual) item.colorManual = true;
   syncInclusioWordMarkers();
   autoSaveProject();
-  renderInclusioEditor();
+  syncUnitColorToolbar();
   renderInclusioRegistry();
   scheduleInclusioFrameRedraw();
 }
@@ -591,16 +626,77 @@ function resetUnitColor(item) {
   applyDefaultUnitColor(item, state);
   syncInclusioWordMarkers();
   autoSaveProject();
-  renderInclusioEditor();
+  syncUnitColorToolbar();
   renderInclusioRegistry();
   scheduleInclusioFrameRedraw();
 }
 
 function inclusioDefaultColor() {
-  return document.getElementById('inclusioColorInput')?.value
-    || document.getElementById('inclusioColor')?.value
+  return document.getElementById('unitColorInput')?.value
     || inclusioColorForNestLevel(0);
 }
+
+let unitColorToolbarWired = false;
+function wireUnitColorToolbar() {
+  if (unitColorToolbarWired) return;
+  const toolbar = document.getElementById('unitColorToolbar');
+  if (!toolbar) return;
+  unitColorToolbarWired = true;
+  toolbar.querySelectorAll('[data-unit-color]').forEach((btn) => {
+    btn.onclick = () => {
+      const item = activeInclusio();
+      if (!item) {
+        alert('Create or select a unit first.');
+        return;
+      }
+      applyUnitColor(item, btn.dataset.unitColor, true);
+    };
+  });
+  const applyBtn = document.getElementById('applyUnitColorBtn');
+  if (applyBtn) {
+    applyBtn.onclick = () => {
+      const item = activeInclusio();
+      if (!item) {
+        alert('Create or select a unit first.');
+        return;
+      }
+      const picker = document.getElementById('unitColorInput');
+      if (!picker) return;
+      applyUnitColor(item, picker.value, true);
+    };
+  }
+  const resetBtn = document.getElementById('resetUnitColorBtn');
+  if (resetBtn) {
+    resetBtn.onclick = () => {
+      const item = activeInclusio();
+      if (!item) return;
+      resetUnitColor(item);
+    };
+  }
+}
+
+function syncUnitColorToolbar() {
+  wireUnitColorToolbar();
+  const toolbar = document.getElementById('unitColorToolbar');
+  if (!toolbar) return;
+  const item = activeInclusio();
+  const hasUnit = !!(item && state.inclusios?.length);
+  const color = item?.color || inclusioColorForNestLevel(item?.nestLevel || 0);
+  const picker = document.getElementById('unitColorInput');
+  if (picker && hasUnit) picker.value = color;
+  toolbar.querySelectorAll('[data-unit-color]').forEach((btn) => {
+    const sel = hasUnit && btn.dataset.unitColor.toLowerCase() === String(color).toLowerCase();
+    btn.classList.toggle('primary', sel);
+  });
+  const status = document.getElementById('unitColorStatus');
+  if (status) {
+    status.textContent = hasUnit
+      ? `Active: ${item.label || UNIT_UI.singular}. Presets apply immediately.`
+      : 'Create or select a unit to change its frame color.';
+  }
+  toolbar.classList.toggle('unit-color-disabled', !hasUnit);
+}
+window.syncUnitColorToolbar = syncUnitColorToolbar;
 
 function drawInclusioDragPreview(svg, startLoc, endLoc, paneState) {
   if (!locOK(startLoc) || !locOK(endLoc) || locEqual(startLoc, endLoc)) return;
@@ -867,18 +963,6 @@ function renderInclusioEditor() {
   html += '</select></label>';
   html += '<label class="small">Label <input id="inclusioLabelInput" value="' + esc(active?.label || '') + '"></label>';
   html += '</div>';
-  html += '<div class="inclusio-field-row inclusio-color-row"><span class="small"><strong>Unit frame color</strong></span></div>';
-  html += '<div class="row inclusio-color-toolbar">';
-  INCLUSIO_COLOR_PRESETS.forEach(p => {
-    const sel = (active?.color || inclusioColorForNestLevel(0)).toLowerCase() === p.value.toLowerCase();
-    html += `<button type="button" class="btn small inclusio-color-preset${sel ? ' primary' : ''}" data-inc-color="${esc(p.value)}" title="${esc(p.name)}" style="border-left:4px solid ${esc(p.value)}">${esc(p.name)}</button>`;
-  });
-  html += '</div>';
-  html += '<div class="row inclusio-color-toolbar">';
-  html += '<label class="small inclusio-custom-color">Custom <input id="inclusioColorInput" type="color" value="' + esc(active?.color || inclusioColorForNestLevel(0)) + '" style="width:48px;height:34px;padding:2px"></label>';
-  html += '<button type="button" class="btn small" id="inclusioApplyColor">Apply Color</button>';
-  html += '<button type="button" class="btn small" id="inclusioResetColor">Reset Color</button>';
-  html += '</div>';
   html += '<label class="small">Frame weight <select id="inclusioFrameWeightSelect">';
   html += `<option value=""${!active?.frameWeight ? ' selected' : ''}>Auto (by nest level)</option>`;
   INCLUSIO_FRAME_WEIGHTS.forEach(w => {
@@ -932,10 +1016,8 @@ function renderInclusioEditor() {
       markUndo();
       fn(item, el);
       autoSaveProject();
-      if (id === '#inclusioColorInput') syncInclusioWordMarkers();
-      if (id === '#inclusioColorInput' || id === '#inclusioLabelInput' || id === '#inclusioEnvelopeToggle') {
+      if (id === '#inclusioLabelInput' || id === '#inclusioEnvelopeToggle') {
         renderInclusioRegistry();
-        if (id === '#inclusioColorInput') scheduleInclusioFrameRedraw();
       }
     };
   };
@@ -963,24 +1045,6 @@ function renderInclusioEditor() {
   if (oSet) oSet.onclick = () => setInclusioAnchor('opening');
   const cSet = box.querySelector('#setInclusioClosing');
   if (cSet) cSet.onclick = () => setInclusioAnchor('closing');
-  box.querySelectorAll('.inclusio-color-preset').forEach(btn => {
-    btn.onclick = () => {
-      const item = activeInclusio();
-      if (!item) return;
-      applyUnitColor(item, btn.dataset.incColor, true);
-    };
-  });
-  const applyBtn = box.querySelector('#inclusioApplyColor');
-  if (applyBtn) {
-    applyBtn.onclick = () => {
-      const item = activeInclusio();
-      const picker = box.querySelector('#inclusioColorInput');
-      if (!item || !picker) return;
-      applyUnitColor(item, picker.value, true);
-    };
-  }
-  const resetBtn = box.querySelector('#inclusioResetColor');
-  if (resetBtn) resetBtn.onclick = () => resetUnitColor(activeInclusio());
 }
 
 function renderInclusioRegistry() {
@@ -1071,7 +1135,10 @@ function initLegendInclusiosSection() {
 
 function renderInclusioUI() {
   initLegendInclusiosSection();
+  wireUnitColorToolbar();
+  renderUnitSwitcher();
   renderInclusioEditor();
+  syncUnitColorToolbar();
   renderInclusioRegistry();
   updateInclusioWorkflowStatus();
   setTimeout(() => {
@@ -1092,9 +1159,13 @@ function inclusiosHtmlForExport() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initLegendInclusiosSection);
+  document.addEventListener('DOMContentLoaded', () => {
+    initLegendInclusiosSection();
+    wireUnitColorToolbar();
+  });
 } else {
   initLegendInclusiosSection();
+  wireUnitColorToolbar();
 }
 
 (function bindInclusioRenderHook() {
@@ -1162,7 +1233,6 @@ if (document.readyState === 'loading') {
       try { wrap.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
       const item = start && end ? addInclusioFromLocs(start, end) : null;
       if (item) {
-        toggleDrawInclusioMode(false);
         render();
       } else {
         scheduleInclusioFrameRedraw();
