@@ -15,6 +15,22 @@
   margin-bottom: 48px;
 }
 
+/* Single-density tightens default clauses; visual breaks must still show */
+body.contour-density-single #editor .clause.layout-break-sm,
+body.contour-density-single .parallel-verse-body .clause.layout-break-sm {
+  margin-bottom: 14px !important;
+}
+
+body.contour-density-single #editor .clause.layout-break-md,
+body.contour-density-single .parallel-verse-body .clause.layout-break-md {
+  margin-bottom: 28px !important;
+}
+
+body.contour-density-single #editor .clause.layout-break-lg,
+body.contour-density-single .parallel-verse-body .clause.layout-break-lg {
+  margin-bottom: 48px !important;
+}
+
 #editor .verse-block.verse-spacing-single,
 .parallel-verse-cell .verse-block.verse-spacing-single {
   margin-bottom: 2.1em;

@@ -5,8 +5,8 @@ body.contour-density-single .parallel-verse-body {
   line-height: 1.35 !important;
 }
 
-body.contour-density-single #editor .clause,
-body.contour-density-single .parallel-verse-body .clause {
+body.contour-density-single #editor .clause:not(.layout-break-sm):not(.layout-break-md):not(.layout-break-lg),
+body.contour-density-single .parallel-verse-body .clause:not(.layout-break-sm):not(.layout-break-md):not(.layout-break-lg) {
   margin-top: 0;
   margin-bottom: 0;
   padding-top: 1px;
