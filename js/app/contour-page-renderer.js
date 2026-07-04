@@ -140,6 +140,8 @@ function contourPageExportCss(opts) {
     + '.legend-preview-word{font-family:' + contourScriptFontFamily(false) + ';font-size:20px}'
     + '.legend-preview-greek{font-family:' + contourScriptFontFamily(true) + ';font-size:20px}'
     + '.comment-marker{display:inline-block;direction:ltr;font-family:Arial,Helvetica,sans-serif;font-size:.58em;color:#b02a2a;background:transparent;border:0;padding:0;margin:0 1px;vertical-align:super;line-height:1;font-weight:bold}'
+    + '.contour-export-supplement{margin-top:28px;page-break-before:auto}'
+    + '.contour-export-supplement .export-legend,.contour-export-supplement .export-comments{margin-top:12px}'
     + (typeof contourExportOverlayCss === 'function' ? contourExportOverlayCss() : '')
     + '@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}button{display:none}}';
 }
@@ -223,13 +225,11 @@ function buildContourExportDocument(opts) {
     ? buildContourExportFitScript(!!opts.fitOnePage)
     : '';
   const printScript = opts.printScript || '';
+  const legendBlock = legendHtml + inclusiosHtml + commentsHtml + arcsHtml;
   return '<!doctype html><html><head><meta charset="utf-8"><title>' + pageTitle + '</title><style>' + css + '</style></head><body>'
     + printBtn
-    + legendHtml
-    + inclusiosHtml
     + pageShell
-    + commentsHtml
-    + arcsHtml
+    + (legendBlock ? `<div class="contour-export-supplement">${legendBlock}</div>` : '')
     + fitScript
     + printScript
     + '</body></html>';

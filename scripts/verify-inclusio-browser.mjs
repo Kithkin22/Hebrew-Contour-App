@@ -76,10 +76,21 @@ async function main() {
       };
 
       const exportHtml = buildContourEditorHtmlFromState(true);
+      const exportDoc = typeof buildContourExportDocument === 'function'
+        ? buildContourExportDocument({ paneState: state })
+        : '';
       const docx = typeof contourDocxXml === 'function' ? contourDocxXml() : '';
       const registry = document.getElementById('inclusioRegistry')?.textContent || '';
 
-      return { afterSet, afterReload, exportHasBrackets: exportHtml.includes('bracket-start'), docxOk: docx.includes('Units'), registryHasRow: registry.includes('Unit') };
+      return {
+        afterSet,
+        afterReload,
+        exportHasInclusioBrackets: exportHtml.includes('bracket-start'),
+        exportHasFrameOverlay: exportDoc.includes('contour-export-inclusio-svg') && exportDoc.includes('inclusio-frame-rail'),
+        exportLegendAfterPage: exportDoc.indexOf('contour-document-sheet--export') < exportDoc.indexOf('export-legend'),
+        docxOk: docx.includes('Units'),
+        registryHasRow: registry.includes('Unit'),
+      };
     });
 
     const regen = await page.evaluate(() => {
@@ -106,7 +117,7 @@ async function main() {
     );
     record('reload-data', unit.afterReload.hasOpening && unit.afterReload.hasClosing, `anchors in state after reload=${unit.afterReload.hasOpening && unit.afterReload.hasClosing}`);
     record('render-after-reload', !unit.afterReload.bracketStart && !unit.afterReload.bracketEnd, `no editor brackets after reload=${!unit.afterReload.bracketStart}`);
-    record('export-html', unit.exportHasBrackets, `export HTML has bracket-start=${unit.exportHasBrackets}`);
+    record('export-html', unit.exportHasFrameOverlay && !unit.exportHasInclusioBrackets && unit.exportLegendAfterPage, `overlay=${unit.exportHasFrameOverlay}, noBracketGlyphs=${!unit.exportHasInclusioBrackets}, legendAfter=${unit.exportLegendAfterPage}`);
     record('export-docx', unit.docxOk, `DOCX mentions Units=${unit.docxOk}`);
     record('registry', unit.registryHasRow, `legend registry lists unit=${unit.registryHasRow}`);
     record(

@@ -25,6 +25,27 @@ function arcGeometryForExport(start, end, ed, isGreek) {
   return { isGreek, y1, y2, anchor1, anchor2, sideX, mid };
 }
 
+function applyExportSvgViewport(svg, opts) {
+  const contentW = opts.contentW;
+  const contentH = opts.contentH;
+  const minX = opts.minX || 0;
+  const vbW = opts.vbW || contentW;
+  svg.setAttribute('viewBox', `${minX} 0 ${vbW} ${contentH}`);
+  if (minX < 0) {
+    svg.setAttribute('width', String(vbW));
+    svg.setAttribute('height', String(contentH));
+    svg.style.width = vbW + 'px';
+    svg.style.height = contentH + 'px';
+    svg.style.left = minX + 'px';
+  } else {
+    svg.setAttribute('width', String(contentW));
+    svg.setAttribute('height', String(contentH));
+    svg.style.width = contentW + 'px';
+    svg.style.height = contentH + 'px';
+    svg.style.left = '0';
+  }
+}
+
 function buildExportArcSvgElement(ed, arcs, isGreek) {
   if (!ed || !arcs || !arcs.length) return null;
   if (typeof drawArcPath !== 'function') return null;
@@ -33,14 +54,8 @@ function buildExportArcSvgElement(ed, arcs, isGreek) {
   svg.setAttribute('aria-hidden', 'true');
   const contentW = Math.max(ed.scrollWidth, ed.offsetWidth, 1);
   let contentH = Math.max(ed.scrollHeight, ed.offsetHeight, 1);
-  svg.setAttribute('viewBox', `0 0 ${contentW} ${contentH}`);
-  svg.setAttribute('width', String(contentW));
-  svg.setAttribute('height', String(contentH));
   svg.style.position = 'absolute';
   svg.style.top = '0';
-  svg.style.left = '0';
-  svg.style.width = contentW + 'px';
-  svg.style.height = contentH + 'px';
   svg.style.pointerEvents = 'none';
   svg.style.overflow = 'visible';
   arcs.forEach((arc) => {
@@ -51,8 +66,7 @@ function buildExportArcSvgElement(ed, arcs, isGreek) {
     if (typeof drawArcLabel === 'function') drawArcLabel(svg, geo, arc, color);
     contentH = Math.max(contentH, geo.y2 + 8, geo.y1 + 8);
   });
-  svg.setAttribute('height', String(contentH));
-  svg.style.height = contentH + 'px';
+  applyExportSvgViewport(svg, { contentW, contentH, minX: 0, vbW: contentW });
   return svg;
 }
 
@@ -92,6 +106,10 @@ function buildExportInclusioSvgElement(ed, paneState) {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'contour-export-inclusio-svg inclusio-frame-svg');
     svg.setAttribute('aria-hidden', 'true');
+    svg.style.position = 'absolute';
+    svg.style.top = '0';
+    svg.style.pointerEvents = 'none';
+    svg.style.overflow = 'visible';
     let minX = 0;
     let vbW = contentW;
     if (bracketRails.length) {
@@ -100,16 +118,6 @@ function buildExportInclusioSvgElement(ed, paneState) {
       minX = Math.min(0, minRailX - 4);
       vbW = Math.max(contentW, maxRailX + 4) - minX;
     }
-    svg.setAttribute('viewBox', `${minX} 0 ${vbW} ${contentH}`);
-    svg.setAttribute('width', String(contentW));
-    svg.setAttribute('height', String(contentH));
-    svg.style.position = 'absolute';
-    svg.style.top = '0';
-    svg.style.left = '0';
-    svg.style.width = contentW + 'px';
-    svg.style.height = contentH + 'px';
-    svg.style.pointerEvents = 'none';
-    svg.style.overflow = 'visible';
     bracketEntries.forEach((entry, i) => {
       if (typeof drawInclusioUnitFrame === 'function') {
         drawInclusioUnitFrame(
@@ -123,27 +131,12 @@ function buildExportInclusioSvgElement(ed, paneState) {
         );
       }
     });
+    applyExportSvgViewport(svg, { contentW, contentH, minX, vbW });
     return svg;
   } finally {
     if (prevRoot == null) delete window.__contourExportRoot;
     else window.__contourExportRoot = prevRoot;
   }
-}
-
-function applyInclusioExportGutter(ed, paneState) {
-  if (!ed || !paneState) return;
-  const spans = typeof computeInclusioNestLevels === 'function'
-    ? computeInclusioNestLevels(paneState.inclusios || [], paneState.verses || [])
-    : [];
-  const visible = spans.filter((s) => s.inc.showMarginEnvelope !== false && s.inc.openingAnchor && s.inc.closingAnchor);
-  const maxNest = typeof inclusioMaxNestLevel === 'function' ? inclusioMaxNestLevel(spans) : 0;
-  const gutterCfg = window.INCLUSIO_FRAME_GUTTER || { marginBase: 36, layerStep: 40, textGap: 8 };
-  const gutter = visible.length
-    ? (gutterCfg.marginBase || 36) + maxNest * (gutterCfg.layerStep || 40) + (gutterCfg.textGap || 8) + 8
-    : 0;
-  if (gutter) ed.style.setProperty('--inclusio-margin-gutter', `${gutter}px`);
-  else ed.style.removeProperty('--inclusio-margin-gutter');
-  ed.classList.toggle('has-inclusio-frames', visible.length > 0);
 }
 
 function createContourExportMeasureHost(bodyHtml, opts) {
@@ -167,15 +160,14 @@ function createContourExportMeasureHost(bodyHtml, opts) {
   sheet.innerHTML = titleHtml
     + `<div class="contour-export-body-wrap">`
     + `<div class="contour-page-body ${langCls}" dir="ltr">${bodyHtml || ''}</div>`
+    + `<div class="contour-export-overlay-layer" aria-hidden="true"></div>`
     + `</div>`;
   host.appendChild(sheet);
   document.body.appendChild(host);
-  const ed = host.querySelector('.contour-page-body');
-  if (ed) applyInclusioExportGutter(ed, opts.paneState || (typeof state !== 'undefined' ? state : null));
   return host;
 }
 
-function renderContourExportOverlaysInto(wrap, ed, opts) {
+function renderContourExportOverlaysInto(layer, ed, opts) {
   opts = opts || {};
   const isGreek = opts.isGreek != null ? opts.isGreek : (typeof state !== 'undefined' && state.language === 'greek');
   const paneState = opts.paneState || (typeof state !== 'undefined' ? state : null);
@@ -184,8 +176,8 @@ function renderContourExportOverlaysInto(wrap, ed, opts) {
   const arcs = (paneState && paneState.arcs) || [];
   const arcSvg = buildExportArcSvgElement(ed, arcs, isGreek);
   const incSvg = buildExportInclusioSvgElement(ed, paneState);
-  if (arcSvg) wrap.appendChild(arcSvg);
-  if (incSvg) wrap.appendChild(incSvg);
+  if (arcSvg) layer.appendChild(arcSvg);
+  if (incSvg) layer.appendChild(incSvg);
   return { arcSvg, incSvg, arcCount: arcs.length, frameCount: paneState?.inclusios?.length || 0 };
 }
 
@@ -194,31 +186,38 @@ function buildContourExportBodyWrapHtml(bodyHtml, opts) {
   if (!bodyHtml) return '';
   const isGreek = opts.isGreek != null ? opts.isGreek : (typeof state !== 'undefined' && state.language === 'greek');
   const langCls = isGreek ? 'lang-greek' : 'lang-hebrew';
-  let overlayHtml = '';
+  let bodyInner = '';
+  let overlayInner = '';
   const host = createContourExportMeasureHost(bodyHtml, opts);
   try {
     const wrap = host.querySelector('.contour-export-body-wrap');
     const ed = host.querySelector('.contour-page-body');
-    if (wrap && ed) {
-      renderContourExportOverlaysInto(wrap, ed, opts);
-      overlayHtml = wrap.innerHTML;
+    const layer = host.querySelector('.contour-export-overlay-layer');
+    if (wrap && ed && layer) {
+      renderContourExportOverlaysInto(layer, ed, opts);
+      bodyInner = ed.outerHTML;
+      overlayInner = layer.innerHTML;
     }
   } finally {
     host.remove();
   }
-  return `<div class="contour-export-body-wrap">${overlayHtml || (`<div class="contour-page-body ${langCls}" dir="ltr">${bodyHtml}</div>`)}</div>`;
+  if (!bodyInner) {
+    bodyInner = `<div class="contour-page-body ${langCls}" dir="ltr">${bodyHtml}</div>`;
+  }
+  return `<div class="contour-export-body-wrap">${bodyInner}<div class="contour-export-overlay-layer" aria-hidden="true">${overlayInner}</div></div>`;
 }
 
 function contourExportOverlayCss() {
-  return '.contour-export-body-wrap{position:relative}'
-    + '.contour-page-body.lang-hebrew.has-inclusio-frames{padding-right:calc(var(--contour-hebrew-anchor-inset) + var(--inclusio-margin-gutter,0px))!important}'
-    + '.contour-export-arc-svg,.contour-export-inclusio-svg{position:absolute;top:0;left:0;z-index:2;pointer-events:none;overflow:visible}'
+  return '.contour-export-body-wrap{position:relative;overflow:visible}'
+    + '.contour-document-sheet.contour-document-sheet--export{overflow:visible}'
+    + '.contour-export-overlay-layer{position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;pointer-events:none;overflow:visible}'
+    + '.contour-export-arc-svg,.contour-export-inclusio-svg{position:absolute;top:0;pointer-events:none;overflow:visible}'
     + '.contour-export-inclusio-svg .inclusio-frame-rail{vector-effect:non-scaling-stroke;fill:none}'
     + '.contour-export-arc-svg .arc-path{fill:none;stroke-width:3;stroke-linecap:round;vector-effect:non-scaling-stroke}'
     + '.contour-export-arc-svg .arc-label{font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600}'
     + 'body.contour-export-fit-one-page .contour-export-fit-outer{display:flex;justify-content:center;align-items:flex-start}'
-    + 'body.contour-export-fit-one-page .contour-export-fit-stage{transform-origin:top center}'
-    + '@media print{body.contour-export-fit-one-page .contour-document-sheet--export{page-break-inside:avoid}}';
+    + 'body.contour-export-fit-one-page .contour-export-fit-stage{transform-origin:top left}'
+    + '@media print{body.contour-export-fit-one-page .contour-document-sheet--export{page-break-inside:avoid}.contour-export-supplement{page-break-before:auto}}';
 }
 
 function buildContourExportFitScript(fitOnePage) {
