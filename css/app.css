@@ -160,6 +160,8 @@ body.dark-mode .parallel-pane-load{background:#17212b;border-color:#314253;color
 #arcSvg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;overflow:visible;}
 .editor-arc-wrap.arc-draw-active{cursor:crosshair;}
 .editor-arc-wrap.arc-draw-active .word{cursor:crosshair;}
+.editor-arc-wrap.inclusio-draw-active{cursor:crosshair;}
+.editor-arc-wrap.inclusio-draw-active .word{cursor:crosshair;}
 #editor{position:relative;z-index:2;}
 .arc-toolbar{border:1px solid #e5e5e5;border-radius:8px;background:#fafafa;padding:8px 10px;margin:8px 0;}
 .arc-toolbar .row{margin:0;}

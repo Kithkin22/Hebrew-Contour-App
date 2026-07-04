@@ -107,6 +107,54 @@ async function main() {
       `markers on words=${regen.wordHasMarker}, DOM brackets=${regen.domHasBracket}`
     );
 
+    const draw = await page.evaluate(() => {
+      ensureStateBundle();
+      stateBundle.parallelEnabled = false;
+      state = stateBundle.panes[0];
+      parseText('אֶ֣לֶף בֵּ֑ית גִּמֶל\nדָּלֶת הֵא', 'Draw test', false, { skipRender: true });
+      state.inclusios = [];
+      state.activeInclusioId = null;
+      clearInclusioWordMarkers();
+      render();
+
+      const item = addInclusioFromLocs({ v: 0, c: 0, w: 0 }, { v: 1, c: 0, w: 0 });
+      render();
+
+      const nested = addInclusioFromLocs({ v: 0, c: 0, w: 0 }, { v: 0, c: 0, w: 2 });
+      render();
+
+      toggleDrawArcMode(true);
+      const arcOn = window.arcDraw && window.arcDraw.active;
+      toggleDrawInclusioMode(true);
+      const arcOff = !(window.arcDraw && window.arcDraw.active);
+      const incOn = inclusioDraw.active;
+      toggleDrawInclusioMode(false);
+      toggleDrawArcMode(false);
+
+      const noTitle = !document.querySelector('#contourPassageTitle .contour-passage-title-text');
+      state.ref = '';
+      state.verses[0].ref = '';
+      syncContourPassageTitle();
+      const pastedHidden = document.getElementById('contourPassageTitle')?.hidden !== false;
+
+      return {
+        drawn: !!item && !!item.openingAnchor && !!item.closingAnchor,
+        rails: document.querySelectorAll('#editor svg.inclusio-frame-svg line.inclusio-frame-rail:not(.inclusio-frame-rail-preview)').length,
+        registry: (document.getElementById('inclusioRegistry')?.textContent || '').includes('Inclusio'),
+        nestedOk: state.inclusios.length === 2,
+        arcMutual: arcOn && arcOff && incOn,
+        pastedHidden,
+        noPlaceholderTitle: noTitle || pastedHidden,
+      };
+    });
+
+    record('draw-from-locs', draw.drawn, `addInclusioFromLocs created=${draw.drawn}`);
+    record('draw-frame-rails', draw.rails >= 2, `frameRails=${draw.rails}`);
+    record('draw-registry', draw.registry, `legend lists drawn inclusio=${draw.registry}`);
+    record('nested-draw', draw.nestedOk, `nested count=${draw.nestedOk}`);
+    record('arc-mutual-exclusion', draw.arcMutual, `arc/inclusio draw modes exclusive=${draw.arcMutual}`);
+    record('no-pasted-passage-title', draw.noPlaceholderTitle, `placeholder title hidden=${draw.noPlaceholderTitle}`);
+
     const pass = results.every((r) => r.pass);
     console.log(`\n${pass ? 'ALL PASSED' : 'SOME FAILED'} (${results.filter((r) => r.pass).length}/${results.length})`);
     process.exit(pass ? 0 : 1);

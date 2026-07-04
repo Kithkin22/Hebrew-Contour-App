@@ -730,7 +730,7 @@ function buildVersesFromLayoutPaste(text, ref, language, refs, layoutLines) {
   }
 
   const normRef = ref ? normalizePassageRangeRef(ref) : '';
-  const verseRef = generated[0] || normRef || 'Pasted passage';
+  const verseRef = generated[0] || normRef || '';
   const clauses = contentLines.map(clauseFromLine).filter(Boolean);
   if (!clauses.length) return [];
   return [{ ref: verseRef, clauses }];
@@ -779,6 +779,12 @@ function verseRefHidden(verse) {
 }
 window.verseRefHidden = verseRefHidden;
 
+function isPlaceholderPassageRef(ref) {
+  const s = String(ref || '').trim().toLowerCase();
+  return !s || s === 'pasted passage';
+}
+window.isPlaceholderPassageRef = isPlaceholderPassageRef;
+
 function formatPassageTitleDisplay(ref) {
   const raw = String(ref || '').trim();
   if (!raw) return '';
@@ -795,9 +801,13 @@ function formatPassageTitleDisplay(ref) {
 window.formatPassageTitleDisplay = formatPassageTitleDisplay;
 
 function passageRefForDisplay() {
-  if (state && state.ref && String(state.ref).trim()) return String(state.ref).trim();
+  if (state && state.ref && String(state.ref).trim()) {
+    const r = String(state.ref).trim();
+    if (!isPlaceholderPassageRef(r)) return r;
+  }
   if (state && state.verses && state.verses.length === 1 && state.verses[0].ref) {
-    return String(state.verses[0].ref).trim();
+    const r = String(state.verses[0].ref).trim();
+    if (!isPlaceholderPassageRef(r)) return r;
   }
   return '';
 }
@@ -859,6 +869,7 @@ window.contourPassageTitleHtml = contourPassageTitleHtml;
 function contourVerseRefHtml(verse, vi, opts) {
   opts = opts || {};
   if (verseRefHidden(verse)) return '';
+  if (typeof isPlaceholderPassageRef === 'function' && isPlaceholderPassageRef(verse && verse.ref)) return '';
   if (!opts.parallel && vi === 0 && state && state.verses && state.verses.length === 1 && passageRefForDisplay()) {
     return '';
   }

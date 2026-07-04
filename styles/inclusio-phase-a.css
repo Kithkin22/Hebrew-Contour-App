@@ -101,7 +101,15 @@
   color: #9a3412;
 }
 
-svg.inclusio-frame-svg {
+.inclusio-frame-rail.inclusio-frame-rail-preview {
+  stroke-dasharray: 8 5;
+  opacity: 0.6;
+}
+
+body.dark-mode svg.inclusio-frame-svg .inclusio-frame-rail-preview {
+  opacity: 0.72;
+}
+
   position: absolute;
   inset: 0;
   width: 100%;

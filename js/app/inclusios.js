@@ -1,6 +1,7 @@
-/* inclusio-phase-a — TextAnchor model, editor + legend registry */
+/* inclusio-phase-a — TextAnchor model, editor + legend registry + draw mode */
 let inclusioPhraseDraft = null; /* { side: 'opening'|'closing', loc } */
 let inclusioRegistryHoverId = null;
+let inclusioDraw = { active: false, isDragging: false, start: null, current: null };
 
 const RELATIONSHIP_BASIS_OPTIONS = [
   { value: '', label: '— unset —' },
@@ -186,10 +187,11 @@ function ensureInclusioFrameSvg(ed) {
   return svg;
 }
 
-function drawInclusioEnvelopeRail(svg, bounds, inc, level) {
+function drawInclusioEnvelopeRail(svg, bounds, inc, level, opts) {
+  opts = opts || {};
   const inset = 8 + (level || 0) * 6;
   const strokeWidth = Math.max(1.5, 3 - (level || 0) * 0.45);
-  const opacity = Math.max(0.55, 1 - (level || 0) * 0.12);
+  const opacity = opts.preview ? 0.55 : Math.max(0.55, 1 - (level || 0) * 0.12);
   const color = inc.color || '#6B7280';
   const xL = Math.max(4, bounds.left - inset);
   const xR = Math.min(bounds.width - 4, bounds.right + inset);
@@ -198,7 +200,7 @@ function drawInclusioEnvelopeRail(svg, bounds, inc, level) {
   const cap = 10 + (level || 0) * 2;
   const mkLine = (x1, y1v, x2, y2v) => {
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('class', 'inclusio-frame-rail');
+    line.setAttribute('class', opts.preview ? 'inclusio-frame-rail inclusio-frame-rail-preview' : 'inclusio-frame-rail');
     line.setAttribute('data-inc-id', inc.id || '');
     line.setAttribute('x1', String(x1));
     line.setAttribute('y1', String(y1v));
@@ -219,11 +221,12 @@ function drawInclusioEnvelopeRail(svg, bounds, inc, level) {
 
 function renderInclusioFrameOverlay(paneState, pane) {
   const ed = inclusioEditorRoot(pane);
-  if (!ed || !paneState?.inclusios?.length) {
-    if (ed) {
-      const old = ed.querySelector(':scope > svg.inclusio-frame-svg');
-      if (old) old.remove();
-    }
+  if (!ed) return;
+  const hasInclusios = !!(paneState?.inclusios?.length);
+  const hasPreview = !pane && inclusioDraw.isDragging && inclusioDraw.start && inclusioDraw.current;
+  if (!hasInclusios && !hasPreview) {
+    const old = ed.querySelector(':scope > svg.inclusio-frame-svg');
+    if (old) old.remove();
     return;
   }
   const svg = ensureInclusioFrameSvg(ed);
@@ -236,15 +239,20 @@ function renderInclusioFrameOverlay(paneState, pane) {
   svg.setAttribute('height', String(contentH));
   svg.style.width = contentW + 'px';
   svg.style.height = contentH + 'px';
-  const spans = computeInclusioNestLevels(paneState.inclusios, paneState.verses);
-  spans.sort((a, b) => (a.inc.nestLevel || 0) - (b.inc.nestLevel || 0));
-  spans.forEach(({ inc }) => {
-    if (inc.showMarginEnvelope === false) return;
-    if (!inc.openingAnchor || !inc.closingAnchor) return;
-    const bounds = inclusioEnvelopeBounds(inc, paneState, pane);
-    if (!bounds) return;
-    drawInclusioEnvelopeRail(svg, bounds, inc, inc.nestLevel || 0);
-  });
+  if (hasInclusios) {
+    const spans = computeInclusioNestLevels(paneState.inclusios, paneState.verses);
+    spans.sort((a, b) => (a.inc.nestLevel || 0) - (b.inc.nestLevel || 0));
+    spans.forEach(({ inc }) => {
+      if (inc.showMarginEnvelope === false) return;
+      if (!inc.openingAnchor || !inc.closingAnchor) return;
+      const bounds = inclusioEnvelopeBounds(inc, paneState, pane);
+      if (!bounds) return;
+      drawInclusioEnvelopeRail(svg, bounds, inc, inc.nestLevel || 0);
+    });
+  }
+  if (hasPreview) {
+    drawInclusioDragPreview(svg, inclusioDraw.start, inclusioDraw.current, paneState);
+  }
 }
 
 function renderInclusioFrameOverlays() {
@@ -274,11 +282,18 @@ if (typeof window !== 'undefined') {
 function updateInclusioWorkflowStatus() {
   const el = document.getElementById('inclusioWorkflowStatus');
   if (!el) return;
+  if (inclusioDraw.active) {
+    el.textContent = inclusioDraw.isDragging
+      ? 'Drawing… release on the closing word to create the inclusio frame.'
+      : 'Draw mode on: drag from the opening word to the closing word.';
+    el.classList.remove('inclusio-status-warn');
+    return;
+  }
   ensureInclusios();
   migrateAllInclusios();
   const item = activeInclusio();
   if (!item) {
-    el.textContent = 'No active inclusio. Click New Inclusio (or Set Opening Anchor to create one). Then select a Hebrew word.';
+    el.textContent = 'No active inclusio. Click New Inclusio, Draw Inclusio, or Set Opening Anchor to create one. Then select a Hebrew word.';
     el.classList.remove('inclusio-status-warn');
     return;
   }
@@ -477,6 +492,94 @@ function addInclusio() {
   updateInclusioWorkflowStatus();
   render();
 }
+
+function inclusioDefaultColor() {
+  return document.getElementById('inclusioColorInput')?.value
+    || document.getElementById('inclusioColor')?.value
+    || '#6B7280';
+}
+
+function drawInclusioDragPreview(svg, startLoc, endLoc, paneState) {
+  if (!locOK(startLoc) || !locOK(endLoc) || locEqual(startLoc, endLoc)) return;
+  const [openLoc, closeLoc] = orderedLocs(startLoc, endLoc);
+  const preview = {
+    id: '__inclusio_preview__',
+    color: inclusioDefaultColor(),
+    openingAnchor: makeTextAnchorFromLocs(openLoc, openLoc),
+    closingAnchor: makeTextAnchorFromLocs(closeLoc, closeLoc),
+    showMarginEnvelope: true,
+    nestLevel: 0,
+  };
+  if (!preview.openingAnchor || !preview.closingAnchor) return;
+  const bounds = inclusioEnvelopeBounds(preview, paneState, null);
+  if (!bounds) return;
+  drawInclusioEnvelopeRail(svg, bounds, preview, 0, { preview: true });
+}
+
+function addInclusioFromLocs(startLoc, endLoc) {
+  if (!locOK(startLoc) || !locOK(endLoc) || locEqual(startLoc, endLoc)) return null;
+  const [openLoc, closeLoc] = orderedLocs(startLoc, endLoc);
+  markUndo();
+  ensureInclusios();
+  const n = state.inclusios.length + 1;
+  const label = `Inclusio ${String.fromCharCode(64 + ((n - 1) % 26) + 1)}`;
+  const color = inclusioDefaultColor();
+  const openingAnchor = makeTextAnchorFromLocs(openLoc, openLoc);
+  const closingAnchor = makeTextAnchorFromLocs(closeLoc, closeLoc);
+  if (!openingAnchor || !closingAnchor) return null;
+  const o = openingAnchor.normalizedText || '';
+  const c = closingAnchor.normalizedText || '';
+  const item = {
+    id: 'inc' + Date.now(),
+    label,
+    color,
+    showMarginEnvelope: true,
+    relationshipKind: 'inclusio',
+    openingAnchor,
+    closingAnchor,
+    theme: '',
+    relationshipBasis: '',
+    evidence: o && c ? (o === c ? o : `${o} … ${c}`) : '',
+    notes: '',
+  };
+  state.inclusios.push(item);
+  state.activeInclusioId = item.id;
+  state.selected = cloneLoc(closeLoc);
+  inclusioPhraseDraft = null;
+  syncStateBundle();
+  if (typeof syncAllPaneInclusioWordMarkers === 'function') syncAllPaneInclusioWordMarkers();
+  else syncInclusioWordMarkers();
+  expandLegendInclusiosSection();
+  if (autosaveReady) autoSaveProject();
+  return item;
+}
+window.addInclusioFromLocs = addInclusioFromLocs;
+
+function toggleDrawInclusioMode(force) {
+  if (typeof isParallelActive === 'function' && isParallelActive()) {
+    if (force !== false) alert('Draw Inclusio is available in single-pane mode.');
+    return;
+  }
+  const next = typeof force === 'boolean' ? force : !inclusioDraw.active;
+  if (next && typeof toggleDrawArcMode === 'function' && window.arcDraw && window.arcDraw.active) {
+    toggleDrawArcMode(false);
+  }
+  inclusioDraw.active = next;
+  inclusioDraw.isDragging = false;
+  inclusioDraw.start = null;
+  inclusioDraw.current = null;
+  const wrap = document.getElementById('editorWrap');
+  const btn = document.getElementById('drawInclusioMode');
+  if (wrap) wrap.classList.toggle('inclusio-draw-active', inclusioDraw.active);
+  if (btn) {
+    btn.textContent = inclusioDraw.active ? 'Drawing Inclusio…' : 'Draw Inclusio';
+    btn.classList.toggle('warn', inclusioDraw.active);
+    btn.classList.toggle('primary', !inclusioDraw.active);
+  }
+  updateInclusioWorkflowStatus();
+  scheduleInclusioFrameRedraw();
+}
+window.toggleDrawInclusioMode = toggleDrawInclusioMode;
 
 function deleteActiveInclusio() {
   const item = activeInclusio();
@@ -874,4 +977,69 @@ if (document.readyState === 'loading') {
   } else {
     install();
   }
+})();
+
+(function initInclusioDrawTool() {
+  function bind() {
+    const btn = document.getElementById('drawInclusioMode');
+    if (btn && !btn.dataset.inclusioDrawBound) {
+      btn.dataset.inclusioDrawBound = '1';
+      btn.onclick = () => toggleDrawInclusioMode();
+    }
+    const wrap = document.getElementById('editorWrap');
+    if (!wrap || wrap.dataset.inclusioDrawBound) return;
+    wrap.dataset.inclusioDrawBound = '1';
+    wrap.addEventListener('pointerdown', e => {
+      if (!inclusioDraw.active || typeof nearestWordLocFromPoint !== 'function') return;
+      const loc = nearestWordLocFromPoint(e.clientX, e.clientY);
+      if (!loc) return;
+      e.preventDefault();
+      e.stopPropagation();
+      inclusioDraw.isDragging = true;
+      inclusioDraw.start = cloneLoc(loc);
+      inclusioDraw.current = cloneLoc(loc);
+      state.selected = cloneLoc(loc);
+      try { wrap.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      scheduleInclusioFrameRedraw();
+    }, true);
+    wrap.addEventListener('pointermove', e => {
+      if (!inclusioDraw.active || !inclusioDraw.isDragging) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof nearestWordLocFromPoint !== 'function') return;
+      const loc = nearestWordLocFromPoint(e.clientX, e.clientY);
+      if (loc) {
+        inclusioDraw.current = cloneLoc(loc);
+        scheduleInclusioFrameRedraw();
+      }
+    }, true);
+    wrap.addEventListener('pointerup', e => {
+      if (!inclusioDraw.active || !inclusioDraw.isDragging) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const end = typeof nearestWordLocFromPoint === 'function'
+        ? (nearestWordLocFromPoint(e.clientX, e.clientY) || inclusioDraw.current)
+        : inclusioDraw.current;
+      const start = inclusioDraw.start;
+      inclusioDraw.isDragging = false;
+      inclusioDraw.start = null;
+      inclusioDraw.current = null;
+      try { wrap.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      const item = start && end ? addInclusioFromLocs(start, end) : null;
+      if (item) {
+        toggleDrawInclusioMode(false);
+        render();
+      } else {
+        scheduleInclusioFrameRedraw();
+      }
+    }, true);
+    wrap.addEventListener('pointercancel', () => {
+      inclusioDraw.isDragging = false;
+      inclusioDraw.start = null;
+      inclusioDraw.current = null;
+      scheduleInclusioFrameRedraw();
+    }, true);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bind);
+  else bind();
 })();
