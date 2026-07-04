@@ -93,9 +93,8 @@
   function updateWorksheetPreview() {
     const frame = document.getElementById('worksheetPdfPreview');
     const previewWrap = document.querySelector('.worksheet-wizard-preview');
-    if (!frame || typeof buildContourExportDocument !== 'function') return;
-    if (!state.verses.length) {
-      frame.removeAttribute('srcdoc');
+    if (!frame || !state.verses.length) {
+      frame?.removeAttribute('srcdoc');
       return;
     }
     const settings = readWorksheetWizardForm();
@@ -110,6 +109,22 @@
       previewWrap.style.setProperty('--worksheet-preview-page-h', layout.pageH + 'px');
       previewWrap.style.setProperty('--worksheet-preview-scale', String(scale));
     }
+
+    const showScreenshotPreview = () => {
+      if (typeof buildScreenshotWorksheetDocument !== 'function' || typeof captureWorksheetContourScreenshot !== 'function') {
+        return false;
+      }
+      captureWorksheetContourScreenshot(settings).then((capture) => {
+        if (!capture) return;
+        const html = buildScreenshotWorksheetDocument(capture, settings);
+        if (html) frame.srcdoc = html;
+      }).catch(() => {});
+      return true;
+    };
+
+    if (showScreenshotPreview()) return;
+
+    if (typeof buildContourExportDocument !== 'function') return;
     let html = '';
     try {
       html = buildContourExportDocument({
@@ -121,8 +136,7 @@
     } catch (e) {
       return;
     }
-    if (!html) return;
-    frame.srcdoc = html;
+    if (html) frame.srcdoc = html;
   }
 
   function showWorksheetPdfWizard(preset) {

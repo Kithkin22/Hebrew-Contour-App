@@ -153,11 +153,12 @@ function buildWorksheetLayoutCss(layout) {
   if (scaled) {
     css += `.contour-export-worksheet-print-root{width:${layout.pageW}px;min-height:${layout.pageH}px;margin:0 auto;overflow:hidden;position:relative;box-sizing:border-box;page-break-after:always}`
       + `.contour-export-worksheet-stage{transform:scale(${layout.scale});transform-origin:top left;position:absolute;left:${layout.marginPx}px;top:${layout.marginPx}px;width:${layout.sheetW}px;height:auto}`
-      + '@media print{.contour-export-worksheet-print-root{page-break-inside:avoid}}';
+      + '@media print{.contour-export-worksheet-print-root{page-break-inside:avoid;transform:none!important}.contour-export-worksheet-stage{transform:scale(' + layout.scale + ')!important;transform-origin:top left!important}}';
   } else {
-    css += `.contour-export-worksheet-print-root{width:${layout.pageW}px;min-height:${layout.pageH}px;margin:0 auto;box-sizing:border-box;padding:${layout.marginPx}px;page-break-after:always}`
-      + `.contour-export-worksheet-stage{width:${layout.sheetW}px;height:auto;transform:none}`
-      + '@media print{.contour-export-worksheet-print-root{page-break-inside:avoid}}';
+    const fitScale = Math.min(1, layout.areaW / layout.sheetW, layout.areaH / layout.sheetH);
+    css += `.contour-export-worksheet-print-root{width:${layout.pageW}px;min-height:${layout.pageH}px;margin:0 auto;box-sizing:border-box;padding:${layout.marginPx}px;page-break-after:always;overflow:hidden}`
+      + `.contour-export-worksheet-stage{width:${layout.sheetW}px;height:auto;transform:scale(${fitScale});transform-origin:top left}`
+      + '@media print{.contour-export-worksheet-print-root{page-break-inside:avoid;padding:' + layout.marginPx + 'px!important;overflow:hidden}.contour-export-worksheet-stage{transform:scale(' + fitScale + ')!important;transform-origin:top left!important}}';
   }
   return css;
 }

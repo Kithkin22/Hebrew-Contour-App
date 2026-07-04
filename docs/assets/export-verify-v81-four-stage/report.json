@@ -1,0 +1,14 @@
+{
+  "at": "2026-07-04T19:08:57.668Z",
+  "finding": "DOM export at 100% placed 816px sheet inside padded print root — Safari auto-scales (~50%). Screenshot export avoids re-render.",
+  "editorRtl": {
+    "dir": "rtl",
+    "align": "right"
+  },
+  "stages": [
+    "1-editor-contour.png",
+    "3-dom-export-screen.png",
+    "3-screenshot-export-screen.png",
+    "3-screenshot-export-print.pdf"
+  ]
+}
