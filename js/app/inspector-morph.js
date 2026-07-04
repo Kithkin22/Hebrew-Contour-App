@@ -49,20 +49,21 @@
     }
     return null;
   }
-  function setInspectorEnabled(enabled){
-    localStorage.setItem(INSPECTOR_PREF_KEY, enabled ? '1' : '0');
-    window.CONTOUR_INSPECTOR_ENABLED=!!enabled;
-    const btn=document.getElementById('inspectorToggleBtn');
-    if(btn){
-      btn.textContent=enabled ? 'Inspector: On' : 'Inspector: Off';
+  function setInspectorEnabled(enabled, opts) {
+    opts = opts || {};
+    window.CONTOUR_INSPECTOR_ENABLED = !!enabled;
+    const btn = document.getElementById('inspectorToggleBtn');
+    if (btn) {
+      btn.textContent = enabled ? 'Inspector: On' : 'Inspector: Off';
       btn.classList.toggle('off', !enabled);
       btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
     }
-    if(!enabled){
-      const box=document.getElementById('wordInspector');
-      if(box){box.style.display='none';box.setAttribute('aria-hidden','true');}
+    if (!enabled) {
+      const box = document.getElementById('wordInspector');
+      if (box) { box.style.display = 'none'; box.setAttribute('aria-hidden', 'true'); }
       clearTimeout(window.__inspectorHoverTimer);
     }
+    if (!opts.skipPersist && typeof syncInspectorPref === 'function') syncInspectorPref(!!enabled);
   }
   function installInspectorToggle(){
     if(document.getElementById('inspectorToggleBtn')) return;
@@ -78,8 +79,7 @@
     if(themeBtn && themeBtn.parentNode) themeBtn.parentNode.insertBefore(btn, themeBtn.nextSibling);
     else if(actions) actions.insertBefore(btn, actions.firstChild);
     else top.appendChild(btn);
-    const saved=localStorage.getItem(INSPECTOR_PREF_KEY);
-    setInspectorEnabled(saved==='1');
+    setInspectorEnabled(false, { skipPersist: true });
   }
   function installManualModal(){
     if(document.getElementById('manualInspectorModal')) return;

@@ -49,6 +49,89 @@ function spacingAfterFromBlankLineCount(blankCount) {
 }
 window.spacingAfterFromBlankLineCount = spacingAfterFromBlankLineCount;
 
+const WORD_CONTOUR_INDENT_PX = 36;
+const WORD_IMPORT_INDENT_STEP_PX = 48;
+const WORD_INDENT_IMPORT_PREF_KEY = 'hc-import-word-indent';
+const WORD_INDENT_MIN_PX = 18;
+const WORD_INDENT_GRID_TOLERANCE_PX = 15;
+
+let lastWordLayoutPasteMeta = null;
+
+function parseCssLengthToPx(raw) {
+  if (raw == null) return 0;
+  const s = String(raw).trim().toLowerCase();
+  if (!s || s === 'auto' || s === 'inherit') return 0;
+  const m = s.match(/^(-?[0-9.]+)\s*(pt|px|in|cm|mm|pc|em|rem|%)?$/);
+  if (!m) return 0;
+  const n = parseFloat(m[1]) || 0;
+  const u = m[2] || 'px';
+  if (u === 'pt') return n * (96 / 72);
+  if (u === 'in') return n * 96;
+  if (u === 'cm') return n * (96 / 2.54);
+  if (u === 'mm') return n * (96 / 25.4);
+  if (u === 'pc') return n * 16;
+  if (u === 'em' || u === 'rem') return n * 16;
+  return n;
+}
+window.parseCssLengthToPx = parseCssLengthToPx;
+
+function readStyleLength(style, prop) {
+  const re = new RegExp('(?:^|;)\\s*' + prop.replace(/-/g, '\\-') + '\\s*:\\s*([^;]+)', 'i');
+  const m = String(style || '').match(re);
+  return m ? parseCssLengthToPx(m[1].trim()) : 0;
+}
+
+function readMarginTopBlankCount(style) {
+  const pt = readStyleLength(style, 'margin-top');
+  if (pt >= 18) return 2;
+  if (pt >= 8) return 1;
+  const mb = readStyleLength(style, 'margin-bottom');
+  if (mb >= 18) return 2;
+  if (mb >= 8) return 1;
+  return 0;
+}
+
+function paragraphIsRtl(el, docRtl) {
+  const dir = String(el.getAttribute('dir') || '').toLowerCase();
+  if (dir === 'rtl') return true;
+  if (dir === 'ltr') return false;
+  const style = el.getAttribute('style') || '';
+  const m = style.match(/direction\s*:\s*(rtl|ltr)/i);
+  if (m) return m[1].toLowerCase() === 'rtl';
+  return !!docRtl;
+}
+
+function extractParagraphIndentPx(el, isRtl) {
+  const style = el.getAttribute('style') || '';
+  const marginRight = readStyleLength(style, 'margin-right');
+  const marginLeft = readStyleLength(style, 'margin-left');
+  const paddingRight = readStyleLength(style, 'padding-right');
+  const paddingLeft = readStyleLength(style, 'padding-left');
+  let textIndent = readStyleLength(style, 'text-indent');
+  if (textIndent < 0) textIndent = Math.abs(textIndent);
+
+  const msoRight = readStyleLength(style, 'mso-para-margin-right');
+  const msoLeft = readStyleLength(style, 'mso-para-margin-left');
+
+  if (isRtl) {
+    return Math.max(
+      marginRight + paddingRight + msoRight,
+      marginLeft + paddingLeft + msoLeft,
+      textIndent
+    );
+  }
+  return Math.max(
+    marginLeft + paddingLeft + msoLeft,
+    marginRight + paddingRight + msoRight,
+    textIndent
+  );
+}
+window.extractParagraphIndentPx = extractParagraphIndentPx;
+
+function normalizePasteLineKey(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
+
 function parseLayoutPasteLines(text) {
   const lines = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
   const contentLines = [];
@@ -62,43 +145,233 @@ function parseLayoutPasteLines(text) {
       contentLines[contentLines.length - 1].spacingAfter = spacingAfterFromBlankLineCount(blankRun);
     }
     blankRun = 0;
-    contentLines.push({ text: String(line).trim(), spacingAfter: 'default' });
+    contentLines.push({ text: String(line).trim(), spacingAfter: 'default', indent: 0 });
   });
   return contentLines;
 }
 window.parseLayoutPasteLines = parseLayoutPasteLines;
 
-function layoutTextFromWordHtml(html) {
-  if (!html) return '';
+function wordLayoutLinesToPlainText(lines) {
+  const out = [];
+  (lines || []).forEach(line => {
+    out.push(line.text);
+    const sp = normalizeSpacingAfter(line.spacingAfter);
+    if (sp === 'medium') out.push('');
+    else if (sp === 'large') {
+      out.push('');
+      out.push('');
+    }
+  });
+  return out.join('\n');
+}
+window.wordLayoutLinesToPlainText = wordLayoutLinesToPlainText;
+
+function applyWordIndentLevels(contentLines, importIndent) {
+  if (!contentLines || !contentLines.length) return;
+  if (importIndent === false) {
+    contentLines.forEach(l => { l.indent = 0; });
+    return;
+  }
+  const pxVals = contentLines.map(l => l.indentPx || 0);
+  const minPx = Math.min(...pxVals);
+  contentLines.forEach(l => {
+    const rel = Math.max(0, (l.indentPx || 0) - minPx);
+    l.indent = rel < WORD_INDENT_MIN_PX ? 0 : Math.round(rel / WORD_IMPORT_INDENT_STEP_PX);
+  });
+}
+
+function assessWordIndentImport(contentLines) {
+  if (!contentLines || !contentLines.length) {
+    return { hasIndent: false, ambiguous: false };
+  }
+  const pxVals = contentLines.map(l => l.indentPx || 0);
+  const minPx = Math.min(...pxVals);
+  const rel = pxVals.map(v => Math.max(0, v - minPx));
+  const hasIndent = rel.some(v => v >= WORD_INDENT_MIN_PX);
+  if (!hasIndent) return { hasIndent: false, ambiguous: false };
+
+  let offGrid = 0;
+  let indentedCount = 0;
+  rel.forEach(v => {
+    if (v < WORD_INDENT_MIN_PX) return;
+    indentedCount++;
+    const rem = v % WORD_IMPORT_INDENT_STEP_PX;
+    const dist = Math.min(rem, WORD_IMPORT_INDENT_STEP_PX - rem);
+    if (dist > WORD_INDENT_GRID_TOLERANCE_PX) offGrid++;
+  });
+  const ambiguous = offGrid > 0 && offGrid >= Math.max(1, Math.ceil(indentedCount / 2));
+  return { hasIndent: true, ambiguous };
+}
+
+function getWordIndentImportPreference() {
+  try {
+    const v = localStorage.getItem(WORD_INDENT_IMPORT_PREF_KEY);
+    if (v === 'yes' || v === 'ignore') return v;
+  } catch (e) { /* ignore */ }
+  return null;
+}
+window.getWordIndentImportPreference = getWordIndentImportPreference;
+
+function setWordIndentImportPreference(value) {
+  try {
+    localStorage.setItem(WORD_INDENT_IMPORT_PREF_KEY, value === 'ignore' ? 'ignore' : 'yes');
+  } catch (e) { /* ignore */ }
+}
+window.setWordIndentImportPreference = setWordIndentImportPreference;
+
+function resolveWordIndentImport(meta, cb) {
+  const pref = getWordIndentImportPreference();
+  if (pref === 'yes') {
+    cb(true);
+    return;
+  }
+  if (pref === 'ignore') {
+    cb(false);
+    return;
+  }
+  if (!meta || !meta.hasIndent) {
+    cb(false);
+    return;
+  }
+  if (!meta.ambiguous) {
+    cb(true);
+    return;
+  }
+  const yes = confirm(
+    'Import contour indentation from Word?\n\n'
+    + 'Some paragraph indents could not be mapped cleanly to Aleph contour levels.\n'
+    + 'Choose OK to import the nearest contour levels, or Cancel to ignore indentation.'
+  );
+  setWordIndentImportPreference(yes ? 'yes' : 'ignore');
+  cb(yes);
+}
+window.resolveWordIndentImport = resolveWordIndentImport;
+
+function setLastWordLayoutPasteMeta(meta) {
+  lastWordLayoutPasteMeta = meta || null;
+}
+window.setLastWordLayoutPasteMeta = setLastWordLayoutPasteMeta;
+
+function getLastWordLayoutPasteMeta() {
+  return lastWordLayoutPasteMeta;
+}
+window.getLastWordLayoutPasteMeta = getLastWordLayoutPasteMeta;
+
+function clearLastWordLayoutPasteMeta() {
+  lastWordLayoutPasteMeta = null;
+}
+window.clearLastWordLayoutPasteMeta = clearLastWordLayoutPasteMeta;
+
+function mergeWordIndentIntoLines(textLines, meta, importIndent) {
+  if (!importIndent || !meta || !Array.isArray(meta.lines) || !meta.lines.length) {
+    return textLines;
+  }
+  if (textLines.length === meta.lines.length) {
+    return textLines.map((tl, i) => Object.assign({}, tl, { indent: meta.lines[i].indent || 0 }));
+  }
+  const byText = new Map();
+  meta.lines.forEach(l => {
+    const key = normalizePasteLineKey(l.text);
+    if (key && !byText.has(key)) byText.set(key, l);
+  });
+  return textLines.map(tl => {
+    const match = byText.get(normalizePasteLineKey(tl.text));
+    return match ? Object.assign({}, tl, { indent: match.indent || 0 }) : tl;
+  });
+}
+window.mergeWordIndentIntoLines = mergeWordIndentIntoLines;
+
+function collectWordHtmlBlocks(doc) {
+  let blocks = Array.from(doc.body.querySelectorAll('p'));
+  if (!blocks.length) {
+    blocks = Array.from(doc.body.querySelectorAll('div, li')).filter(el => {
+      const txt = (el.textContent || '').replace(/\u00a0/g, ' ').trim();
+      return txt && !el.querySelector('p');
+    });
+  }
+  return blocks;
+}
+
+function parseWordHtmlLayoutLines(html, opts) {
+  opts = opts || {};
+  if (!html) return null;
   try {
     const doc = new DOMParser().parseFromString(html, 'text/html');
-    const blocks = doc.body ? Array.from(doc.body.querySelectorAll('p, div, li')) : [];
-    if (!blocks.length) return '';
-    const hasHebrew = /[\u0590-\u05FF]/.test(doc.body.textContent || '');
-    if (!hasHebrew) return '';
-    const out = [];
+    if (!doc.body) return null;
+    const bodyText = doc.body.textContent || '';
+    const hasHebrew = /[\u0590-\u05FF]/.test(bodyText);
+    const hasGreek = /[\u0370-\u03FF]/.test(bodyText);
+    if (!hasHebrew && !hasGreek) return null;
+
+    const bodyDir = String(doc.body.getAttribute('dir') || '').toLowerCase();
+    const bodyStyleRtl = /direction\s*:\s*rtl/i.test(doc.body.getAttribute('style') || '');
+    const docRtl = opts.isRtl != null ? !!opts.isRtl : (hasHebrew || bodyDir === 'rtl' || bodyStyleRtl);
+
+    const blocks = collectWordHtmlBlocks(doc);
+    if (!blocks.length) return null;
+
+    const rawItems = [];
     blocks.forEach(el => {
-      const txt = (el.textContent || '').replace(/\u00a0/g, ' ').trim();
-      const style = (el.getAttribute('style') || '').toLowerCase();
-      let extraBlanks = 0;
-      const marginMatch = style.match(/margin-top:\s*([0-9.]+)pt/);
-      if (marginMatch) {
-        const pt = parseFloat(marginMatch[1]) || 0;
-        if (pt >= 18) extraBlanks = 2;
-        else if (pt >= 8) extraBlanks = 1;
+      const txt = (el.textContent || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+      const style = el.getAttribute('style') || '';
+      if (!txt) {
+        rawItems.push({ blank: true });
+        return;
       }
-      while (extraBlanks-- > 0) out.push('');
-      out.push(txt);
+      const leadingBlanks = readMarginTopBlankCount(style);
+      for (let i = 0; i < leadingBlanks; i++) rawItems.push({ blank: true });
+      rawItems.push({
+        text: txt,
+        indentPx: extractParagraphIndentPx(el, paragraphIsRtl(el, docRtl)),
+      });
     });
-    return out.join('\n');
+
+    const contentLines = [];
+    let blankRun = 0;
+    rawItems.forEach(item => {
+      if (item.blank) {
+        blankRun++;
+        return;
+      }
+      if (contentLines.length) {
+        contentLines[contentLines.length - 1].spacingAfter = spacingAfterFromBlankLineCount(blankRun);
+      }
+      blankRun = 0;
+      contentLines.push({
+        text: item.text,
+        spacingAfter: 'default',
+        indentPx: item.indentPx || 0,
+        indent: 0,
+      });
+    });
+
+    if (!contentLines.length) return null;
+
+    applyWordIndentLevels(contentLines, true);
+    const assessment = assessWordIndentImport(contentLines);
+
+    return {
+      lines: contentLines,
+      text: wordLayoutLinesToPlainText(contentLines),
+      hasIndent: assessment.hasIndent,
+      ambiguous: assessment.ambiguous,
+    };
   } catch (e) {
-    return '';
+    return null;
   }
+}
+window.parseWordHtmlLayoutLines = parseWordHtmlLayoutLines;
+
+function layoutTextFromWordHtml(html) {
+  const parsed = parseWordHtmlLayoutLines(html);
+  return parsed ? parsed.text : '';
 }
 window.layoutTextFromWordHtml = layoutTextFromWordHtml;
 
-function buildVersesFromLayoutPaste(text, ref, language, refs) {
-  const contentLines = parseLayoutPasteLines(text);
+function buildVersesFromLayoutPaste(text, ref, language, refs, layoutLines) {
+  const contentLines = (layoutLines && layoutLines.length)
+    ? layoutLines
+    : parseLayoutPasteLines(text);
   if (!contentLines.length) return [];
   const generated = Array.isArray(refs) ? refs : [];
   const usePerLineVerses = generated.length === contentLines.length && generated.length > 1;
@@ -106,7 +379,7 @@ function buildVersesFromLayoutPaste(text, ref, language, refs) {
   function clauseFromLine(line) {
     const words = tokenizeClauseWords(line.text.split(/\s+/).filter(Boolean), language);
     if (!words.length) return null;
-    const clause = { indent: 0, words, ann: {} };
+    const clause = { indent: Math.max(0, Math.round(line.indent || 0)), words, ann: {} };
     const level = normalizeSpacingAfter(line.spacingAfter);
     if (level !== 'default') clause.spacingAfter = level;
     return clause;
@@ -271,6 +544,12 @@ function toggleSelectedVerseRefHidden() {
   const verse = state.verses[vi];
   if (verse.hideRef) delete verse.hideRef;
   else verse.hideRef = true;
+  if (typeof syncHideVerseRefsPref === 'function') {
+    const allHidden = state.verses.every(v => verseRefHidden(v));
+    const noneHidden = state.verses.every(v => !verseRefHidden(v));
+    if (allHidden) syncHideVerseRefsPref(true);
+    else if (noneHidden) syncHideVerseRefsPref(false);
+  }
   syncStateBundle();
   if (autosaveReady) autoSaveProject();
   render();
@@ -287,6 +566,7 @@ function setAllVerseRefsHidden(hidden) {
     if (hidden) v.hideRef = true;
     else delete v.hideRef;
   });
+  if (typeof syncHideVerseRefsPref === 'function') syncHideVerseRefsPref(hidden);
   syncStateBundle();
   if (autosaveReady) autoSaveProject();
   render();

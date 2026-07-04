@@ -1,0 +1,19 @@
+/* Project view density — single = clean reading contour (default for new projects) */
+
+body.contour-density-single #editor,
+body.contour-density-single .parallel-verse-body {
+  line-height: 1.35 !important;
+}
+
+body.contour-density-single #editor .clause,
+body.contour-density-single .parallel-verse-body .clause {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+
+body.contour-density-comfortable #editor,
+body.contour-density-comfortable .parallel-verse-body {
+  line-height: var(--contour-line-base, 1.75) !important;
+}

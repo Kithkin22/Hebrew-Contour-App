@@ -341,12 +341,23 @@ document.getElementById('pasteBox').addEventListener('paste',e=>{
   e.preventDefault();
   const html=e.clipboardData.getData('text/html');
   const plain=e.clipboardData.getData('text/plain');
-  const layoutHtml=typeof layoutTextFromWordHtml==='function'?layoutTextFromWordHtml(html):'';
-  const cleaned=cleanLogosPaste(layoutHtml||plain,{preserveBlankLines:true});
+  const layout=getLanguageLayout();
+  const parsed=typeof parseWordHtmlLayoutLines==='function'?parseWordHtmlLayoutLines(html,{isRtl:layout.language!=='greek'}):null;
+  let cleaned;
+  if(parsed&&parsed.text){
+    if(typeof setLastWordLayoutPasteMeta==='function')setLastWordLayoutPasteMeta(parsed);
+    cleaned=cleanLogosPaste(parsed.text,{preserveBlankLines:true});
+  }else{
+    if(typeof clearLastWordLayoutPasteMeta==='function')clearLastWordLayoutPasteMeta();
+    cleaned=cleanLogosPaste(plain,{preserveBlankLines:true});
+  }
   const box=e.target;
   const start=box.selectionStart,end=box.selectionEnd;
   box.value=box.value.slice(0,start)+cleaned+box.value.slice(end);
   box.selectionStart=box.selectionEnd=start+cleaned.length;
+});
+document.getElementById('pasteBox').addEventListener('input',()=>{
+  if(typeof clearLastWordLayoutPasteMeta==='function')clearLastWordLayoutPasteMeta();
 });
 document.getElementById('pasteBox').addEventListener('focus',function(){
   if(this.value.trim())return;
@@ -376,7 +387,25 @@ async function loadSampleWlcPassage(){
   await generateWlc();
 }
 function bindPasteTargetPane(){if(stateBundle.parallelEnabled){if(typeof bindParallelTargetPaneFromFocus==='function')bindParallelTargetPaneFromFocus();else bindActivePane(stateBundle.activePane);}}
-function createTextFromPaste(opts){opts=opts||{};bindPasteTargetPane();if(!opts.preserveLayout)generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value,opts.preserveLayout?{preserveBlankLines:true}:undefined);box.value=cleaned;parseText(cleaned,document.getElementById('refBox').value,true,{preserveLayout:!!opts.preserveLayout});if(stateBundle.parallelEnabled)syncStateBundle();closeTopMenus();}
+function finishTextFromPaste(cleaned,opts){
+  const ref=document.getElementById('refBox').value;
+  const meta=opts.preserveLayout&&typeof getLastWordLayoutPasteMeta==='function'?getLastWordLayoutPasteMeta():null;
+  const runParse=(importIndent)=>{
+    let layoutLines=null;
+    if(opts.preserveLayout&&importIndent&&meta&&typeof mergeWordIndentIntoLines==='function'){
+      layoutLines=mergeWordIndentIntoLines(parseLayoutPasteLines(cleaned),meta,importIndent);
+    }
+    parseText(cleaned,ref,true,{preserveLayout:!!opts.preserveLayout,layoutLines});
+    if(stateBundle.parallelEnabled)syncStateBundle();
+    closeTopMenus();
+  };
+  if(opts.preserveLayout&&meta&&meta.hasIndent&&typeof resolveWordIndentImport==='function'){
+    resolveWordIndentImport(meta,runParse);
+    return;
+  }
+  runParse(!!(meta&&meta.hasIndent));
+}
+function createTextFromPaste(opts){opts=opts||{};bindPasteTargetPane();if(!opts.preserveLayout)generatedRefs=[];const box=document.getElementById('pasteBox');const cleaned=cleanLogosPaste(box.value,opts.preserveLayout?{preserveBlankLines:true}:undefined);box.value=cleaned;finishTextFromPaste(cleaned,opts);}
 document.getElementById('makeText').onclick=()=>createTextFromPaste({preserveLayout:false});
 document.getElementById('makeTextWithLayout').onclick=()=>createTextFromPaste({preserveLayout:true});
 document.getElementById('sampleText').onclick=loadSampleText;
@@ -457,7 +486,7 @@ function loadProjectIntoPane(paneIndex,projectId){const pi=paneIndex===1?1:0;con
 function openProjectInActivePane(id){if(!id)return;if(stateBundle.parallelEnabled){loadProjectIntoPane(stateBundle.activePane,id);closeProjectFileMenu();return;}openProjectById(id);}
 function openProjectById(id){if(!id)return;if(id===projectStore.currentProjectId){const curRec=getCurrentProjectRecord();updateSaveStatus('Already open: '+(curRec?curRec.name:'project'));closeProjectFileMenu();return;}switchToProject(id);closeProjectFileMenu();}
 function initProjectManager(){const stored=readProjectStoreRaw();if(stored&&stored.projects){projectStore={currentProjectId:stored.currentProjectId,projects:stored.projects||{}};}else{migrateLegacyProjects();}if(!projectStore.currentProjectId||!projectStore.projects[projectStore.currentProjectId]){const ids=Object.keys(projectStore.projects).sort((a,b)=>(projectStore.projects[b].updatedAt||'').localeCompare(projectStore.projects[a].updatedAt||''));if(ids.length){projectStore.currentProjectId=ids[0];}else{const id=newProjectId();const now=new Date().toISOString();syncStateBundle();projectStore.currentProjectId=id;projectStore.projects[id]={id,name:'Untitled Project',createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:projectPayloadParallel()};writeProjectStore();}}const rec=getCurrentProjectRecord();if(rec&&rec.payload&&payloadHasContent(rec.payload)){try{restoreProjectPayload(rec.payload);updateSaveStatus('Restored: '+rec.name+' · last edited '+new Date(rec.updatedAt||rec.createdAt).toLocaleString());}catch(e){updateSaveStatus('Could not restore '+rec.name+'. Starting blank.');}}updateCurrentProjectLabel();renderProjectFileSubmenus();initProjectFileMenu();if(typeof initProjectHeader==='function')initProjectHeader();}
-function resetManualInspectorState(){try{localStorage.setItem('contour4_manual_inspector_entries','{}');}catch(e){}window.CONTOUR_MANUAL_INSPECTOR={};}function createNewProject(opts){const saveCurrent=!(opts&&opts.saveCurrent===false);if(saveCurrent)persistCurrentProject(true);const id=newProjectId();const now=new Date().toISOString();const n=uniqueProjectName('Untitled Project');stateBundle=freshProjectBundle();state=stateBundle.panes[0];generatedRefs=stateBundle.generatedRefsByPane[0]=[];versePairPick=null;commentAnchorStart=null;clearUndoStack();resetManualInspectorState();bindActivePane(0);syncGeneratorFieldsFromActivePane();const pasteBox=document.getElementById('pasteBox');const refBox=document.getElementById('refBox');if(pasteBox){pasteBox.value='';pasteBox.dir='rtl';}if(refBox)refBox.value='';const parallelToggle=document.getElementById('parallelModeToggle');if(parallelToggle)parallelToggle.checked=false;syncStateBundle();projectStore.projects[id]={id,name:n,createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:projectPayloadParallel()};projectStore.currentProjectId=id;writeProjectStore();const wasReady=autosaveReady;autosaveReady=false;render();autosaveReady=wasReady;updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('New project: '+n);}
+function resetManualInspectorState(){try{localStorage.setItem('contour4_manual_inspector_entries','{}');}catch(e){}window.CONTOUR_MANUAL_INSPECTOR={};}function createNewProject(opts){const saveCurrent=!(opts&&opts.saveCurrent===false);if(saveCurrent)persistCurrentProject(true);const id=newProjectId();const now=new Date().toISOString();const n=uniqueProjectName('Untitled Project');stateBundle=freshProjectBundle();state=stateBundle.panes[0];generatedRefs=stateBundle.generatedRefsByPane[0]=[];versePairPick=null;commentAnchorStart=null;clearUndoStack();resetManualInspectorState();bindActivePane(0);syncGeneratorFieldsFromActivePane();const pasteBox=document.getElementById('pasteBox');const refBox=document.getElementById('refBox');if(pasteBox){pasteBox.value='';pasteBox.dir='rtl';}if(refBox)refBox.value='';const parallelToggle=document.getElementById('parallelModeToggle');if(parallelToggle)parallelToggle.checked=false;if(typeof setProjectViewPrefs==='function')setProjectViewPrefs(null,{reset:true,persist:false});syncStateBundle();projectStore.projects[id]={id,name:n,createdAt:now,updatedAt:now,appVersion:APP_VERSION,payload:projectPayloadParallel()};projectStore.currentProjectId=id;writeProjectStore();const wasReady=autosaveReady;autosaveReady=false;render();autosaveReady=wasReady;updateCurrentProjectLabel();renderProjectFileSubmenus();updateSaveStatus('New project: '+n);}
 function clearTableProject(silent,target){ensureStateBundle();const parallel=!!stateBundle.parallelEnabled;let which=target;if(which===undefined||which===null)which=parallel?stateBundle.activePane:'single';const msg=which==='all'?'Clear all text, annotations, and table content in BOTH panes?':which===0?'Clear all text, annotations, and table content in the LEFT pane?':which===1?'Clear all text, annotations, and table content in the RIGHT pane?':'Clear all text, annotations, and table content in this project?';if(!silent&&!confirm(msg))return;const wipePane=function(pi){stateBundle.panes[pi]=freshPaneState();stateBundle.generatedRefsByPane[pi]=[];pruneCrossArcsForPane(pi);};if(which==='all'){wipePane(0);wipePane(1);stateBundle.crossArcs=[];stateBundle.verseAlignPairs=null;versePairPick=null;}else if(parallel&&(which===0||which===1)){wipePane(which);stateBundle.verseAlignPairs=null;versePairPick=null;}else{state=freshProjectState();generatedRefs=[];stateBundle.panes[stateBundle.activePane]=state;stateBundle.generatedRefsByPane[stateBundle.activePane]=generatedRefs;}bindActivePane(stateBundle.activePane);syncGeneratorFieldsFromActivePane();const pasteBox=document.getElementById('pasteBox');const refBox=document.getElementById('refBox');if(pasteBox&&!state.verses.length)pasteBox.value='';if(refBox&&!state.ref)refBox.value='';clearUndoStack();persistCurrentProject(true);const wasReady=autosaveReady;autosaveReady=false;render();autosaveReady=wasReady;const status=which==='all'?'Both panes cleared.':which===0?'Left pane cleared.':which===1?'Right pane cleared.':'Table cleared.';updateSaveStatus(status);}
 function updateSaveStatus(msg){let el=document.getElementById('saveStatus');if(el)el.textContent=msg;}
 function saveProjectLocal(){try{if(typeof setSaveIndicator==='function')setSaveIndicator('saving');persistCurrentProject(false);}catch(e){alert('Could not save in this browser. Try Export JSON instead.');}}
