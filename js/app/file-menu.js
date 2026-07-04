@@ -198,7 +198,10 @@ function exportContourHtml(){
   if(isParallelActive()){alert('For parallel passages, export each pane separately or use Word export.');return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   const fname=askExportFilename(suggestedExportBase('contour-editor'),'html');if(!fname)return;
-  const html=typeof buildContourExportDocument==='function'?buildContourExportDocument():null;
+  const html=typeof buildContourExportDocument==='function'?buildContourExportDocument({
+    includeSupplement:true,
+    worksheet:false,
+  }):null;
   if(!html){alert('Create or generate text first.');return;}
   triggerDownload(new Blob([html],{type:'text/html;charset=utf-8'}),fname);
 }
@@ -261,7 +264,8 @@ function exportContourPdf(opts){
       includePrintButton:true,
       docTitle:printMeta.title,
       paneState:state,
-      fitOnePage:!!opts.fitOnePage,
+      worksheet:true,
+      includeSupplement:!!opts.includeSupplement,
     }):null;
   }catch(e){
     alert('Could not prepare contour PDF export. Try reloading the project.');
@@ -303,4 +307,4 @@ document.getElementById('detectLegendEntries').onclick=detectUsedLegendEntries;
 document.getElementById('clearLegendEntries').onclick=()=>{if(confirm('Clear all legend entries?')){state.legend=[];renderLegendEditor();autoSaveProject();}};
 document.getElementById('contourDocxExport').onclick=exportContourDocx;
 document.getElementById('contourPdfExport').onclick=exportContourPdf;
-document.getElementById('contourPdfExportFit').onclick=()=>exportContourPdf({fitOnePage:true});
+document.getElementById('contourPdfExportLegend').onclick=()=>exportContourPdf({includeSupplement:true});

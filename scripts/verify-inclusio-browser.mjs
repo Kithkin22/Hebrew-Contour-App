@@ -77,7 +77,7 @@ async function main() {
 
       const exportHtml = buildContourEditorHtmlFromState(true);
       const exportDoc = typeof buildContourExportDocument === 'function'
-        ? buildContourExportDocument({ paneState: state })
+        ? buildContourExportDocument({ paneState: state, worksheet: true })
         : '';
       const docx = typeof contourDocxXml === 'function' ? contourDocxXml() : '';
       const registry = document.getElementById('inclusioRegistry')?.textContent || '';
@@ -87,7 +87,7 @@ async function main() {
         afterReload,
         exportHasInclusioBrackets: exportHtml.includes('bracket-start'),
         exportHasFrameOverlay: exportDoc.includes('contour-export-inclusio-svg') && exportDoc.includes('inclusio-frame-rail'),
-        exportLegendAfterPage: exportDoc.indexOf('contour-document-sheet--export') < exportDoc.indexOf('export-legend'),
+        exportWorksheetOnly: !exportDoc.includes('<table class="export-legend"') && exportDoc.includes('layoutWorksheet'),
         docxOk: docx.includes('Units'),
         registryHasRow: registry.includes('Unit'),
       };
@@ -117,7 +117,7 @@ async function main() {
     );
     record('reload-data', unit.afterReload.hasOpening && unit.afterReload.hasClosing, `anchors in state after reload=${unit.afterReload.hasOpening && unit.afterReload.hasClosing}`);
     record('render-after-reload', !unit.afterReload.bracketStart && !unit.afterReload.bracketEnd, `no editor brackets after reload=${!unit.afterReload.bracketStart}`);
-    record('export-html', unit.exportHasFrameOverlay && !unit.exportHasInclusioBrackets && unit.exportLegendAfterPage, `overlay=${unit.exportHasFrameOverlay}, noBracketGlyphs=${!unit.exportHasInclusioBrackets}, legendAfter=${unit.exportLegendAfterPage}`);
+    record('export-html', unit.exportHasFrameOverlay && !unit.exportHasInclusioBrackets && unit.exportWorksheetOnly, `overlay=${unit.exportHasFrameOverlay}, noBracketGlyphs=${!unit.exportHasInclusioBrackets}, worksheetOnly=${unit.exportWorksheetOnly}`);
     record('export-docx', unit.docxOk, `DOCX mentions Units=${unit.docxOk}`);
     record('registry', unit.registryHasRow, `legend registry lists unit=${unit.registryHasRow}`);
     record(
@@ -647,21 +647,25 @@ async function main() {
           includePrintButton: true,
           docTitle: meta.title,
           paneState: state,
+          worksheet: true,
         })
         : '';
-      const fitHtml = typeof buildContourExportDocument === 'function'
+      const legendHtml = typeof buildContourExportDocument === 'function'
         ? buildContourExportDocument({
           includePrintButton: true,
           docTitle: meta.title,
           paneState: state,
-          fitOnePage: true,
+          worksheet: true,
+          includeSupplement: true,
         })
         : '';
       if (!html || html.length < 500) return { ok: false, reason: 'export html too short' };
       if (!html.includes('window.print()')) return { ok: false, reason: 'missing print button' };
       const hasArcOverlay = html.includes('contour-export-arc-svg') && html.includes('arc-path');
       const hasFrameOverlay = html.includes('contour-export-inclusio-svg') && html.includes('inclusio-frame-rail');
-      const hasFitScript = fitHtml.includes('fitOnePage') && fitHtml.includes('contour-export-fit');
+      const hasWorksheetScript = html.includes('layoutWorksheet') && html.includes('contour-export-worksheet');
+      const noLegendOnWorksheet = !html.includes('<table class="export-legend"');
+      const legendOnPage2 = legendHtml.includes('contour-export-supplement-page') && legendHtml.includes('<table class="export-legend"');
       let printed = false;
       const oldOpen = window.open;
       window.open = function () {
@@ -683,15 +687,19 @@ async function main() {
       }
       const docx = typeof contourDocxXml === 'function' ? contourDocxXml() : '';
       return {
-        ok: printed && hasArcOverlay && hasFrameOverlay && hasFitScript,
+        ok: printed && hasArcOverlay && hasFrameOverlay && hasWorksheetScript && noLegendOnWorksheet && legendOnPage2,
         htmlLen: html.length,
         docxOk: docx.length > 200,
         hasArcOverlay,
         hasFrameOverlay,
-        hasFitScript,
+        hasWorksheetScript,
+        noLegendOnWorksheet,
+        legendOnPage2,
         reason: !hasArcOverlay ? 'missing arc overlay'
           : !hasFrameOverlay ? 'missing frame overlay'
-          : !hasFitScript ? 'missing fit-one-page script'
+          : !hasWorksheetScript ? 'missing worksheet script'
+          : !noLegendOnWorksheet ? 'legend on worksheet page'
+          : !legendOnPage2 ? 'legend page missing'
           : !printed ? 'print not triggered' : '',
       };
     });
@@ -699,7 +707,7 @@ async function main() {
       'export-pdf-script',
       exportPdf.ok,
       exportPdf.ok
-        ? `printTriggered, htmlLen=${exportPdf.htmlLen}, arcs=${exportPdf.hasArcOverlay}, frames=${exportPdf.hasFrameOverlay}, fit=${exportPdf.hasFitScript}`
+        ? `printTriggered, htmlLen=${exportPdf.htmlLen}, arcs=${exportPdf.hasArcOverlay}, frames=${exportPdf.hasFrameOverlay}, worksheet=${exportPdf.hasWorksheetScript}, legendPage2=${exportPdf.legendOnPage2}`
         : exportPdf.reason || 'export failed'
     );
 

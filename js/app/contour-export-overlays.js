@@ -148,7 +148,7 @@ function createContourExportMeasureHost(bodyHtml, opts) {
   host.style.cssText = 'position:fixed;left:-12000px;top:0;visibility:hidden;pointer-events:none;z-index:-1';
   if (typeof contourPageExportCss === 'function') {
     const style = document.createElement('style');
-    style.textContent = contourPageExportCss({ isGreek });
+    style.textContent = contourPageExportCss({ isGreek, worksheet: !!opts.worksheet });
     host.appendChild(style);
   }
   const titleHtml = opts.includeTitle === false ? '' : (
@@ -215,38 +215,55 @@ function contourExportOverlayCss() {
     + '.contour-export-inclusio-svg .inclusio-frame-rail{vector-effect:non-scaling-stroke;fill:none}'
     + '.contour-export-arc-svg .arc-path{fill:none;stroke-width:3;stroke-linecap:round;vector-effect:non-scaling-stroke}'
     + '.contour-export-arc-svg .arc-label{font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:600}'
-    + 'body.contour-export-fit-one-page .contour-export-fit-outer{display:flex;justify-content:center;align-items:flex-start}'
-    + 'body.contour-export-fit-one-page .contour-export-fit-stage{transform-origin:top left}'
-    + '@media print{body.contour-export-fit-one-page .contour-document-sheet--export{page-break-inside:avoid}.contour-export-supplement{page-break-before:auto}}';
+    + 'body.contour-export-worksheet{margin:0;padding:0;background:#fff}'
+    + '.contour-export-worksheet-host{width:8.5in;height:11in;margin:0 auto;box-sizing:border-box;page-break-after:always;overflow:visible}'
+    + '.contour-export-worksheet-frame{display:flex;align-items:center;justify-content:center;overflow:visible}'
+    + '.contour-export-worksheet-stage{transform-origin:top left;overflow:visible}'
+    + '.contour-export-supplement-page{page-break-before:always;margin:0;padding:24px}'
+    + '@media print{body.contour-export-worksheet{padding:0}.contour-export-worksheet-host{page-break-inside:avoid}.contour-export-supplement-page{page-break-before:always}}';
 }
 
-function buildContourExportFitScript(fitOnePage) {
-  if (!fitOnePage) return '';
+function buildContourWorksheetScript() {
   return '<script>(function(){'
-    + 'function fitOnePage(){'
+    + 'function layoutWorksheet(){'
+    + 'if(document.body.classList.contains("contour-worksheet-applied"))return;'
     + 'var sheet=document.querySelector(".contour-document-sheet--export");'
-    + 'if(!sheet||document.body.classList.contains("contour-export-fit-applied"))return;'
-    + 'var printableH=Math.max(400,(11*96)-(2*0.6*96));'
-    + 'var h=Math.max(sheet.scrollHeight,sheet.offsetHeight);'
-    + 'if(h<=printableH+4)return;'
-    + 'var scale=Math.min(1,printableH/h);'
-    + 'var outer=document.createElement("div");'
-    + 'outer.className="contour-export-fit-outer";'
+    + 'if(!sheet)return;'
+    + 'var dpi=96,margin=1.15*dpi,pageW=8.5*dpi,pageH=11*dpi;'
+    + 'var areaW=pageW-2*margin,areaH=pageH-2*margin;'
+    + 'var w=Math.max(sheet.offsetWidth,sheet.scrollWidth,1);'
+    + 'var h=Math.max(sheet.offsetHeight,sheet.scrollHeight,1);'
+    + 'var scale=Math.min(areaW/w,areaH/h);'
+    + 'var host=document.createElement("div");'
+    + 'host.className="contour-export-worksheet-host";'
+    + 'var frame=document.createElement("div");'
+    + 'frame.className="contour-export-worksheet-frame";'
     + 'var stage=document.createElement("div");'
-    + 'stage.className="contour-export-fit-stage";'
-    + 'sheet.parentNode.insertBefore(outer,sheet);'
-    + 'outer.appendChild(stage);'
+    + 'stage.className="contour-export-worksheet-stage";'
+    + 'sheet.parentNode.insertBefore(host,sheet);'
+    + 'host.appendChild(frame);'
+    + 'frame.appendChild(stage);'
     + 'stage.appendChild(sheet);'
+    + 'frame.style.width=areaW+"px";'
+    + 'frame.style.height=areaH+"px";'
+    + 'stage.style.width=w+"px";'
+    + 'stage.style.height=h+"px";'
     + 'stage.style.transform="scale("+scale+")";'
-    + 'stage.style.width=(sheet.offsetWidth*scale)+"px";'
-    + 'stage.style.height=(h*scale)+"px";'
-    + 'document.body.classList.add("contour-export-fit-one-page","contour-export-fit-applied");'
+    + 'stage.style.marginLeft=Math.max(0,(areaW-w*scale)/2)+"px";'
+    + 'stage.style.marginTop=Math.max(0,(areaH-h*scale)/2)+"px";'
+    + 'document.body.classList.add("contour-export-worksheet","contour-worksheet-applied");'
     + '}'
-    + 'if(document.fonts&&document.fonts.ready){document.fonts.ready.then(fitOnePage).catch(fitOnePage);}'
-    + 'else{setTimeout(fitOnePage,120);}'
+    + 'if(document.fonts&&document.fonts.ready){document.fonts.ready.then(layoutWorksheet).catch(layoutWorksheet);}'
+    + 'else{setTimeout(layoutWorksheet,120);}'
     + '})();<\/script>';
 }
 
+function buildContourExportFitScript(fitOnePage) {
+  if (fitOnePage) return buildContourWorksheetScript();
+  return '';
+}
+
+window.buildContourWorksheetScript = buildContourWorksheetScript;
 window.buildContourExportBodyWrapHtml = buildContourExportBodyWrapHtml;
 window.contourExportOverlayCss = contourExportOverlayCss;
 window.buildContourExportFitScript = buildContourExportFitScript;
