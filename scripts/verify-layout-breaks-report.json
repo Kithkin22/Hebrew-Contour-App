@@ -1,7 +1,7 @@
 {
   "feature": "layout-breaks",
   "url": "http://127.0.0.1:8765",
-  "at": "2026-07-04T00:51:43.838Z",
+  "at": "2026-07-04T02:17:07.691Z",
   "pass": true,
   "results": [
     {
@@ -67,7 +67,7 @@
     {
       "id": "verse-docx",
       "pass": true,
-      "detail": "DOCX has verse w:spacing 720 twips=true"
+      "detail": "DOCX has verse w:spacing 1228 twips=true"
     },
     {
       "id": "hide-verse-ref",

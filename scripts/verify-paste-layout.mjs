@@ -80,7 +80,7 @@ async function main() {
         domLarge,
         afterReload,
         exportHtml,
-        docxHas480: docx.includes('w:spacing w:after="480"'),
+        docxHas480: docx.includes('w:spacing w:after="600"'),
         pane0: stateBundle.panes[0].verses[0].clauses[0].spacingAfter || 'default',
         pane1: stateBundle.panes[1].verses[0].clauses[0].spacingAfter || 'default',
       };
@@ -93,7 +93,7 @@ async function main() {
     record('dom-breaks', unit.domMedium && unit.domLarge, `medium=${unit.domMedium}, large=${unit.domLarge}`);
     record('save-reload', unit.afterReload[1] === 'medium' && unit.afterReload[2] === 'large', `reloaded=${unit.afterReload.join(',')}`);
     record('export-html', unit.exportHtml.includes('layout-break-md') && unit.exportHtml.includes('layout-break-lg'), 'export HTML has break classes');
-    record('export-docx', unit.docxHas480, 'DOCX has medium spacing twips');
+    record('export-docx', unit.docxHas480, 'DOCX has medium spacing twips (600)');
     record('parallel-independent', unit.pane0 === 'medium' && unit.pane1 === 'large', `pane0=${unit.pane0}, pane1=${unit.pane1}`);
 
     const pass = results.every((r) => r.pass);

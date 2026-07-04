@@ -63,8 +63,9 @@ function contourDocxXml(){
     return `<w:r><w:rPr>${rpr}</w:rPr><w:t xml:space="preserve">${xmlEscape(txt)}</w:t></w:r>`;
   }
   let body='';
-  if(state.ref){
-    body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>${xmlEscape(state.ref)}</w:t></w:r></w:p>`;
+  const exportTitle=typeof contourPassageTitleForExport==='function'?contourPassageTitleForExport():(state.ref||'');
+  if(exportTitle){
+    body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>${xmlEscape(exportTitle)}</w:t></w:r></w:p>`;
   }
   function legendRunProps(e){
     let rpr=`<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="24"/><w:szCs w:val="24"/>`;
@@ -105,9 +106,9 @@ function contourDocxXml(){
       body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:color w:val="666666"/><w:sz w:val="20"/></w:rPr><w:t>${xmlEscape(v.ref)}</w:t></w:r></w:p>`;
     }
     v.clauses.forEach((c,ci)=>{
-      let indent=Math.max(0,(c.indent||0)*720);
+      const indentTwips=typeof contourIndentDocxTwips==='function'?contourIndentDocxTwips(c.indent||0):Math.max(0,(c.indent||0)*720);
       let runs=c.words.map((w,wi)=>wordRun(w,{v:vi,c:ci,w:wi})).join('');
-      let ppr=isGreek?`<w:jc w:val="left"/><w:ind w:left="${indent}"/>`:`<w:bidi/><w:jc w:val="right"/><w:ind w:right="${indent}"/>`;
+      let ppr=isGreek?`<w:jc w:val="left"/><w:ind w:left="${indentTwips}"/>`:`<w:bidi/><w:jc w:val="right"/><w:ind w:right="${indentTwips}"/>`;
       const clauseTwips=typeof spacingAfterDocxTwips==='function'?spacingAfterDocxTwips(c):0;
       const isLastClause=ci===v.clauses.length-1;
       const verseTwips=isLastClause&&typeof verseSpacingAfterDocxTwips==='function'?verseSpacingAfterDocxTwips(v):0;
@@ -195,14 +196,8 @@ function exportContourHtml(){
   if(isParallelActive()){alert('For parallel passages, export each pane separately or use Word export.');return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
   const fname=askExportFilename(suggestedExportBase('contour-editor'),'html');if(!fname)return;
-  const editorHtml=typeof buildContourEditorHtmlFromState==='function'?buildContourEditorHtmlFromState(true):document.getElementById('editor').innerHTML;
-  if(!editorHtml){alert('Create or generate text first.');return;}
-  const isGreek=state.language==='greek';
-  const textDir=isGreek?'ltr':'rtl';
-  const textAlign=isGreek?'left':'right';
-  const textFont=isGreek?"'SBL Greek','Gentium Plus','Times New Roman',serif":"'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif";
-  const layoutBreakCss=typeof exportLayoutBreakCss==='function'?exportLayoutBreakCss():'';
-  const html='<!doctype html><html><head><meta charset="utf-8"><title>'+xmlEscape(state.ref||'Contour Export')+'</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px}#printEditor{direction:'+textDir+';text-align:'+textAlign+';font-size:26px;line-height:2.1;font-family:'+textFont+'}.clause,.word{font-family:'+textFont+'}'+layoutBreakCss+'</style></head><body><div class="export-title">'+xmlEscape(state.ref||'Contour Export')+'</div>'+legendHtmlForExport()+(typeof inclusiosHtmlForExport==='function'?inclusiosHtmlForExport():'')+'<div id="printEditor" dir="'+textDir+'">'+editorHtml+'</div>'+commentsHtmlForExport()+arcsHtmlForExport()+'</body></html>';
+  const html=typeof buildContourExportDocument==='function'?buildContourExportDocument():null;
+  if(!html){alert('Create or generate text first.');return;}
   triggerDownload(new Blob([html],{type:'text/html;charset=utf-8'}),fname);
 }
 function exportContourPdf(opts){
@@ -213,26 +208,18 @@ function exportContourPdf(opts){
   const printMeta=preparePrintFilename(fname);
   const win=window.open('', '_blank');
   if(!win){alert('Popup blocked. Allow popups for this page, then try again.');return;}
-  let editorHtml='';
+  let docHtml='';
   try{
-    editorHtml=typeof buildContourEditorHtmlFromState==='function'?buildContourEditorHtmlFromState(true):document.getElementById('editor').innerHTML;
+    docHtml=typeof buildContourExportDocument==='function'?buildContourExportDocument({
+      includePrintButton:true,
+      docTitle:printMeta.title,
+      printScript:'<script>document.title='+JSON.stringify(printMeta.title)+';setTimeout(()=>{try{if(window.opener)window.opener.document.title='+JSON.stringify(printMeta.title)+';}catch(e){}} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title='+JSON.stringify(printMeta.oldTitle)+';}catch(e){}}<\/script>'
+    }):null;
   }catch(e){
     alert('Could not prepare contour PDF export. Try reloading the project.');
     return;
   }
-  if(!editorHtml){alert('Create or generate text first.');return;}
-  const isGreek=state.language==='greek';
-  const textDir=isGreek?'ltr':'rtl';
-  const textAlign=isGreek?'left':'right';
-  const textFont=isGreek?"'SBL Greek','Gentium Plus','Times New Roman',serif":"'SBL BibLit','SBL Hebrew','Ezra SIL','Times New Roman',serif";
-  const title=xmlEscape(printMeta.title);
-  const refTitle=xmlEscape(state.ref||'Contour Export');
-  const legendHtml=legendHtmlForExport();
-  const inclusiosHtml=typeof inclusiosHtmlForExport==='function'?inclusiosHtmlForExport():'';
-  const commentsHtml=commentsHtmlForExport();
-  const arcsHtml=arcsHtmlForExport();
-  const layoutBreakCss=typeof exportLayoutBreakCss==='function'?exportLayoutBreakCss():'';
-  const docHtml='<!doctype html><html><head><meta charset="utf-8"><title>'+title+'</title><style>body{font-family:Arial,Helvetica,sans-serif;margin:32px;color:#222}.export-title{font-weight:bold;margin-bottom:14px;direction:ltr;text-align:left}#printEditor{direction:'+textDir+';text-align:'+textAlign+';unicode-bidi:isolate;font-size:26px;line-height:2.1;font-family:'+textFont+'}.clause{display:block;direction:'+textDir+';text-align:'+textAlign+';unicode-bidi:isolate;border-radius:6px;padding:2px 8px;margin:2px 0;font-family:'+textFont+'}'+layoutBreakCss+'.word{display:inline-block;direction:'+textDir+';text-align:'+textAlign+';padding:0 3px;border-radius:4px;font-family:'+textFont+'}.maqaf-connector{display:inline;padding:0;margin:0 -1px;font-family:inherit;line-height:inherit;vertical-align:baseline}.word.selected{background:#ff9900;color:#000;border:2px solid #cc6600;font-weight:normal;}.word.sameword{background:#ffff00;color:#000;border:2px solid #d4aa00;font-weight:normal;}.comment-marker{display:inline-block;direction:ltr;font-family:Arial,Helvetica,sans-serif;font-size:.58em;color:#b02a2a;background:transparent;border:0;padding:0;margin:0 1px;vertical-align:super;line-height:1;font-weight:bold}.word.deleted{text-decoration:line-through;opacity:.35}.word.pred{color:#0b61a4;font-weight:bold}.word.subj{color:#b02a2a;font-weight:bold}.word.fmt-bold{font-weight:bold}.word.fmt-italic{font-style:italic}.word.fmt-underline{text-decoration:underline}.word.fmt-double-underline{border-bottom:3px double currentColor}.word.bracket-start::before{content:\'[\';font-family:Arial,Helvetica,sans-serif;margin-left:2px;margin-right:1px;color:var(--bracket-color,#000);font-weight:bold}.word.bracket-end::after{content:\']\';font-family:Arial,Helvetica,sans-serif;margin-left:1px;margin-right:2px;color:var(--bracket-color,#000);font-weight:bold}.muted{color:#666;font-size:13px;direction:ltr;text-align:left;font-family:Arial,Helvetica,sans-serif}.export-legend{border:1px solid #999;border-collapse:collapse;margin:12px 0 20px 0;width:100%;font-family:Arial,Helvetica,sans-serif}.export-legend th,.export-legend td{border:1px solid #999;padding:6px}.export-legend th{background:#eee;text-align:left}.legend-swatch{display:inline-block;min-width:56px;padding:2px 8px;border:1px solid #999;border-radius:4px;background:#fff;text-align:center;-webkit-print-color-adjust:exact;print-color-adjust:exact}.legend-preview-word{font-family:\'SBL BibLit\',\'SBL Hebrew\',\'Ezra SIL\',\'Times New Roman\',serif;font-size:20px}.legend-preview-greek{font-family:\'SBL Greek\',\'Gentium Plus\',\'Times New Roman\',serif;font-size:20px}@page{margin:0.6in}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}button{display:none}#printEditor{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><button onclick="window.print()" style="margin-bottom:16px;padding:8px 12px">Print / Save as PDF</button><div class="export-title">'+refTitle+'</div>'+legendHtml+inclusiosHtml+'<div id="printEditor" dir="'+textDir+'">'+editorHtml+'</div>'+commentsHtml+arcsHtml+'<script>document.title='+JSON.stringify(printMeta.title)+';setTimeout(()=>{try{if(window.opener)window.opener.document.title='+JSON.stringify(printMeta.title)+';}catch(e){} window.print();},300); window.onafterprint=()=>{try{if(window.opener)window.opener.document.title='+JSON.stringify(printMeta.oldTitle)+';}catch(e){}}<\/script></body></html>';
+  if(!docHtml){alert('Create or generate text first.');return;}
   win.document.write(docHtml);
   win.document.close();
 }

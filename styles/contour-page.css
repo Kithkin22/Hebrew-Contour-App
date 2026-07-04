@@ -1,0 +1,65 @@
+/* Canonical contour page body — shared by editor live preview and export serialization */
+
+#editor.contour-document-page,
+.contour-page-body {
+  font-size: var(--contour-body-font-size, 26px);
+  line-height: var(--contour-body-line-height, 2.1);
+}
+
+#editor.contour-document-page .clause,
+.contour-page-body .clause {
+  display: block;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin: 2px 0;
+}
+
+#editor.contour-document-page .clause.layout-break-sm,
+.contour-page-body .clause.layout-break-sm {
+  margin-bottom: var(--contour-break-sm, 18px);
+}
+
+#editor.contour-document-page .clause.layout-break-md,
+.contour-page-body .clause.layout-break-md {
+  margin-bottom: var(--contour-break-md, 40px);
+}
+
+#editor.contour-document-page .clause.layout-break-lg,
+.contour-page-body .clause.layout-break-lg {
+  margin-bottom: var(--contour-break-lg, 72px);
+}
+
+#editor.contour-document-page .verse-block.verse-spacing-single,
+.contour-page-body .verse-block.verse-spacing-single {
+  margin-bottom: var(--contour-verse-spacing-single, 2.1em);
+}
+
+#editor.contour-document-page .verse-block.verse-spacing-oneHalf,
+.contour-page-body .verse-block.verse-spacing-oneHalf {
+  margin-bottom: var(--contour-verse-spacing-oneHalf, 3.15em);
+}
+
+#editor.contour-document-page .verse-block.verse-spacing-double,
+.contour-page-body .verse-block.verse-spacing-double {
+  margin-bottom: var(--contour-verse-spacing-double, 4.2em);
+}
+
+body.contour-density-single #editor.contour-document-page .clause:not(.layout-break-sm):not(.layout-break-md):not(.layout-break-lg),
+body.contour-density-single .contour-page-body .clause:not(.layout-break-sm):not(.layout-break-md):not(.layout-break-lg) {
+  /* density handled in project-view-prefs.css */
+}
+
+body.contour-density-single #editor.contour-document-page .clause.layout-break-sm,
+body.contour-density-single .contour-page-body .clause.layout-break-sm {
+  margin-bottom: var(--contour-break-sm, 18px) !important;
+}
+
+body.contour-density-single #editor.contour-document-page .clause.layout-break-md,
+body.contour-density-single .contour-page-body .clause.layout-break-md {
+  margin-bottom: var(--contour-break-md, 40px) !important;
+}
+
+body.contour-density-single #editor.contour-document-page .clause.layout-break-lg,
+body.contour-density-single .contour-page-body .clause.layout-break-lg {
+  margin-bottom: var(--contour-break-lg, 72px) !important;
+}

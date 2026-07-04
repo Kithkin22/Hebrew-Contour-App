@@ -23,7 +23,8 @@ async function unlock(page) {
     await page.click('#appPasswordSubmit');
   }
   await page.waitForFunction(
-    () => typeof contourPassageTitleHtml === 'function' && typeof parseWordHtmlLayoutLines === 'function',
+    () => typeof contourPassageTitleHtml === 'function' && typeof parseWordHtmlLayoutLines === 'function'
+      && typeof buildContourExportDocument === 'function',
     { timeout: 25000 }
   );
 }
@@ -118,6 +119,9 @@ async function main() {
       const exportHtml = typeof buildContourEditorHtmlFromState === 'function'
         ? buildContourEditorHtmlFromState(true)
         : '';
+      const exportDoc = typeof buildContourExportDocument === 'function'
+        ? buildContourExportDocument()
+        : '';
       const docx = typeof contourDocxXml === 'function' ? contourDocxXml() : '';
 
       const payload = projectPayload();
@@ -140,12 +144,13 @@ async function main() {
         mdMb,
         lgMb,
         indentCount: indentSample.length,
-        exportCssHas40: exportCss.includes('40px'),
-        exportCssHas72: exportCss.includes('72px'),
+        exportCssHas40: exportCss.includes('40px') || exportCss.includes('--contour-break-md'),
+        exportCssHas72: exportCss.includes('72px') || exportCss.includes('--contour-break-lg'),
         exportHasBreaks: exportHtml.includes('layout-break-md') && exportHtml.includes('layout-break-lg'),
         exportHasIndent: exportHtml.includes('margin-right:30px') || exportHtml.includes('margin-right:60px'),
-        docxBreaks: docx.includes('w:spacing w:after="480"') && docx.includes('w:spacing w:after="960"'),
-        docxIndent: docx.includes('w:ind w:right="720"') || docx.includes('w:ind w:right="1440"'),
+        exportCanonicalShell: exportDoc.includes('contour-document-sheet--export') && exportDoc.includes('contour-page-body'),
+        docxBreaks: docx.includes('w:spacing w:after="600"') && docx.includes('w:spacing w:after="1080"'),
+        docxIndent: docx.includes('w:ind w:right="450"') || docx.includes('w:ind w:right="900"'),
         reloadOk,
         hasDocumentPage: editor.classList.contains('contour-document-page') && !!sheet,
         hasDocumentSurface: wrap.classList.contains('contour-document-surface'),
@@ -185,6 +190,7 @@ async function main() {
     record('document-page-classes', qa.hasDocumentPage && qa.hasDocumentSurface, `page=${qa.hasDocumentPage} surface=${qa.hasDocumentSurface}`);
     record('export-html-spacing', qa.exportCssHas40 && qa.exportCssHas72, `css40=${qa.exportCssHas40} css72=${qa.exportCssHas72}`);
     record('export-html-breaks-indent', qa.exportHasBreaks && qa.exportHasIndent, `breaks=${qa.exportHasBreaks} indent=${qa.exportHasIndent}`);
+    record('export-canonical-page', qa.exportCanonicalShell, `canonicalShell=${qa.exportCanonicalShell}`);
     record('export-docx', qa.docxBreaks && qa.docxIndent, `breaks=${qa.docxBreaks} indent=${qa.docxIndent}`);
     record('save-reload', qa.reloadOk, `reloadOk=${qa.reloadOk}`);
     record('parallel-mode', qa.parallelVisible, `parallelVisible=${qa.parallelVisible}`);

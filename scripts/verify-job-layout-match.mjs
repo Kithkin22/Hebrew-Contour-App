@@ -137,9 +137,9 @@ async function main() {
         exportHasLg: exportHtml.includes('layout-break-lg'),
         exportHasSm: exportHtml.includes('layout-break-sm'),
         exportHasIndent: exportHtml.includes('margin-right:30px') || exportHtml.includes('margin-right:60px'),
-        docx480: docx.includes('w:spacing w:after="480"'),
-        docx960: docx.includes('w:spacing w:after="960"'),
-        docxIndent: docx.includes('w:ind w:right="720"') || docx.includes('w:ind w:right="1440"'),
+        docx480: docx.includes('w:spacing w:after="600"'),
+        docx960: docx.includes('w:spacing w:after="1080"'),
+        docxIndent: docx.includes('w:ind w:right="450"') || docx.includes('w:ind w:right="900"'),
         reloadedSpacing: reloadedSpacing.slice(0, 6),
         reloadedIndents: reloadedIndents.slice(0, 6),
         hasRtl,
@@ -160,7 +160,7 @@ async function main() {
     record('manual-visual-break', unit.afterManual.small === 'small' && unit.afterManual.large === 'large', `manual=${JSON.stringify(unit.afterManual)}`);
     record('export-html-breaks', unit.exportHasMd && unit.exportHasLg, `md=${unit.exportHasMd}, lg=${unit.exportHasLg}`);
     record('export-html-indent', unit.exportHasIndent, `exportHasIndent=${unit.exportHasIndent}`);
-    record('export-docx-breaks', unit.docx480 && unit.docx960, `480=${unit.docx480}, 960=${unit.docx960}`);
+    record('export-docx-breaks', unit.docx480 && unit.docx960, `600=${unit.docx480}, 1080=${unit.docx960}`);
     record('export-docx-indent', unit.docxIndent, `docxIndent=${unit.docxIndent}`);
 
     const mdMargin = unit.margins.find((m) => m.cls.includes('layout-break-md'));

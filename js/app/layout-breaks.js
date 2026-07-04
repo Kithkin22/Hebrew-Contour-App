@@ -35,10 +35,10 @@ window.clauseLayoutClassNames = clauseLayoutClassNames;
 
 function spacingAfterDocxTwips(clause) {
   const level = normalizeSpacingAfter(clause && clause.spacingAfter);
-  if (level === 'small') return 240;
-  if (level === 'medium') return 480;
-  if (level === 'large') return 960;
-  return 0;
+  if (level === 'default') return 0;
+  if (typeof contourBreakDocxTwips === 'function') return contourBreakDocxTwips(level);
+  const px = CONTOUR_PAGE && CONTOUR_PAGE.breakPx && CONTOUR_PAGE.breakPx[level];
+  return px ? Math.round(px * 15) : 0;
 }
 window.spacingAfterDocxTwips = spacingAfterDocxTwips;
 
@@ -51,10 +51,7 @@ window.spacingAfterFromBlankLineCount = spacingAfterFromBlankLineCount;
 
 const WORD_CONTOUR_INDENT_PX = 36;
 /** Editor/export pixel width per stored indent level (presentation calibration). */
-const CONTOUR_DISPLAY_INDENT_PX = 30;
-window.contourDisplayIndentPx = function contourDisplayIndentPx() {
-  return CONTOUR_DISPLAY_INDENT_PX;
-};
+/* display indent px: see js/app/contour-page-renderer.js (contourDisplayIndentPx) */
 const WORD_IMPORT_INDENT_STEP_PX = 48;
 const WORD_INDENT_IMPORT_PREF_KEY = 'hc-import-word-indent';
 const WORD_INDENT_MIN_PX = 18;
@@ -406,17 +403,7 @@ function buildVersesFromLayoutPaste(text, ref, language, refs, layoutLines) {
 }
 window.buildVersesFromLayoutPaste = buildVersesFromLayoutPaste;
 
-function exportLayoutBreakCss() {
-  return '.clause{display:block;border-radius:6px;padding:2px 8px;margin:2px 0}'
-    + '.clause.layout-break-sm{margin-bottom:18px!important}'
-    + '.clause.layout-break-md{margin-bottom:40px!important}'
-    + '.clause.layout-break-lg{margin-bottom:72px!important}'
-    + '.verse-block{margin-bottom:0}'
-    + '.verse-block.verse-spacing-single{margin-bottom:2.1em!important}'
-    + '.verse-block.verse-spacing-oneHalf{margin-bottom:3.15em!important}'
-    + '.verse-block.verse-spacing-double{margin-bottom:4.2em!important}';
-}
-window.exportLayoutBreakCss = exportLayoutBreakCss;
+/* exportLayoutBreakCss: see js/app/contour-page-renderer.js */
 
 function verseSpacingAfterClass(verse) {
   const level = normalizeVerseSpacingAfter(verse && verse.spacingAfter);
@@ -437,9 +424,8 @@ window.verseBlockClassNames = verseBlockClassNames;
 
 function verseSpacingAfterDocxTwips(verse) {
   const level = normalizeVerseSpacingAfter(verse && verse.spacingAfter);
-  if (level === 'single') return 480;
-  if (level === 'oneHalf') return 720;
-  if (level === 'double') return 960;
+  if (level === 'default') return 0;
+  if (typeof contourVerseSpacingDocxTwips === 'function') return contourVerseSpacingDocxTwips(level);
   return 0;
 }
 window.verseSpacingAfterDocxTwips = verseSpacingAfterDocxTwips;

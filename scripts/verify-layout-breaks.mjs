@@ -190,7 +190,7 @@ async function main() {
         pane0,
         pane1,
         exportHasClass: exportHtml.includes('layout-break-md'),
-        docxHasSpacing: docx.includes('w:spacing w:after="480"'),
+        docxHasSpacing: docx.includes('w:spacing w:after="600"'),
         wordsUnchanged:
           state.verses[0].clauses[0].words.length > 0 &&
           !state.verses[0].clauses.some((c) => c.words.some((w) => w.text === '')),
@@ -198,7 +198,7 @@ async function main() {
         verseAfterDefault,
         verseAfterMerge,
         verseExportHasClass: verseExportHtml.includes('verse-spacing-oneHalf'),
-        verseDocxHasSpacing: verseDocx.includes('w:spacing w:after="720"'),
+        verseDocxHasSpacing: verseDocx.includes('w:spacing w:after="1228"'),
         hideRefEditor,
         hideAll,
         hideRefMerge: newVerseHide.hideRef === true,
@@ -258,7 +258,7 @@ async function main() {
     record(
       'verse-docx',
       unit.verseDocxHasSpacing,
-      `DOCX has verse w:spacing 720 twips=${unit.verseDocxHasSpacing}`
+      `DOCX has verse w:spacing 1228 twips=${unit.verseDocxHasSpacing}`
     );
     record('hide-verse-ref', unit.hideRefEditor, `contour editor hides selected verse ref=${unit.hideRefEditor}`);
     record('hide-all-verse-refs', unit.hideAll, `hide all verse refs in pane=${unit.hideAll}`);
