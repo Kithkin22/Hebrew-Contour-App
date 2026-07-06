@@ -1,6 +1,6 @@
 /**
  * File menu — Word/Apple-style top-left menu bar label and dropdown.
- * Loaded last so it wins over legacy ::before / font-size:0 hacks in app.css.
+ * Uses #projectMenuTrigger ID to beat legacy font-size:0 / ::before hacks in app.css.
  */
 
 /* ── Menu bar row: File | Generate text | Paste text ── */
@@ -17,9 +17,12 @@
   flex: 0 0 auto;
 }
 
-/* Visible "File" label — never hide via font-size:0 or empty ::before */
-.file-menu-card > .file-menu-trigger,
-.file-menu-card > .save-tools-title {
+/* Visible "File" label — beats app.css font-size:0 and hcd navy pill */
+#projectMenuTrigger,
+.top-stack .file-menu-card.compact-card:has(.save-tools-title) > .save-tools-title,
+.top-stack .file-menu-card > .file-menu-trigger {
+  display: inline-flex !important;
+  align-items: center !important;
   font-size: 13px !important;
   font-weight: 600 !important;
   line-height: 1.2 !important;
@@ -33,19 +36,25 @@
   border-radius: var(--hc-radius-sm, 6px) !important;
   cursor: pointer;
   user-select: none;
+  filter: none !important;
+  white-space: nowrap !important;
 }
 
-.file-menu-card > .file-menu-trigger::before,
-.file-menu-card > .save-tools-title::before {
+#projectMenuTrigger::before,
+#projectMenuTrigger::after,
+.top-stack .file-menu-card > .file-menu-trigger::before,
+.top-stack .file-menu-card > .save-tools-title::before,
+.top-stack .file-menu-card > .file-menu-trigger::after,
+.top-stack .file-menu-card > .save-tools-title::after {
   content: none !important;
   display: none !important;
 }
 
-.file-menu-card > .file-menu-trigger::after,
-.file-menu-card > .save-tools-title::after {
-  content: none !important;
-}
-
+#projectMenuTrigger:hover,
+#projectMenuTrigger:focus,
+.file-menu-card:hover > #projectMenuTrigger,
+.file-menu-card:focus-within > #projectMenuTrigger,
+.file-menu-card.menu-open > #projectMenuTrigger,
 .file-menu-card:hover > .file-menu-trigger,
 .file-menu-card:focus-within > .file-menu-trigger,
 .file-menu-card.menu-open > .file-menu-trigger,
@@ -124,6 +133,7 @@ body.hc-project-menu-open .file-menu-dropdown-portal {
   margin: 0 4px;
 }
 
+body.dark-mode #projectMenuTrigger,
 body.dark-mode .file-menu-card > .file-menu-trigger,
 body.dark-mode .file-menu-card > .save-tools-title,
 body.dark-mode .app-menu-bar .card[data-menu="generate"] > .menu-trigger,
@@ -131,6 +141,8 @@ body.dark-mode .app-menu-bar .card[data-menu="paste"] > .menu-trigger {
   color: var(--hc-text, #f5f5f7) !important;
 }
 
+body.dark-mode #projectMenuTrigger:hover,
+body.dark-mode .file-menu-card.menu-open > #projectMenuTrigger,
 body.dark-mode .file-menu-card:hover > .file-menu-trigger,
 body.dark-mode .file-menu-card.menu-open > .file-menu-trigger,
 body.dark-mode .app-menu-bar .card[data-menu="generate"]:hover > .menu-trigger,
