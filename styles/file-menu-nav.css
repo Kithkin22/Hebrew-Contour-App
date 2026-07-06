@@ -1,0 +1,153 @@
+/**
+ * File menu — Word/Apple-style top-left menu bar label and dropdown.
+ * Loaded last so it wins over legacy ::before / font-size:0 hacks in app.css.
+ */
+
+/* ── Menu bar row: File | Generate text | Paste text ── */
+.app-menu-bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-menu-bar > .card.compact-card {
+  flex: 0 0 auto;
+}
+
+/* Visible "File" label — never hide via font-size:0 or empty ::before */
+.file-menu-card > .file-menu-trigger,
+.file-menu-card > .save-tools-title {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.01em;
+  color: var(--hc-text, #1a2332) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  min-height: 28px !important;
+  padding: 4px 10px !important;
+  border-radius: var(--hc-radius-sm, 6px) !important;
+  cursor: pointer;
+  user-select: none;
+}
+
+.file-menu-card > .file-menu-trigger::before,
+.file-menu-card > .save-tools-title::before {
+  content: none !important;
+  display: none !important;
+}
+
+.file-menu-card > .file-menu-trigger::after,
+.file-menu-card > .save-tools-title::after {
+  content: none !important;
+}
+
+.file-menu-card:hover > .file-menu-trigger,
+.file-menu-card:focus-within > .file-menu-trigger,
+.file-menu-card.menu-open > .file-menu-trigger,
+.file-menu-card:hover > .save-tools-title,
+.file-menu-card:focus-within > .save-tools-title,
+.file-menu-card.menu-open > .save-tools-title {
+  background: var(--hc-surface-2, #f3f4f6) !important;
+  border-color: var(--hc-border, #e5e7eb) !important;
+  color: var(--hc-text, #1a2332) !important;
+  filter: none !important;
+}
+
+/* Match Generate / Paste triggers in the same menu bar */
+.app-menu-bar .card[data-menu="generate"] > .menu-trigger,
+.app-menu-bar .card[data-menu="paste"] > .menu-trigger {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  min-height: 28px !important;
+  padding: 4px 10px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--hc-text, #1a2332) !important;
+}
+
+.app-menu-bar .card[data-menu="generate"] > .menu-trigger::before,
+.app-menu-bar .card[data-menu="paste"] > .menu-trigger::before {
+  content: none !important;
+}
+
+.app-menu-bar .card[data-menu="generate"]:hover > .menu-trigger,
+.app-menu-bar .card[data-menu="paste"]:hover > .menu-trigger,
+.app-menu-bar .card[data-menu="generate"]:focus-within > .menu-trigger,
+.app-menu-bar .card[data-menu="paste"]:focus-within > .menu-trigger,
+.app-menu-bar .card[data-menu="generate"].menu-open > .menu-trigger,
+.app-menu-bar .card[data-menu="paste"].menu-open > .menu-trigger {
+  background: var(--hc-surface-2, #f3f4f6) !important;
+  border-color: var(--hc-border, #e5e7eb) !important;
+}
+
+/* File dropdown must show when menu-open (beats generic .compact-card > div { display:none }) */
+.top-stack .file-menu-card > .file-menu-dropdown {
+  display: none !important;
+}
+
+.top-stack .file-menu-card.menu-open > .file-menu-dropdown,
+.file-menu-card.menu-open > .file-menu-dropdown {
+  display: block !important;
+}
+
+/* No hover mega-panel behind File card */
+.top-stack .file-menu-card:hover::before,
+.top-stack .file-menu-card:hover::after,
+.top-stack .file-menu-card:focus-within::before,
+.top-stack .file-menu-card:focus-within::after,
+.top-stack .file-menu-card.menu-open::before,
+.top-stack .file-menu-card.menu-open::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Portaled dropdown (shell layout) */
+.file-menu-dropdown-portal {
+  position: fixed !important;
+  z-index: 5002 !important;
+}
+
+body.hc-project-menu-open .file-menu-dropdown-portal {
+  display: block !important;
+}
+
+/* Project name + save status between menus and right actions */
+.top-stack > .project-header-block {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0 4px;
+}
+
+body.dark-mode .file-menu-card > .file-menu-trigger,
+body.dark-mode .file-menu-card > .save-tools-title,
+body.dark-mode .app-menu-bar .card[data-menu="generate"] > .menu-trigger,
+body.dark-mode .app-menu-bar .card[data-menu="paste"] > .menu-trigger {
+  color: var(--hc-text, #f5f5f7) !important;
+}
+
+body.dark-mode .file-menu-card:hover > .file-menu-trigger,
+body.dark-mode .file-menu-card.menu-open > .file-menu-trigger,
+body.dark-mode .app-menu-bar .card[data-menu="generate"]:hover > .menu-trigger,
+body.dark-mode .app-menu-bar .card[data-menu="paste"]:hover > .menu-trigger {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+@media (max-width: 900px) {
+  .app-menu-bar {
+    flex-wrap: wrap;
+  }
+
+  .top-stack > .project-header-block {
+    order: 10;
+    width: 100%;
+    text-align: left;
+    align-items: flex-start;
+  }
+}

@@ -51,7 +51,8 @@
   border-radius: var(--hc-radius-sm, 6px) !important;
 }
 
-.app-toolbar-primary .file-menu-card > .save-tools-title::before {
+.app-toolbar-primary .file-menu-card > .save-tools-title::before,
+.app-toolbar-primary .file-menu-card > .file-menu-trigger::before {
   content: none !important;
 }
 

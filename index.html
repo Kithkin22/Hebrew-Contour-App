@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="styles/contour-document-presentation.css?v=5">
 <link rel="stylesheet" href="styles/contour-page.css?v=1">
 <link rel="stylesheet" href="styles/worksheet-pdf-wizard.css?v=1">
+<link rel="stylesheet" href="styles/file-menu-nav.css?v=1">
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
@@ -40,37 +41,37 @@
 <div class="wrap">
   <div id="topMenuBackdrop" aria-hidden="true"></div>
   <div class="top-stack">
-  <div class="app-toolbar-primary">
-  <p class="muted top-menu-hint">Click or tap a menu to generate text, paste from Logos, or save your project.</p>
+  <div class="app-toolbar-primary app-menu-bar" role="menubar" aria-label="Application menu">
   <div class="card compact-card file-menu-card" data-menu="project" id="projectFileMenuCard">
-    <strong class="save-tools-title menu-trigger" id="projectMenuTrigger">File</strong>
-    <div class="file-menu-dropdown" id="projectFileMenuDropdown" role="menu" aria-hidden="true">
+    <strong class="file-menu-trigger save-tools-title menu-trigger" id="projectMenuTrigger" aria-label="File menu">File</strong>
+    <div class="file-menu-dropdown" id="projectFileMenuDropdown" role="menu" aria-hidden="true" aria-label="File">
       <div class="file-menu-current">Current: <span id="currentProjectName">Untitled Project</span></div>
       <ul class="file-menu-list" role="none">
         <li role="none"><button type="button" class="file-menu-item" data-action="new-project" role="menuitem">New Project</button></li>
+        <li role="none"><button type="button" class="file-menu-item" data-action="import-project" role="menuitem">Open Project…</button></li>
         <li role="none" class="file-menu-has-submenu">
           <button type="button" class="file-menu-item" id="openRecentMenuBtn" role="menuitem" aria-haspopup="true">Open Recent <span class="file-menu-chevron" aria-hidden="true">›</span></button>
           <ul class="file-submenu" id="recentProjectsSubmenu" role="menu"></ul>
         </li>
-        <li role="none"><button type="button" class="file-menu-item" data-action="save-project" role="menuitem">Save Project</button></li>
+        <li role="none"><button type="button" class="file-menu-item" data-action="save-project" role="menuitem">Save</button></li>
         <li role="none"><button type="button" class="file-menu-item" data-action="save-as" role="menuitem">Save As…</button></li>
         <li role="none" class="file-menu-separator" aria-hidden="true"></li>
         <li role="none" class="file-menu-has-submenu">
           <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Export <span class="file-menu-chevron" aria-hidden="true">›</span></button>
           <ul class="file-submenu" role="menu">
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-pdf" role="menuitem">Worksheet PDF</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-word" role="menuitem">Contour as Word</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-html" role="menuitem">Contour as HTML</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-pdf" role="menuitem">Table as PDF</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-word" role="menuitem">Table as Word</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="export-project-json" role="menuitem">Project as JSON</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-pdf" role="menuitem">Export Worksheet PDF</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-word" role="menuitem">Export DOCX</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-html" role="menuitem">Export HTML</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-pdf" role="menuitem">Export Table PDF</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-table-word" role="menuitem">Export Table DOCX</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-project-json" role="menuitem">Export JSON</button></li>
           </ul>
         </li>
         <li role="none" class="file-menu-has-submenu">
           <button type="button" class="file-menu-item" role="menuitem" aria-haspopup="true">Import <span class="file-menu-chevron" aria-hidden="true">›</span></button>
           <ul class="file-submenu" role="menu">
             <li role="none"><button type="button" class="file-menu-item" data-action="import-text" role="menuitem">Import Text</button></li>
-            <li role="none"><button type="button" class="file-menu-item" data-action="import-project" role="menuitem">Import Project File</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="import-project" role="menuitem">Import JSON…</button></li>
             <li role="none"><button type="button" class="file-menu-item" id="importMorphDataBtn" role="menuitem">Import Morph Data (.json)</button></li>
             <li role="none"><button type="button" class="file-menu-item" id="clearMorphDataBtn" role="menuitem">Clear Morph Data</button></li>
           </ul>
@@ -403,7 +404,7 @@
         <tr><td><span class="kbd">Ctrl+Shift</span> + <span class="kbd">Delete</span></td><td>Hide or restore <strong>all matching words</strong></td></tr>
       </tbody>
     </table>
-    <p class="muted small">Use Generate text, Paste text, or Load sample to load a passage. Each passage is its own project — use <strong>Project</strong> (File menu) to save, open recent, export, and import. Enable <strong>Parallel passages</strong> (desktop) for side-by-side comparison.</p>
+    <p class="muted small">Use Generate text, Paste text, or Load sample to load a passage. Each passage is its own project — use <strong>File</strong> to save, open, export, and import. Enable <strong>Parallel passages</strong> (desktop) for side-by-side comparison.</p>
     <div class="row"><button type="button" class="btn primary" id="helpModalClose">Close</button></div>
   </div>
 </div>
