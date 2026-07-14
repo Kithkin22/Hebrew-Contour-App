@@ -2,11 +2,17 @@
 
 This folder contains the installable PWA version of the Hebrew Contour Table App.
 
+## Architecture
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for BHSA / SHEBANQ proxy design, deployment requirements (Vercel vs GitHub Pages), error/cache behavior, and local verification commands.
+
 ## Files
 - `index.html` — the app
 - `manifest.json` — app install metadata
 - `service-worker.js` — offline caching
 - `icons/` — home screen icons
+- `api/bhsa-verse.js` — BHSA same-origin proxy (Vercel serverless)
+- `docs/ARCHITECTURE.md` — BHSA and related architecture notes
 
 ## Install on iPhone
 1. Upload this folder to a web host such as GitHub Pages.
@@ -15,6 +21,8 @@ This folder contains the installable PWA version of the Hebrew Contour Table App
 4. Tap Add to Home Screen.
 
 After the first load, the app should continue to open offline from the Home Screen.
+
+**Note:** GitHub Pages cannot run the BHSA serverless proxy. Use the Vercel deployment for BHSA generation, or use WLC / paste mode on static hosts. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## User feedback
 
