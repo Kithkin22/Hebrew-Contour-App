@@ -92,7 +92,10 @@ function setupBooks(){
   if(status)status.textContent=source==='greek'?'Greek source: SBLGNT (fetched online from Faithlife/SBLGNT).':source==='hebrew-bhsa'?'Hebrew source: BHSA / ETCBC via SHEBANQ (requires internet).':'Hebrew source: bundled WLC (offline).';
 }
 function getWlcText(book,sc,sv,ec,ev){const out=[];let started=false;for(const line of WLC_TEXT.split(/\r?\n/)){if(!line.trim())continue;const parts=line.split('\t');if(parts.length<6)continue;const [b,c,v,_blank,_seq,txt]=parts;const cn=+c,vn=+v;if(b===book&&cn===+sc&&vn===+sv)started=true;if(started){if(b!==book)break;if(cn>+ec||(cn===+ec&&vn>+ev))break;out.push({chapter:cn,verse:vn,text:(txt||'').trim()});if(cn===+ec&&vn===+ev)break;}}return out;}
-const SHEBANQ_VERSE_API='https://shebanq.ancient-data.org/hebrew/verse.json';
+/* SHEBANQ itself has no Access-Control-Allow-Origin, so browsers must call
+ * our same-origin Vercel proxy (/api/bhsa-verse), which fetches SHEBANQ server-side.
+ * Direct endpoint (server-side only): https://shebanq.ancient-data.org/hebrew/verse.json */
+const BHSA_PROXY_API='/api/bhsa-verse';
 const BHSA_VERSION='4b';
 const BHSA_LATIN_BY_WLC={
   '01O':'Genesis','02O':'Exodus','03O':'Leviticus','04O':'Numeri','05O':'Deuteronomium',
@@ -113,16 +116,80 @@ function cleanBhsaVerse(raw){
     .replace(/\s+/g,' ')
     .trim();
 }
-async function fetchShebanqVerse(bhsaLatin,chapter,verse){
-  const url=new URL(SHEBANQ_VERSE_API);
+function buildBhsaVerseUrl(base,bhsaLatin,chapter,verse){
+  const url=new URL(base, typeof location!=='undefined' && location.origin ? location.origin : 'http://localhost');
   url.searchParams.set('version',BHSA_VERSION);
   url.searchParams.set('book',bhsaLatin);
   url.searchParams.set('chapter',String(chapter));
   url.searchParams.set('verse',String(verse));
-  const response=await fetch(url,{headers:{Accept:'application/json'}});
-  if(!response.ok)return null;
-  const data=await response.json();
-  if(!data.good||!data.data||!data.data.text)return null;
+  return url;
+}
+function truncateForLog(text,max){
+  const s=String(text||'');
+  return s.length>(max||240)?s.slice(0,max||240)+'…':s;
+}
+function classifyBhsaFetchError(err,meta){
+  const message=String(err&&err.message||err||'');
+  const name=String(err&&err.name||'');
+  const offline=typeof navigator!=='undefined' && navigator && navigator.onLine===false;
+  if(offline)return {kind:'offline',userMessage:'Could not load BHSA text. Check your internet connection or use WLC/paste mode.'};
+  if(name==='AbortError' || /timeout|timed out/i.test(message))return {kind:'timeout',userMessage: /timed out/i.test(message)?message:'BHSA request timed out.'};
+  if(meta && meta.proxyMissing)return {kind:'proxy',userMessage:message||'BHSA proxy is unavailable on this host. Use the Vercel deployment, or switch to WLC/paste mode.'};
+  if(meta && meta.unexpectedFormat)return {kind:'format',userMessage:message||'Unexpected response format from BHSA.'};
+  if(meta && meta.status===404)return {kind:'http',userMessage:message||'BHSA server returned 404.'};
+  if(meta && meta.status>=400)return {kind:'http',userMessage:message||`BHSA server returned ${meta.status}.`};
+  if(meta && meta.rejected)return {kind:'rejected',userMessage:message||'BHSA endpoint rejected the request.'};
+  if(/Failed to fetch|NetworkError|Load failed|CORS/i.test(message)){
+    return {kind:'network',userMessage:'Unable to contact BHSA server. If you are on GitHub Pages or a static host, use the Vercel deployment or WLC/paste mode.'};
+  }
+  return {kind:'unknown',userMessage:message?`Could not load BHSA text: ${message}`:'Could not load BHSA text.'};
+}
+function logBhsaEvent(event,detail){
+  try{
+    const payload=Object.assign({event,at:new Date().toISOString()},detail||{});
+    console.info('[BHSA]', payload);
+  }catch(_e){}
+}
+async function fetchShebanqVerse(bhsaLatin,chapter,verse){
+  const passage=`${bhsaLatin} ${chapter}:${verse}`;
+  const proxyUrl=buildBhsaVerseUrl(BHSA_PROXY_API,bhsaLatin,chapter,verse);
+  logBhsaEvent('request',{passage,url:String(proxyUrl)});
+  let response;
+  try{
+    response=await fetch(String(proxyUrl),{headers:{Accept:'application/json'},cache:'no-store'});
+  }catch(err){
+    const classified=classifyBhsaFetchError(err,{});
+    logBhsaEvent('fetch-exception',{passage,url:String(proxyUrl),name:err&&err.name,message:String(err&&err.message||err),stack:err&&err.stack?String(err.stack).split('\n').slice(0,6):null,classified});
+    const wrapped=new Error(classified.userMessage);
+    wrapped.bhsaClassified=classified;
+    wrapped.cause=err;
+    throw wrapped;
+  }
+  const raw=await response.text();
+  logBhsaEvent('response',{passage,url:String(proxyUrl),status:response.status,ok:response.ok,bodyPreview:truncateForLog(raw)});
+  if(response.status===404){
+    const err=new Error('BHSA proxy is unavailable on this host. Use the Vercel deployment, or switch to WLC/paste mode.');
+    err.bhsaClassified=classifyBhsaFetchError(err,{status:404,proxyMissing:true});
+    throw err;
+  }
+  let data=null;
+  try{data=JSON.parse(raw);}catch(_parseErr){
+    const err=new Error('Unexpected response format from BHSA.');
+    err.bhsaClassified=classifyBhsaFetchError(err,{status:response.status,unexpectedFormat:true});
+    throw err;
+  }
+  if(!response.ok){
+    const upstreamMsg=(data&&Array.isArray(data.msgs)&&data.msgs[0]&&data.msgs[0][1])||`BHSA server returned ${response.status}.`;
+    const err=new Error(upstreamMsg);
+    err.bhsaClassified=classifyBhsaFetchError(err,{status:response.status,rejected:true});
+    throw err;
+  }
+  if(!data.good||!data.data||!data.data.text){
+    const upstreamMsg=(data&&Array.isArray(data.msgs)&&data.msgs[0]&&data.msgs[0][1])||`BHSA lookup failed for ${passage}.`;
+    const err=new Error(upstreamMsg);
+    err.bhsaClassified=classifyBhsaFetchError(err,{rejected:true});
+    throw err;
+  }
   return cleanBhsaVerse(data.data.text);
 }
 async function getBhsaText(wlcBookId,sc,sv,ec,ev){
@@ -132,13 +199,18 @@ async function getBhsaText(wlcBookId,sc,sv,ec,ev){
   if(!refs.length)return [];
   const out=[];
   for(const ref of refs){
-    const text=await fetchShebanqVerse(bhsaLatin,ref.chapter,ref.verse);
-    if(!text){
-      if(!out.length)throw new Error(`BHSA lookup failed for ${bhsaLatin} ${ref.chapter}:${ref.verse}.`);
-      break;
+    try{
+      const text=await fetchShebanqVerse(bhsaLatin,ref.chapter,ref.verse);
+      if(!text){
+        if(!out.length)throw new Error(`BHSA lookup failed for ${bhsaLatin} ${ref.chapter}:${ref.verse}.`);
+        break;
+      }
+      out.push({chapter:ref.chapter,verse:ref.verse,text});
+      if(ref.chapter===+ec&&ref.verse===+ev)break;
+    }catch(err){
+      if(out.length)break;
+      throw err;
     }
-    out.push({chapter:ref.chapter,verse:ref.verse,text});
-    if(ref.chapter===+ec&&ref.verse===+ev)break;
   }
   if(!out.length)throw new Error('No Hebrew text returned from BHSA for that reference.');
   return out;
@@ -262,7 +334,12 @@ function parseBibleReference(input){
   return {source:book.source,bookId:book.id,bookName:book.name,sc,sv,ec,ev};
 }
 function setGeneratorFromParsedRef(parsed){
-  document.getElementById('textSource').value=parsed.source;
+  const sourceSel=document.getElementById('textSource');
+  const current=sourceSel?sourceSel.value:'hebrew-bhsa';
+  // Book aliases only distinguish hebrew vs greek; preserve BHSA when already selected.
+  if(parsed.source==='greek')sourceSel.value='greek';
+  else if(current==='hebrew-bhsa'||parsed.source==='hebrew-bhsa')sourceSel.value='hebrew-bhsa';
+  else sourceSel.value='hebrew';
   setupBooks();
   const sel=document.getElementById('bookSelect');
   sel.value=parsed.bookId;
@@ -328,13 +405,21 @@ async function generateWlc(){
     }else if(source==='hebrew-bhsa'){
       status.textContent='Loading Hebrew text from BHSA (SHEBANQ)...';
       verses=await getBhsaText(book,sc,sv,ec,ev);
-      state.language='hebrew';
+      state.language='hebrew-bhsa';
     }else{
       verses=getWlcText(book,sc,sv,ec,ev);
       state.language='hebrew';
     }
   }catch(e){
-    status.textContent=source==='greek'?'Could not load Greek text. Check your internet connection or use paste mode.':source==='hebrew-bhsa'?'Could not load BHSA text. Check your internet connection or use WLC/paste mode.':'Could not load Hebrew text.';
+    if(source==='hebrew-bhsa'){
+      const classified=(e&&e.bhsaClassified)||classifyBhsaFetchError(e,{});
+      logBhsaEvent('generate-failed',{error:String(e&&e.message||e),classified,stack:e&&e.stack?String(e.stack).split('\n').slice(0,8):null});
+      status.textContent=classified.userMessage||'Could not load BHSA text.';
+    }else if(source==='greek'){
+      status.textContent='Could not load Greek text. Check your internet connection or use paste mode.';
+    }else{
+      status.textContent='Could not load Hebrew text.';
+    }
     return;
   }
   if(!verses.length){status.textContent='No text found for that range.';return;}
