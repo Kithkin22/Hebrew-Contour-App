@@ -244,14 +244,19 @@
 
   function ensureInspectorRows(){
     const box = document.getElementById('wordInspector');
-    if(!box || document.getElementById('wiLemma')) return;
+    if(!box) return;
+    // Contour now creates #wiLemma itself (Lexical form). Only add greek-only rows here.
+    if(document.getElementById('wiGloss')) return;
 
     const wordRow = box.querySelector('#wiWord') && box.querySelector('#wiWord').closest('.wi-row');
     const rootRow = box.querySelector('#wiRoot') && box.querySelector('#wiRoot').closest('.wi-row');
     const parsingRow = box.querySelector('#wiParsing') && box.querySelector('#wiParsing').closest('.wi-row');
 
-    if(rootRow && rootRow.querySelector('.wi-label')){
+    if(rootRow && rootRow.querySelector('.wi-label') && !document.getElementById('wiRootLabel')){
       rootRow.querySelector('.wi-label').id = 'wiRootLabel';
+    }
+    if(wordRow && wordRow.querySelector('.wi-label') && !document.getElementById('wiWordLabel')){
+      wordRow.querySelector('.wi-label').id = 'wiWordLabel';
     }
 
     function insertAfter(refRow, html){
@@ -260,11 +265,13 @@
       return refRow.nextElementSibling;
     }
 
-    if(wordRow){
-      insertAfter(wordRow, '<div class="wi-row" id="wiLemmaRow"><div class="wi-label" id="wiLemmaLabel">Lemma</div><div class="wi-value wi-greek" id="wiLemma">—</div></div>');
+    if(!document.getElementById('wiLemma') && wordRow){
+      insertAfter(wordRow, '<div class="wi-row" id="wiLemmaRow"><div class="wi-label" id="wiLemmaLabel">Lexical form</div><div class="wi-value wi-hebrew" id="wiLemma">—</div></div>');
     }
-    if(parsingRow){
+    if(!document.getElementById('wiGlossRow') && parsingRow){
       insertAfter(parsingRow, '<div class="wi-row" id="wiGlossRow"><div class="wi-label" id="wiGlossLabel">Gloss</div><div class="wi-value" id="wiGloss">—</div></div>');
+    }
+    if(!document.getElementById('wiStrongsRow') && document.getElementById('wiGlossRow')){
       insertAfter(document.getElementById('wiGlossRow'), '<div class="wi-row" id="wiStrongsRow"><div class="wi-label" id="wiStrongsLabel">Strong\'s</div><div class="wi-value" id="wiStrongs">—</div></div>');
     }
 
@@ -289,9 +296,6 @@
   window.updateInspectorLanguageRows = function(){
     ensureInspectorRows();
     const isGreek = window.state && state.language === 'greek';
-    const show = id => { const el = document.getElementById(id); if(el) el.style.display = ''; };
-    const hide = id => { const el = document.getElementById(id); if(el) el.style.display = 'none'; };
-
     const lemmaRow = document.getElementById('wiLemmaRow');
     const glossRow = document.getElementById('wiGlossRow');
     const strongsRow = document.getElementById('wiStrongsRow');
@@ -300,13 +304,18 @@
     const lexLabel = document.getElementById('wiLexiconLabel');
     const lexLink = document.getElementById('wiLexiconLink');
     const rootLabel = document.getElementById('wiRootLabel');
+    const wordLabel = document.getElementById('wiWordLabel');
+    const lemmaLabel = document.getElementById('wiLemmaLabel');
+
+    if(wordLabel) wordLabel.textContent = 'Text form';
+    if(lemmaLabel) lemmaLabel.textContent = 'Lexical form';
+    if(rootLabel) rootLabel.textContent = 'Root';
 
     if(isGreek){
       if(lemmaRow) lemmaRow.style.display = '';
       if(glossRow) glossRow.style.display = '';
       if(strongsRow) strongsRow.style.display = '';
       if(bdagRow) bdagRow.style.display = '';
-      if(rootLabel) rootLabel.textContent = 'Root/Lemma';
       if(lexLabel) lexLabel.textContent = 'LSJ';
       if(lexLink) lexLink.textContent = 'Open in Perseus LSJ ↗';
       document.querySelectorAll('#wordInspector .wi-hebrew,#wordInspector .wi-greek').forEach(el => {
@@ -314,11 +323,10 @@
         el.classList.add('wi-greek');
       });
     }else{
-      if(lemmaRow) lemmaRow.style.display = 'none';
+      if(lemmaRow) lemmaRow.style.display = '';
       if(glossRow) glossRow.style.display = 'none';
       if(strongsRow) strongsRow.style.display = 'none';
       if(bdagRow) bdagRow.style.display = 'none';
-      if(rootLabel) rootLabel.textContent = 'Lemma / Root';
       if(lexLabel) lexLabel.textContent = 'BDB';
       if(lexLink) lexLink.textContent = 'Open in Sefaria BDB ↗';
       document.querySelectorAll('#wordInspector #wiWord,#wordInspector #wiRoot,#wordInspector #wiLemma').forEach(el => {

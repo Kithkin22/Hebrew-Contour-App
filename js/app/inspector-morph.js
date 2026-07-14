@@ -88,11 +88,13 @@
     modal.innerHTML=`
       <div class="manual-card">
         <h3>Manual Inspector Entry</h3>
-        <p class="muted">Add or correct the lemma/root and parsing for the selected word.</p>
-        <label>Word</label>
+        <p class="muted">Correct Lexical form, Root, and Parsing for the selected Text form. Text form stays the passage word.</p>
+        <label>Text form</label>
         <input id="manualInspectorWord" class="manual-hebrew" readonly>
-        <label>Lemma / Root</label>
-        <input id="manualInspectorRoot" class="manual-hebrew" placeholder="שׁכב">
+        <label>Lexical form</label>
+        <input id="manualInspectorLemma" class="manual-hebrew" placeholder="נָשָׂא">
+        <label>Root</label>
+        <input id="manualInspectorRoot" class="manual-hebrew" placeholder="נשׂא">
         <label>Parsing</label>
         <input id="manualInspectorParsing" placeholder="Qal perfect 3ms">
         <div class="manual-row">
@@ -120,7 +122,8 @@
     const word=getWordText(el);
     const existing=lookupManual(el, word) || {};
     document.getElementById('manualInspectorWord').value=word;
-    document.getElementById('manualInspectorRoot').value=existing.root || existing.lemma || '';
+    document.getElementById('manualInspectorLemma').value=existing.lemma || '';
+    document.getElementById('manualInspectorRoot').value=existing.root || '';
     document.getElementById('manualInspectorParsing').value=existing.parsing || existing.morph || '';
     const modal=document.getElementById('manualInspectorModal');
     modal.classList.add('show');
@@ -129,8 +132,8 @@
       const data=loadManual();
       const entry={
         word,
+        lemma:document.getElementById('manualInspectorLemma').value.trim(),
         root:document.getElementById('manualInspectorRoot').value.trim(),
-        lemma:document.getElementById('manualInspectorRoot').value.trim(),
         parsing:document.getElementById('manualInspectorParsing').value.trim()
       };
       manualKeys(el, word).forEach(k=>{data[k]=entry;});
@@ -141,6 +144,7 @@
       const data=loadManual();
       manualKeys(el, word).forEach(k=>delete data[k]);
       saveManual(data);
+      document.getElementById('manualInspectorLemma').value='';
       document.getElementById('manualInspectorRoot').value='';
       document.getElementById('manualInspectorParsing').value='';
     };
@@ -155,8 +159,8 @@
     btn.id='manualInspectorBtn';
     btn.type='button';
     btn.className='btn app-toolbar-btn';
-    btn.textContent='Manual Root';
-    btn.title='Manually add root/parsing for selected word';
+    btn.textContent='Manual Forms';
+    btn.title='Manually add lexical form / root / parsing for selected word';
     btn.onclick=openManualInspector;
     if(inspectorBtn && inspectorBtn.parentNode) inspectorBtn.parentNode.insertBefore(btn, inspectorBtn.nextSibling);
     else if(actions) actions.appendChild(btn);
@@ -164,19 +168,28 @@
   }
 
   function relabel(){
+    const wordLabel=document.getElementById('wiWordLabel');
+    if(wordLabel) wordLabel.textContent='Text form';
+    const lemmaLabel=document.getElementById('wiLemmaLabel');
+    if(lemmaLabel) lemmaLabel.textContent='Lexical form';
+    const rootLabel=document.getElementById('wiRootLabel');
+    if(rootLabel) rootLabel.textContent='Root';
     document.querySelectorAll('#wordInspector .wi-label').forEach(el=>{
-      if(el.textContent.trim()==='Root') el.textContent='Lemma / Root';
-      if(el.textContent.trim()==='Gloss') el.closest('.wi-row')?.remove();
+      const t=el.textContent.trim();
+      if(t==='Word') el.textContent='Text form';
+      if(t==='Lemma / Root' || t==='Root/Lemma') el.textContent='Root';
+      if(t==='Gloss' && !(window.state&&state.language==='greek')) el.closest('.wi-row')?.remove();
     });
   }
-  function chooseRoot(m, manual, word){
-    const candidates=[];
-    if(manual) candidates.push(manual.root, manual.lemma);
-    if(m) candidates.push(m.rootHebrew, m.hebrewRoot, m.lemmaHebrew, m.hebrewLemma, m.lexeme, m.root, m.lemma);
-    const heb=candidates.find(v=>v&&isHebrew(v));
-    if(heb) return heb;
-    const nonStrong=candidates.find(v=>v&&!looksLikeStrong(v));
-    return nonStrong || '—';
+  function chooseLexical(m, manual){
+    if(manual && manual.lemma) return manual.lemma;
+    if(window.CONTOUR_HEBREW_FORMS) return window.CONTOUR_HEBREW_FORMS.pickLexicalForm(m) || '—';
+    return (m && (m.lemmaHebrew || m.lemma)) || '—';
+  }
+  function chooseRoot(m, manual){
+    if(manual && manual.root) return manual.root;
+    if(window.CONTOUR_HEBREW_FORMS) return window.CONTOUR_HEBREW_FORMS.pickRootForm(m) || '—';
+    return (m && (m.rootHebrew || m.root)) || '—';
   }
 
   function fillBdbFields(bdb){
@@ -202,8 +215,13 @@
     const bdb=await window.lookupSefariaBDB(word,{passageRef});
     if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
     if(!bdb){fillBdbFields(null);return;}
+    const wiLemma=document.getElementById('wiLemma');
+    if(wiLemma && bdb.lemma && (wiLemma.textContent==='—' || !wiLemma.textContent.trim())){
+      wiLemma.textContent=bdb.lemma;
+    }
     if(wiRoot){
-      const rootText=bdb.root||bdb.lemma||'';
+      // Prefer a true root; do not copy lexical form into Root just to fill the cell.
+      const rootText=bdb.root && bdb.root!==bdb.lemma ? bdb.root : (bdb.root||'');
       if(rootText && (wiRoot.textContent==='—' || !wiRoot.textContent.trim())) wiRoot.textContent=rootText;
     }
     let morphEntry=null;
@@ -220,21 +238,26 @@
   function enhance(wordEl){
     if(window.CONTOUR_INSPECTOR_ENABLED===false) return;
     relabel();
+    if(typeof window.updateInspectorLanguageRows==='function') window.updateInspectorLanguageRows();
     const wiWord=document.getElementById('wiWord');
+    const wiLemma=document.getElementById('wiLemma');
     const wiRoot=document.getElementById('wiRoot');
     const wiParsing=document.getElementById('wiParsing');
     if(!wiWord||!wiRoot||!wiParsing) return;
     const word=(wiWord.textContent&&wiWord.textContent!=='—') ? wiWord.textContent : getWordText(wordEl);
+    if(word) wiWord.textContent=word;
     let morph=null;
     try{ if(typeof window.CONTOUR_LOOKUP_MORPH==='function') morph=window.CONTOUR_LOOKUP_MORPH(word, wordEl); }catch(e){}
     const manual=lookupManual(wordEl, word);
     if(manual || morph){
-      wiRoot.textContent=chooseRoot(morph, manual, word);
+      if(wiLemma) wiLemma.textContent=chooseLexical(morph, manual);
+      wiRoot.textContent=chooseRoot(morph, manual);
       wiParsing.textContent=(manual&&manual.parsing) || (typeof window.mergeInspectorParsing==='function'
         ? window.mergeInspectorParsing(morph, morph&&(morph.parsing||morph.morph||morph.morphology))
         : (morph&&(morph.parsing||morph.morph||morph.morphology))) || '—';
-    }else if(looksLikeStrong(wiRoot.textContent)){
-      wiRoot.textContent='—';
+    }else{
+      if(wiLemma && looksLikeStrong(wiLemma.textContent)) wiLemma.textContent='—';
+      if(looksLikeStrong(wiRoot.textContent)) wiRoot.textContent='—';
     }
     applyBdbToInspector(word, wiRoot, wiParsing, wordEl);
   }

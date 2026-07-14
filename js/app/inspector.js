@@ -68,13 +68,19 @@
       : (morphParsing||data.parsing||data.morph||'—');
 
     document.getElementById('wiWord').textContent = word || '—';
-    document.getElementById('wiRoot').textContent = (morphEntry&&(morphEntry.root||morphEntry.lemma)) || data.root || '—';
-    document.getElementById('wiParsing').textContent = localParsing || '—';
+    const forms = (typeof window.CONTOUR_HEBREW_FORMS!=='undefined' && window.CONTOUR_HEBREW_FORMS.inspectForms)
+      ? window.CONTOUR_HEBREW_FORMS.inspectForms(morphEntry||data, word)
+      : {surface:word||'—', lexical:(morphEntry&&(morphEntry.lemmaHebrew||morphEntry.lemma))||data.lemma||'—', root:(morphEntry&&(morphEntry.rootHebrew||morphEntry.root))||data.root||'—', parsing:localParsing||'—'};
+    const wiLemma=document.getElementById('wiLemma');
+    if(wiLemma) wiLemma.textContent = forms.lexical || '—';
+    document.getElementById('wiRoot').textContent = forms.root || '—';
+    document.getElementById('wiParsing').textContent = localParsing || forms.parsing || '—';
     const wiBdbGloss=document.getElementById('wiBdbGloss');
     const wiBdbLink=document.getElementById('wiBdbLink');
     if(wiBdbGloss) wiBdbGloss.textContent='Loading…';
     if(wiBdbLink) wiBdbLink.style.display='none';
     if(typeof applyLanguageLayout==='function') applyLanguageLayout();
+    if(typeof window.updateInspectorLanguageRows==='function') window.updateInspectorLanguageRows();
 
     positionInspector(el);
     box.setAttribute('aria-hidden','false');
@@ -100,7 +106,7 @@
 
   function resetWordInspector(){
     hideInspector();
-    ['wiWord','wiRoot','wiParsing'].forEach(id=>{
+    ['wiWord','wiLemma','wiRoot','wiParsing'].forEach(id=>{
       const el=document.getElementById(id);
       if(el) el.textContent='—';
     });
@@ -165,9 +171,10 @@
     box.setAttribute('aria-hidden','true');
     box.innerHTML = `
       <div class="wi-title">Inspector</div>
-      <div class="wi-row"><div class="wi-label">Word</div><div class="wi-value wi-hebrew" id="wiWord">—</div></div>
-      <div class="wi-row"><div class="wi-label">Root</div><div class="wi-value wi-hebrew" id="wiRoot">—</div></div>
-      <div class="wi-row"><div class="wi-label">Parsing</div><div class="wi-value" id="wiParsing">—</div></div>
+      <div class="wi-row"><div class="wi-label" id="wiWordLabel">Text form</div><div class="wi-value wi-hebrew" id="wiWord">—</div></div>
+      <div class="wi-row" id="wiLemmaRow"><div class="wi-label" id="wiLemmaLabel">Lexical form</div><div class="wi-value wi-hebrew" id="wiLemma">—</div></div>
+      <div class="wi-row"><div class="wi-label" id="wiRootLabel">Root</div><div class="wi-value wi-hebrew" id="wiRoot">—</div></div>
+      <div class="wi-row"><div class="wi-label" id="wiParsingLabel">Parsing</div><div class="wi-value" id="wiParsing">—</div></div>
       <div class="wi-row" id="wiBdbRow"><div class="wi-label">BDB</div><div class="wi-value"><div id="wiBdbGloss">—</div><a id="wiBdbLink" href="#" target="_blank" rel="noopener" style="display:none">Open in Sefaria BDB ↗</a></div></div>
     `;
     document.body.appendChild(box);
@@ -284,10 +291,14 @@
       if(!key || !entry) return;
       const e = {
         word: entry.word || entry.surface || '',
-        root: entry.root || entry.lemma || '',
-        lemma: entry.lemma || entry.root || '',
-        parsing: entry.parsing || entry.morph || entry.morphology || ''
+        root: entry.rootHebrew || entry.root || '',
+        lemma: entry.lemmaHebrew || entry.lemma || '',
+        parsing: entry.parsing || entry.morph || entry.morphology || '',
+        morph: entry.morph || '',
+        gloss: entry.gloss || entry.kjvGloss || '',
+        strong: entry.strong || entry.strongs || ''
       };
+      // Keep lemma/root independent: do not copy one into the other.
       out.words[key] = e;
       const norm = normalizeMorphKey(e.word || key);
       if(norm && !out.words[norm]) out.words[norm] = e;
@@ -311,9 +322,12 @@
         Object.entries(payload.refs).forEach(([key, entry])=>{
           if(entry && typeof entry === 'object') out.refs[key] = {
             word: entry.word || entry.surface || '',
-            root: entry.root || entry.lemma || '',
-            lemma: entry.lemma || entry.root || '',
-            parsing: entry.parsing || entry.morph || entry.morphology || ''
+            root: entry.rootHebrew || entry.root || '',
+            lemma: entry.lemmaHebrew || entry.lemma || '',
+            parsing: entry.parsing || entry.morph || entry.morphology || '',
+            morph: entry.morph || '',
+            gloss: entry.gloss || entry.kjvGloss || '',
+            strong: entry.strong || entry.strongs || ''
           };
         });
       }
@@ -363,6 +377,7 @@
       if(!wordEl) return;
       setTimeout(function(){
         const wiWord = document.getElementById('wiWord');
+        const wiLemma = document.getElementById('wiLemma');
         const wiRoot = document.getElementById('wiRoot');
         const wiParsing = document.getElementById('wiParsing');
         if(!wiWord || !wiRoot || !wiParsing) return;
@@ -371,10 +386,14 @@
           : (wordEl.textContent || '').replace(/[0-9]/g,'').trim();
         const m = window.CONTOUR_LOOKUP_MORPH(word, wordEl);
         if(m){
-          wiRoot.textContent = m.root || m.lemma || '—';
+          const forms = window.CONTOUR_HEBREW_FORMS
+            ? window.CONTOUR_HEBREW_FORMS.inspectForms(m, word)
+            : {lexical:m.lemma||'—', root:m.root||'—', parsing:m.parsing||m.morph||'—'};
+          if(wiLemma) wiLemma.textContent = forms.lexical;
+          wiRoot.textContent = forms.root;
           wiParsing.textContent = typeof window.compactMorphHBParsing==='function'
-            ? (window.compactMorphHBParsing(m) || m.parsing || m.morph || '—')
-            : (m.parsing || m.morph || '—');
+            ? (window.compactMorphHBParsing(m) || forms.parsing || '—')
+            : (forms.parsing || '—');
         }
       }, 280);
     }, true);
@@ -385,7 +404,7 @@
 })();
 
 
-/* Inspector MorphHB/Job JSON support — Word, Lemma/Root, Parsing only */
+/* Inspector MorphHB/Job JSON support — Text form, Lexical form, Root, Parsing */
 (function(){
   function isHebrew(s){ return /[\u0590-\u05FF]/.test(String(s||'')); }
   function norm(s){
@@ -406,9 +425,17 @@
     if(gloss && gloss.closest('.wi-row')) gloss.closest('.wi-row').remove();
   }
   function relabel(){
+    const wordLabel=document.getElementById('wiWordLabel')||document.querySelector('#wordInspector .wi-row #wiWord')?.closest('.wi-row')?.querySelector('.wi-label');
+    if(wordLabel) wordLabel.textContent='Text form';
+    const lemmaLabel=document.getElementById('wiLemmaLabel');
+    if(lemmaLabel) lemmaLabel.textContent='Lexical form';
+    const rootLabel=document.getElementById('wiRootLabel')||document.querySelector('#wiRoot')?.closest('.wi-row')?.querySelector('.wi-label');
+    if(rootLabel && rootLabel.id!=='wiLemmaLabel') rootLabel.textContent='Root';
     document.querySelectorAll('#wordInspector .wi-label').forEach(el=>{
-      if(el.textContent.trim()==='Root') el.textContent='Lemma / Root';
-      if(el.textContent.trim()==='Gloss') el.closest('.wi-row')?.remove();
+      const t=el.textContent.trim();
+      if(t==='Word') el.textContent='Text form';
+      if(t==='Lemma / Root' || t==='Root/Lemma') el.textContent='Root';
+      if(t==='Gloss' && window.state&&state.language!=='greek') el.closest('.wi-row')?.remove();
     });
   }
   function getWordTextFromEl(el){
@@ -444,35 +471,33 @@
     }
     return null;
   }
-  function chooseLemmaRoot(m){
-    if(!m) return '—';
-    const candidates=[
-      m.rootHebrew, m.hebrewRoot, m.lemmaHebrew, m.hebrewLemma,
-      m.lexeme, m.root, m.lemma, m.word
-    ];
-    const heb=candidates.find(v=>v && isHebrew(v));
-    if(heb) return heb;
-    const nonStrong=candidates.find(v=>v && !looksLikeStrong(v));
-    return nonStrong || '—';
-  }
   function enhance(wordEl){
     const wiWord=document.getElementById('wiWord');
+    const wiLemma=document.getElementById('wiLemma');
     const wiRoot=document.getElementById('wiRoot');
     const wiParsing=document.getElementById('wiParsing');
     if(!wiWord || !wiRoot || !wiParsing) return;
 
     relabel();
     removeGlossRow();
+    if(typeof window.updateInspectorLanguageRows==='function') window.updateInspectorLanguageRows();
 
     const word=(wiWord.textContent && wiWord.textContent!=='—') ? wiWord.textContent : getWordTextFromEl(wordEl);
+    // Text form always remains the passage surface — never overwrite with lemma.
+    if(word) wiWord.textContent=word;
     const m=lookupMorph(wordEl, word);
 
     if(m){
-      wiRoot.textContent=chooseLemmaRoot(m);
+      const forms=window.CONTOUR_HEBREW_FORMS
+        ? window.CONTOUR_HEBREW_FORMS.inspectForms(m, word)
+        : {lexical:m.lemma||'—', root:m.root||'—', parsing:m.parsing||m.morph||'—'};
+      if(wiLemma) wiLemma.textContent=forms.lexical;
+      wiRoot.textContent=forms.root;
       wiParsing.textContent=typeof window.compactMorphHBParsing==='function'
-        ? (window.compactMorphHBParsing(m) || m.parsing || m.morph || m.morphology || '—')
-        : (m.parsing || m.morph || m.morphology || '—');
+        ? (window.compactMorphHBParsing(m) || forms.parsing || '—')
+        : (forms.parsing || '—');
     }else{
+      if(wiLemma && looksLikeStrong(wiLemma.textContent)) wiLemma.textContent='—';
       if(looksLikeStrong(wiRoot.textContent)) wiRoot.textContent='—';
     }
   }

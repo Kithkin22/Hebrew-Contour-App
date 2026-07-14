@@ -90,3 +90,16 @@ These cover Job 1:1–3, Genesis 1:1–5, CORS proof, Generate Reference BHSA pr
 ### Generate Reference preserves BHSA
 
 Book aliases only distinguish `hebrew` vs `greek`. When the generator Source is already **Hebrew — BHSA**, Generate Reference **must keep BHSA** and must **not** silently downgrade to WLC. That preservation is intentional (`setGeneratorFromParsedRef` / pane reference loading in `js/app/layout.js` and `js/app/core.js`).
+
+## Surface form vs Lexical form (Hebrew Inspector)
+
+Contour distinguishes:
+
+| Role | UI label | Source |
+| --- | --- | --- |
+| Surface / text form | **Text form** | `word.text` in the manuscript / MorphHB `word` |
+| Lexical form / lemma | **Lexical form** | MorphHB `lemma` / `lemmaHebrew` (never the inflected surface) |
+| Root | **Root** | MorphHB `root` / `rootHebrew` when available |
+| Morphology | **Parsing** | Analysis of the **surface** form |
+
+Helpers live in `js/app/hebrew-forms.js`. Manuscript rendering always uses `word.text` and must never substitute lemma. There is no `@aleph/inspector` package in this repo — Inspector UI is Contour-owned (`js/app/inspector.js`, `inspector-morph.js`) and must not import Aleph Study / vocabulary persistence.
