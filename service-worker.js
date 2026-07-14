@@ -1,4 +1,4 @@
-const CACHE_NAME = 'contour-app-pwa-v87';
+const CACHE_NAME = 'contour-app-pwa-v88';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -41,6 +41,7 @@ const APP_ASSETS = [
   './js/app/keyboard.js',
   './js/app/annotations.js',
   './js/app/theme.js',
+  './js/app/hebrew-forms.js',
   './js/app/inspector.js',
   './js/app/inspector-morph.js',
   './js/app/ui-init.js',

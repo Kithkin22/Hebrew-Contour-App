@@ -1520,7 +1520,7 @@ body.dark-mode .admin-link:hover,body.dark-mode .admin-link:focus{color:#6db5ff;
 body.dark-mode .admin-link.has-unread{color:#6db5ff;}
 
 /* Greek inspector parity with Hebrew */
-#wiLemmaRow,#wiGlossRow,#wiStrongsRow{display:none;}
+#wiGlossRow,#wiStrongsRow{display:none;}
 #wiBdagRow{display:none;}
 #wiStrongs a{color:var(--ui-blue,#1f5f99);font-weight:800;text-decoration:none;}
 #wiStrongs a:hover{text-decoration:underline;}

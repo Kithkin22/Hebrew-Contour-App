@@ -338,7 +338,7 @@
     return {
       headword: headwordForUrl,
       lemma,
-      root: root || lemma,
+      root: root || '',
       gloss: gloss || '—',
       parsing: parsing || '—',
       strongNumber: (strongEntry && strongEntry.strong_number) ||
