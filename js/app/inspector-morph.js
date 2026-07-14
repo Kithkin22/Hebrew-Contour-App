@@ -220,18 +220,22 @@
       wiLemma.textContent=bdb.lemma;
     }
     if(wiRoot){
-      // Prefer a true root; do not copy lexical form into Root just to fill the cell.
-      const rootText=bdb.root && bdb.root!==bdb.lemma ? bdb.root : (bdb.root||'');
+      // Fill Root only from an actual BDB root string; never invent Root from lemma.
+      const rootText=String(bdb.root||'').trim();
       if(rootText && (wiRoot.textContent==='—' || !wiRoot.textContent.trim())) wiRoot.textContent=rootText;
     }
     let morphEntry=null;
     try{
       if(typeof window.CONTOUR_LOOKUP_MORPH==='function') morphEntry=window.CONTOUR_LOOKUP_MORPH(word, wordEl);
     }catch(e){}
-    const mergedParsing=typeof window.mergeInspectorParsing==='function'
-      ? window.mergeInspectorParsing(morphEntry, bdb.parsing)
-      : (bdb.parsing||'—');
-    if(wiParsing && mergedParsing && mergedParsing!=='—') wiParsing.textContent=mergedParsing;
+    const hasMorphParsing=!!(morphEntry&&(morphEntry.parsing||morphEntry.morph||morphEntry.morphology));
+    // Prefer MorphHB parsing; use BDB grammar only when MorphHB has none.
+    if(wiParsing && !hasMorphParsing){
+      const bdbParsing=String(bdb.parsing||'').trim();
+      if(bdbParsing && bdbParsing!=='—' && (wiParsing.textContent==='—' || !wiParsing.textContent.trim())){
+        wiParsing.textContent=bdbParsing;
+      }
+    }
     fillBdbFields(bdb);
   }
   window.applyBdbToInspector=applyBdbToInspector;

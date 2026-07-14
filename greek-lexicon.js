@@ -228,9 +228,9 @@
     const lsj = lookupLsj(lemma);
 
     const result = {
-      word: cleanGreekWord(surfaceWord) || lemma,
+      word: cleanGreekWord(surfaceWord) || surfaceWord || '—',
       lemma,
-      root: lemma,
+      root: '',
       parsing: (morph && morph.parsing) || '—',
       gloss: (strongs && strongs.gloss) || '—',
       strongs: strongs ? strongs.id : '—',
@@ -371,7 +371,7 @@
       if(window.CONTOUR_INSPECTOR_ENABLED === false) return;
       if(wiWord) wiWord.textContent = g.word || '—';
       if(wiLemma) wiLemma.textContent = g.lemma || '—';
-      if(wiRoot && (!wiRoot.textContent || wiRoot.textContent === '—')) wiRoot.textContent = g.root || g.lemma || '—';
+      if(wiRoot && (!wiRoot.textContent || wiRoot.textContent === '—')) wiRoot.textContent = g.root || '—';
       if(wiParsing && (!wiParsing.textContent || wiParsing.textContent === '—')) wiParsing.textContent = g.parsing || '—';
       if(wiGloss) wiGloss.textContent = g.gloss || '—';
       if(wiStrongs){
