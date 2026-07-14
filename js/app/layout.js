@@ -133,12 +133,12 @@ function classifyBhsaFetchError(err,meta){
   const name=String(err&&err.name||'');
   const offline=typeof navigator!=='undefined' && navigator && navigator.onLine===false;
   if(offline)return {kind:'offline',userMessage:'Could not load BHSA text. Check your internet connection or use WLC/paste mode.'};
-  if(name==='AbortError' || /timeout|timed out/i.test(message))return {kind:'timeout',userMessage:'BHSA request timed out.'};
-  if(meta && meta.status===404)return {kind:'http',userMessage:'BHSA server returned 404.'};
-  if(meta && meta.status>=400)return {kind:'http',userMessage:`BHSA server returned ${meta.status}.`};
-  if(meta && meta.proxyMissing)return {kind:'proxy',userMessage:'BHSA proxy is unavailable on this host. Use the Vercel deployment, or switch to WLC/paste mode.'};
-  if(meta && meta.unexpectedFormat)return {kind:'format',userMessage:'Unexpected response format from BHSA.'};
-  if(meta && meta.rejected)return {kind:'rejected',userMessage:'BHSA endpoint rejected the request.'};
+  if(name==='AbortError' || /timeout|timed out/i.test(message))return {kind:'timeout',userMessage: /timed out/i.test(message)?message:'BHSA request timed out.'};
+  if(meta && meta.proxyMissing)return {kind:'proxy',userMessage:message||'BHSA proxy is unavailable on this host. Use the Vercel deployment, or switch to WLC/paste mode.'};
+  if(meta && meta.unexpectedFormat)return {kind:'format',userMessage:message||'Unexpected response format from BHSA.'};
+  if(meta && meta.status===404)return {kind:'http',userMessage:message||'BHSA server returned 404.'};
+  if(meta && meta.status>=400)return {kind:'http',userMessage:message||`BHSA server returned ${meta.status}.`};
+  if(meta && meta.rejected)return {kind:'rejected',userMessage:message||'BHSA endpoint rejected the request.'};
   if(/Failed to fetch|NetworkError|Load failed|CORS/i.test(message)){
     return {kind:'network',userMessage:'Unable to contact BHSA server. If you are on GitHub Pages or a static host, use the Vercel deployment or WLC/paste mode.'};
   }
@@ -156,7 +156,7 @@ async function fetchShebanqVerse(bhsaLatin,chapter,verse){
   logBhsaEvent('request',{passage,url:String(proxyUrl)});
   let response;
   try{
-    response=await fetch(String(proxyUrl),{headers:{Accept:'application/json'}});
+    response=await fetch(String(proxyUrl),{headers:{Accept:'application/json'},cache:'no-store'});
   }catch(err){
     const classified=classifyBhsaFetchError(err,{});
     logBhsaEvent('fetch-exception',{passage,url:String(proxyUrl),name:err&&err.name,message:String(err&&err.message||err),stack:err&&err.stack?String(err.stack).split('\n').slice(0,6):null,classified});
