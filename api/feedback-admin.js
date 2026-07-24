@@ -19,6 +19,9 @@ function json(res, status, body) {
 
 function parseBody(req) {
   let body = req.body;
+  if (Buffer.isBuffer(body)) {
+    body = body.toString('utf8');
+  }
   if (typeof body === 'string') {
     try {
       body = JSON.parse(body);
@@ -26,27 +29,58 @@ function parseBody(req) {
       return null;
     }
   }
-  return body && typeof body === 'object' ? body : null;
+  return body && typeof body === 'object' && !Buffer.isBuffer(body) ? body : null;
+}
+
+/** Match client normalization; strip pasted env whitespace/BOM/zero-width chars. */
+function normalizeSecret(value) {
+  return String(value || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim();
+}
+
+function readEnvPassword() {
+  // Same precedence as `FEEDBACK_ADMIN_PASSWORD || ADMIN_PASSWORD` (empty string skips).
+  const feedback = process.env.FEEDBACK_ADMIN_PASSWORD;
+  const admin = process.env.ADMIN_PASSWORD;
+  if (feedback) return { name: 'FEEDBACK_ADMIN_PASSWORD', raw: String(feedback) };
+  if (admin) return { name: 'ADMIN_PASSWORD', raw: String(admin) };
+  return { name: null, raw: '' };
 }
 
 function getAdminPassword() {
-  return process.env.FEEDBACK_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD || '';
+  return normalizeSecret(readEnvPassword().raw);
+}
+
+function headerValue(req, name) {
+  const value = req.headers[name];
+  if (Array.isArray(value)) return value.length ? String(value[0] || '') : '';
+  return value == null ? '' : String(value);
 }
 
 function safeEqual(a, b) {
-  const left = Buffer.from(String(a || ''));
-  const right = Buffer.from(String(b || ''));
+  const left = Buffer.from(String(a || ''), 'utf8');
+  const right = Buffer.from(String(b || ''), 'utf8');
   if (left.length !== right.length) return false;
   return crypto.timingSafeEqual(left, right);
+}
+
+function readCandidates(req, body) {
+  const header = normalizeSecret(
+    headerValue(req, 'x-admin-password') || headerValue(req, 'x-admin-key')
+  );
+  const fromBody = normalizeSecret(body && body.password != null ? body.password : '');
+  return { header, fromBody };
 }
 
 function isAuthorized(req, body) {
   const expected = getAdminPassword();
   if (!expected) return false;
-  const header = req.headers['x-admin-password'] || req.headers['x-admin-key'] || '';
-  const fromBody = body && body.password ? String(body.password) : '';
-  const candidate = header || fromBody;
-  return safeEqual(candidate, expected);
+  const { header, fromBody } = readCandidates(req, body);
+  // Accept either channel so a mangled header cannot block a valid body password.
+  if (header && safeEqual(header, expected)) return true;
+  if (fromBody && safeEqual(fromBody, expected)) return true;
+  return false;
 }
 
 module.exports = async function handler(req, res) {

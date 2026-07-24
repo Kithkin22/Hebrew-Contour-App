@@ -272,8 +272,12 @@ function showGate(){
   $('loginGate').classList.remove('hidden');
 }
 
+function normalizeSecret(value){
+  return String(value || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+}
+
 async function signIn(password){
-  adminPassword = String(password || '').trim();
+  adminPassword = normalizeSecret(password);
   if(!adminPassword){ setLoginError('Enter the admin password.'); return; }
   setLoginError('');
   $('loginBtn').disabled = true;
