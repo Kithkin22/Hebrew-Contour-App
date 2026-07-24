@@ -1,5 +1,10 @@
 /* file-menu-new-project-v1 */
-function initProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const trigger=document.getElementById('projectMenuTrigger');const dd=document.getElementById('projectFileMenuDropdown');if(!card||!trigger||!dd)return;window.closeProjectFileMenu=closeProjectFileMenu;window.openProjectFileMenu=openProjectFileMenu;trigger.setAttribute('role','button');trigger.setAttribute('tabindex','0');trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(e){e.stopPropagation();toggleProjectFileMenu(trigger);});trigger.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleProjectFileMenu(trigger);}});dd.querySelectorAll('[data-action]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const action=btn.getAttribute('data-action');if(typeof window.handleProjectFileAction==='function')window.handleProjectFileAction(action);});});card.querySelectorAll('.file-menu-has-submenu > .file-menu-item').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const li=btn.parentElement;if(!li)return;if(window.matchMedia('(hover: none)').matches||e.detail>0){li.classList.toggle('submenu-open');}});});const openRecentBtn=document.getElementById('openRecentMenuBtn');if(openRecentBtn&&!openRecentBtn.dataset.bound){openRecentBtn.dataset.bound='1';openRecentBtn.addEventListener('click',function(e){e.stopPropagation();renderProjectFileSubmenus();const li=this.parentElement;if(li)li.classList.add('submenu-open');});}document.getElementById('projectFileInput').onchange=function(e){importProjectFile(e.target.files[0]);e.target.value='';};document.addEventListener('click',function(e){if(!card.classList.contains('menu-open'))return;if(card.contains(e.target)||dd.contains(e.target))return;closeProjectFileMenu();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&card.classList.contains('menu-open'))closeProjectFileMenu();});}
+function initProjectFileMenu(){const card=document.getElementById('projectFileMenuCard');const trigger=document.getElementById('projectMenuTrigger');const dd=document.getElementById('projectFileMenuDropdown');if(!card||!trigger||!dd)return;window.closeProjectFileMenu=closeProjectFileMenu;window.openProjectFileMenu=openProjectFileMenu;trigger.setAttribute('role','button');trigger.setAttribute('tabindex','0');trigger.setAttribute('aria-haspopup','menu');trigger.setAttribute('aria-expanded','false');trigger.addEventListener('click',function(e){e.stopPropagation();toggleProjectFileMenu(trigger);});trigger.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleProjectFileMenu(trigger);}});dd.querySelectorAll('[data-action]').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const action=btn.getAttribute('data-action');if(typeof window.handleProjectFileAction==='function')window.handleProjectFileAction(action);});});card.querySelectorAll('.file-menu-has-submenu > .file-menu-item').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();const li=btn.parentElement;if(!li)return;if(window.matchMedia('(hover: none)').matches||e.detail>0){li.classList.toggle('submenu-open');}});});const openRecentBtn=document.getElementById('openRecentMenuBtn');if(openRecentBtn&&!openRecentBtn.dataset.bound){openRecentBtn.dataset.bound='1';openRecentBtn.addEventListener('click',function(e){e.stopPropagation();renderProjectFileSubmenus();const li=this.parentElement;if(li)li.classList.add('submenu-open');});}document.getElementById('projectFileInput').onchange=function(e){importProjectFile(e.target.files[0]);e.target.value='';};
+  const alephInput=document.getElementById('alephTranslationFileInput');
+  if(alephInput&&!alephInput.dataset.bound){
+    alephInput.dataset.bound='1';
+    alephInput.onchange=function(e){importAlephTranslationFile(e.target.files[0]);e.target.value='';};
+  }document.addEventListener('click',function(e){if(!card.classList.contains('menu-open'))return;if(card.contains(e.target)||dd.contains(e.target))return;closeProjectFileMenu();});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&card.classList.contains('menu-open'))closeProjectFileMenu();});}
 
 document.querySelectorAll('[data-text-color]').forEach(btn=>btn.onclick=()=>setSelectedColor(btn.dataset.textColor));
 document.getElementById('applyCustomColor').onclick=()=>setSelectedColor(document.getElementById('customTextColor').value);
@@ -37,7 +42,159 @@ document.addEventListener('click',(e)=>{let pop=document.getElementById('comment
 function xmlEscape(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));}
 function docxXml(){let textHeader=state.language==='greek'?'Greek Text':'Hebrew Text';let headers=[textHeader,'Translation','Gloss','Parsing','Notes',...state.columns];let rows=clauseRows().map(r=>[r.hebrew,r.ann['Translation']||'',r.translation,r.ann['Parsing']||'',r.notes,...state.columns.map(c=>r.ann[c]||'')]);function cell(t,rtl){return `<w:tc><w:tcPr><w:tcW w:w="2400" w:type="dxa"/></w:tcPr><w:p>${rtl?'<w:pPr><w:bidi/><w:jc w:val="right"/></w:pPr>':''}<w:r><w:t xml:space="preserve">${xmlEscape(t)}</w:t></w:r></w:p></w:tc>`}let table='<w:tbl><w:tblPr><w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders></w:tblPr>';table+='<w:tr>'+headers.map(h=>cell(h,false)).join('')+'</w:tr>';rows.forEach(r=>{table+='<w:tr>'+r.map((v,i)=>cell(v,i===0&&state.language!=='greek')).join('')+'</w:tr>';});table+='</w:tbl>';return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${table}<w:sectPr/></w:body></w:document>`;}
 
-function contourDocxXml(){
+/** Canonical Aleph/Contour verse key: "Book Chapter:Verse" (e.g. "Job 19:21"). */
+function canonicalAlephVerseKey(ref){
+  const raw=String(ref||'').trim().replace(/[–—]/g,'-').replace(/\s+/g,' ');
+  if(!raw)return '';
+  if(typeof parseBibleReference==='function'){
+    const parsed=parseBibleReference(raw);
+    if(parsed&&parsed.sc&&parsed.sv&&parsed.sc===parsed.ec&&parsed.sv===parsed.ev){
+      return parsed.bookName+' '+parsed.sc+':'+parsed.sv;
+    }
+  }
+  const full=raw.match(/^(.+?)\s+(\d+)\s*:\s*(\d+)$/);
+  if(full)return full[1].trim()+' '+(+full[2])+':'+(+full[3]);
+  const cv=raw.match(/^(\d+)\s*:\s*(\d+)$/);
+  return cv?(+cv[1])+':'+(+cv[2]):'';
+}
+function chapterVerseSuffix(key){
+  const m=String(key||'').match(/(\d+)\s*:\s*(\d+)\s*$/);
+  return m?(+m[1])+':'+(+m[2]):'';
+}
+function alephEntryText(val){
+  if(val==null)return '';
+  if(typeof val==='string')return val;
+  if(typeof val==='object'&&!Array.isArray(val)&&typeof val.text==='string')return val.text;
+  return null;
+}
+function validateAlephTranslationJson(data){
+  if(!data||typeof data!=='object'||Array.isArray(data))return 'Not a valid Aleph Translation JSON file.';
+  if(data.app!=='aleph')return 'Not an Aleph translation export (expected app: "aleph").';
+  if(data.version!==1)return 'Unsupported Aleph translation JSON version (expected version: 1).';
+  if(typeof data.reference!=='string'||!data.reference.trim())return 'Missing passage reference.';
+  if(!data.translations||typeof data.translations!=='object'||Array.isArray(data.translations)){
+    return 'Missing translations map.';
+  }
+  const keys=Object.keys(data.translations);
+  if(!keys.length)return 'Translations map is empty.';
+  for(let i=0;i<keys.length;i++){
+    const key=keys[i];
+    if(!String(key||'').trim())return 'translations contains an empty verse key.';
+    if(alephEntryText(data.translations[key])===null){
+      return 'Invalid translation for "'+key+'". Expected a string or { "text": "..." }.';
+    }
+  }
+  return null;
+}
+function alephPassageMatchError(reference){
+  const contourRef=state.ref||'';
+  if(!contourRef.trim())return 'Open a Contour passage before importing a translation.';
+  const pa=typeof parseBibleReference==='function'?parseBibleReference(contourRef):null;
+  const pb=typeof parseBibleReference==='function'?parseBibleReference(reference):null;
+  if(!pb)return 'Could not parse the file reference "'+reference+'". Use a form like "Job 19:21-29".';
+  if(!pa)return 'Could not parse the Contour passage "'+contourRef+'".';
+  if(pa.bookId!==pb.bookId){
+    return 'Wrong book. Contour has '+pa.bookName+', but the file is for '+pb.bookName+'.';
+  }
+  const same=pa.sc===pb.sc&&pa.sv===pb.sv&&pa.ec===pb.ec&&pa.ev===pb.ev;
+  if(same)return null;
+  const a=typeof normalizePassageRangeRef==='function'?normalizePassageRangeRef(contourRef):contourRef;
+  const b=typeof normalizePassageRangeRef==='function'?normalizePassageRangeRef(reference):reference;
+  return 'Wrong passage range. Contour has "'+a+'", but the file is for "'+b+'".';
+}
+function normalizeAlephTranslationsMap(raw){
+  const byCanon={};
+  const byChapterVerse={};
+  let collisions=0;
+  Object.keys(raw||{}).forEach(function(rawKey){
+    const text=alephEntryText(raw[rawKey]);
+    if(text===null)return;
+    const entry={text:String(text)};
+    const canon=canonicalAlephVerseKey(rawKey);
+    const cv=chapterVerseSuffix(canon||rawKey);
+    if(canon){
+      if(byCanon[canon]&&byCanon[canon].text!==entry.text)collisions++;
+      byCanon[canon]=entry;
+    }
+    if(cv){
+      if(byChapterVerse[cv]&&byChapterVerse[cv].text!==entry.text)collisions++;
+      byChapterVerse[cv]=entry;
+    }
+  });
+  return {byCanon:byCanon,byChapterVerse:byChapterVerse,collisions:collisions};
+}
+function applyAlephTranslationImport(data){
+  const err=validateAlephTranslationJson(data);
+  if(err)return {ok:false,error:err};
+  if(!state.verses||!state.verses.length){
+    return {ok:false,error:'Open or generate the Contour passage before importing a translation.'};
+  }
+  const mismatch=alephPassageMatchError(data.reference);
+  if(mismatch)return {ok:false,error:mismatch};
+  const normalized=normalizeAlephTranslationsMap(data.translations);
+  markUndo();
+  state.alephTranslations={
+    reference:String(data.reference).trim(),
+    translations:normalized.byCanon,
+    byChapterVerse:normalized.byChapterVerse,
+    importedAt:new Date().toISOString()
+  };
+  syncStateBundle();
+  if(autosaveReady)autoSaveProject();
+  let matched=0;
+  state.verses.forEach(function(v){
+    if(getAlephTranslationForVerse(v).trim())matched++;
+  });
+  let status='Imported Aleph translation ('+matched+' Contour verse'+(matched===1?'':'s')+' with text).';
+  if(normalized.collisions)status+=' Note: '+normalized.collisions+' duplicate key'+(normalized.collisions===1?'':'s')+' resolved by keeping the last value.';
+  updateSaveStatus(status);
+  return {ok:true,matched:matched,collisions:normalized.collisions};
+}
+function importAlephTranslationFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(){
+    try{
+      const data=JSON.parse(String(reader.result||''));
+      const result=applyAlephTranslationImport(data);
+      if(!result.ok)alert(result.error);
+    }catch(e){
+      const detail=(e&&e.message)?String(e.message):'Invalid JSON.';
+      alert('Could not parse Aleph Translation JSON.\n\n'+detail);
+    }
+  };
+  reader.onerror=function(){alert('Could not read that file.');};
+  reader.readAsText(file,'utf-8');
+}
+function promptImportAlephTranslation(){
+  const input=document.getElementById('alephTranslationFileInput');
+  if(!input){alert('Import control is unavailable. Reload the app and try again.');return;}
+  input.click();
+}
+function getAlephTranslationForVerse(v){
+  const store=state.alephTranslations;
+  if(!store)return '';
+  const canon=canonicalAlephVerseKey(v&&v.ref);
+  if(canon&&store.translations&&store.translations[canon]){
+    return String(store.translations[canon].text||'');
+  }
+  const cv=chapterVerseSuffix(v&&v.ref);
+  if(cv&&store.byChapterVerse&&store.byChapterVerse[cv]){
+    return String(store.byChapterVerse[cv].text||'');
+  }
+  // Legacy in-memory maps that stored plain strings under "19:21"
+  if(cv&&store.translations&&typeof store.translations[cv]==='string'){
+    return String(store.translations[cv]||'');
+  }
+  if(cv&&store.translations&&store.translations[cv]&&typeof store.translations[cv].text==='string'){
+    return String(store.translations[cv].text||'');
+  }
+  return '';
+}
+
+function contourDocxXml(opts){
+  opts=opts||{};
+  const sideBySide=!!opts.sideBySide;
   const isGreek=state.language==='greek';
   function hex(c){return String(c||'').replace('#','').toUpperCase() || '000000';}
   function baseRunProps(extra=''){
@@ -63,6 +220,30 @@ function contourDocxXml(){
     let suppressCommentEnd=l&&isCommentBoundary(l,'end')&&!w.bracketSource;
     let txt=((w.bracketStart&&!suppressCommentStart)?'[':'')+w.text+((w.bracketEnd&&!suppressCommentEnd)?']':'')+' ';
     return `<w:r><w:rPr>${rpr}</w:rPr><w:t xml:space="preserve">${xmlEscape(txt)}</w:t></w:r>`;
+  }
+  function hebrewClauseParagraph(v,vi,c,ci){
+    const indentTwips=typeof contourIndentDocxTwipsForClause==='function'?contourIndentDocxTwipsForClause(c):Math.max(0,(c.indent||0)*720);
+    let runs=c.words.map((w,wi)=>wordRun(w,{v:vi,c:ci,w:wi})).join('');
+    let ppr=isGreek?`<w:jc w:val="left"/><w:ind w:left="${indentTwips}"/>`:`<w:bidi/><w:jc w:val="right"/><w:ind w:right="${indentTwips}"/>`;
+    const clauseTwips=typeof spacingAfterDocxTwips==='function'?spacingAfterDocxTwips(c):0;
+    const isLastClause=ci===v.clauses.length-1;
+    const verseTwips=isLastClause&&typeof verseSpacingAfterDocxTwips==='function'?verseSpacingAfterDocxTwips(v):0;
+    const spaceTwips=clauseTwips+verseTwips;
+    if(spaceTwips)ppr+=`<w:spacing w:after="${spaceTwips}"/>`;
+    return `<w:p><w:pPr>${ppr}</w:pPr>${runs}</w:p>`;
+  }
+  function hebrewVerseParagraphs(v,vi){
+    let paras='';
+    if(!(typeof verseRefHidden==='function'&&verseRefHidden(v))){
+      paras+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:color w:val="666666"/><w:sz w:val="20"/></w:rPr><w:t>${xmlEscape(v.ref)}</w:t></w:r></w:p>`;
+    }
+    v.clauses.forEach((c,ci)=>{paras+=hebrewClauseParagraph(v,vi,c,ci);});
+    return paras;
+  }
+  function englishTranslationParagraphs(text){
+    const raw=String(text||'');
+    if(!raw.trim())return '<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:t xml:space="preserve"></w:t></w:r></w:p>';
+    return raw.split(/\n/).map(line=>`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">${xmlEscape(line)}</w:t></w:r></w:p>`).join('');
   }
   let body='';
   const exportTitle=typeof contourPassageTitleForExport==='function'?contourPassageTitleForExport():(state.ref||'');
@@ -103,22 +284,19 @@ function contourDocxXml(){
       if(inc.theme||inc.evidence)body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:t xml:space="preserve">${xmlEscape([inc.theme&&'Theme: '+inc.theme,inc.evidence&&'Evidence: '+inc.evidence].filter(Boolean).join('; '))}</w:t></w:r></w:p>`;
     });
   }
-  state.verses.forEach((v,vi)=>{
-    if(!(typeof verseRefHidden==='function'&&verseRefHidden(v))){
-      body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:color w:val="666666"/><w:sz w:val="20"/></w:rPr><w:t>${xmlEscape(v.ref)}</w:t></w:r></w:p>`;
-    }
-    v.clauses.forEach((c,ci)=>{
-      const indentTwips=typeof contourIndentDocxTwipsForClause==='function'?contourIndentDocxTwipsForClause(c):Math.max(0,(c.indent||0)*720);
-      let runs=c.words.map((w,wi)=>wordRun(w,{v:vi,c:ci,w:wi})).join('');
-      let ppr=isGreek?`<w:jc w:val="left"/><w:ind w:left="${indentTwips}"/>`:`<w:bidi/><w:jc w:val="right"/><w:ind w:right="${indentTwips}"/>`;
-      const clauseTwips=typeof spacingAfterDocxTwips==='function'?spacingAfterDocxTwips(c):0;
-      const isLastClause=ci===v.clauses.length-1;
-      const verseTwips=isLastClause&&typeof verseSpacingAfterDocxTwips==='function'?verseSpacingAfterDocxTwips(v):0;
-      const spaceTwips=clauseTwips+verseTwips;
-      if(spaceTwips)ppr+=`<w:spacing w:after="${spaceTwips}"/>`;
-      body+=`<w:p><w:pPr>${ppr}</w:pPr>${runs}</w:p>`;
+  if(sideBySide){
+    let table='<w:tbl><w:tblPr><w:tblW w:w="10800" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders></w:tblPr>';
+    table+='<w:tr><w:tc><w:tcPr><w:tcW w:w="5400" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Hebrew</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="5400" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Translation</w:t></w:r></w:p></w:tc></w:tr>';
+    state.verses.forEach((v,vi)=>{
+      const heb=hebrewVerseParagraphs(v,vi)||'<w:p><w:r><w:t></w:t></w:r></w:p>';
+      const eng=englishTranslationParagraphs(getAlephTranslationForVerse(v));
+      table+=`<w:tr><w:tc><w:tcPr><w:tcW w:w="5400" w:type="dxa"/></w:tcPr>${heb}</w:tc><w:tc><w:tcPr><w:tcW w:w="5400" w:type="dxa"/></w:tcPr>${eng}</w:tc></w:tr>`;
     });
-  });
+    table+='</w:tbl>';
+    body+=table;
+  }else{
+    state.verses.forEach((v,vi)=>{body+=hebrewVerseParagraphs(v,vi);});
+  }
   ensureComments();
   if(state.comments&&state.comments.length){
     body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Comments</w:t></w:r></w:p>`;
@@ -191,9 +369,27 @@ function exportContourDocx(opts){
   opts=opts||{};
   if(!opts.skipParallel&&isParallelActive()){exportContourDocxParallel();return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}
-  let files=[{name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'},{name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},{name:'word/document.xml',data:contourDocxXml()}];
-  let fname=askExportFilename(suggestedExportBase('contour-editor'),'docx');if(!fname)return;triggerDownload(makeZip(files),fname);
+  const fname=askExportFilename(suggestedExportBase('contour-editor'),'docx');
+  if(!fname)return;
+  downloadDocxZip(docxZipFiles(contourDocxXml()),fname);
 }
+function exportContourSideBySideDocx(opts){
+  opts=opts||{};
+  if(!opts.skipParallel&&isParallelActive()){
+    withPaneExport(stateBundle.activePane,function(){exportContourSideBySideDocx({skipParallel:true});});
+    return;
+  }
+  if(!state.verses.length){alert('Create or generate text first.');return;}
+  if(!state.alephTranslations){
+    if(!confirm('No Aleph translation is imported yet. Export side-by-side with blank translation column?'))return;
+  }
+  const fname=askExportFilename(suggestedExportBase('side-by-side'),'docx');
+  if(!fname)return;
+  // Reuses contourDocxXml Hebrew pipeline (word runs, clause spacing, annotations).
+  downloadDocxZip(docxZipFiles(contourDocxXml({sideBySide:true})),fname);
+}
+window.exportContourSideBySideDocx=exportContourSideBySideDocx;
+window.promptImportAlephTranslation=promptImportAlephTranslation;
 function exportContourHtml(){
   if(isParallelActive()){alert('For parallel passages, export each pane separately or use Word export.');return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}

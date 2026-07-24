@@ -61,6 +61,7 @@
           <ul class="file-submenu" role="menu">
             <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-pdf" role="menuitem">Export Worksheet PDF</button></li>
             <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-word" role="menuitem">Export DOCX</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-side-by-side" role="menuitem">Export Side-by-Side DOCX</button></li>
             <li role="none"><button type="button" class="file-menu-item" data-action="export-contour-html" role="menuitem">Export HTML</button></li>
             <li role="none"><button type="button" class="file-menu-item" data-action="export-table-pdf" role="menuitem">Export Table PDF</button></li>
             <li role="none"><button type="button" class="file-menu-item" data-action="export-table-word" role="menuitem">Export Table DOCX</button></li>
@@ -72,6 +73,7 @@
           <ul class="file-submenu" role="menu">
             <li role="none"><button type="button" class="file-menu-item" data-action="import-text" role="menuitem">Import Text</button></li>
             <li role="none"><button type="button" class="file-menu-item" data-action="import-project" role="menuitem">Import JSON…</button></li>
+            <li role="none"><button type="button" class="file-menu-item" data-action="import-aleph-translation" role="menuitem">Import Aleph Translation</button></li>
             <li role="none"><button type="button" class="file-menu-item" id="importMorphDataBtn" role="menuitem">Import Morph Data (.json)</button></li>
             <li role="none"><button type="button" class="file-menu-item" id="clearMorphDataBtn" role="menuitem">Clear Morph Data</button></li>
           </ul>
@@ -91,6 +93,7 @@
       <p id="saveStatus" class="file-menu-status muted small"></p>
     </div>
     <input type="file" id="projectFileInput" accept="application/json,.json" class="hidden">
+    <input type="file" id="alephTranslationFileInput" accept="application/json,.json" class="hidden">
   </div>
   <div class="card compact-card" data-menu="generate">
     <strong class="menu-trigger">Generate text</strong>

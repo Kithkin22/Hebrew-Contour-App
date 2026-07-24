@@ -3,7 +3,7 @@ let state={ref:'',verses:[],selected:null,columns:[],language:'hebrew-bhsa',lege
 /* Parallel passages (desktop): dual panes, verse alignment, cross-pane arcs */
 const PARALLEL_MIN_WIDTH=1024;
 let stateBundle={parallelEnabled:false,activePane:0,crossArcs:[],verseAlignPairs:null,generatedRefsByPane:[[],[]],panes:[null,null]};let versePairPick=null;
-function freshPaneState(){return {ref:'',verses:[],selected:null,columns:[],language:'hebrew-bhsa',legend:[],inclusios:[],activeInclusioId:null,comments:[],activeCommentId:null,arcs:[],activeArcId:null};}
+function freshPaneState(){return {ref:'',verses:[],selected:null,columns:[],language:'hebrew-bhsa',legend:[],inclusios:[],activeInclusioId:null,comments:[],activeCommentId:null,arcs:[],activeArcId:null,alephTranslations:null};}
 function ensureStateBundle(){if(!stateBundle.panes[0])stateBundle.panes[0]=freshPaneState();if(!stateBundle.panes[1])stateBundle.panes[1]=freshPaneState();if(stateBundle.panes[0]===stateBundle.panes[1])stateBundle.panes[1]=freshPaneState();if(!stateBundle.generatedRefsByPane[0])stateBundle.generatedRefsByPane[0]=[];if(!stateBundle.generatedRefsByPane[1])stateBundle.generatedRefsByPane[1]=[];}
 function paneIndexForState(st){if(!st)return-1;if(stateBundle.panes[0]===st)return 0;if(stateBundle.panes[1]===st)return 1;return-1;}
 function commitStateToPane(pi){if(pi!==0&&pi!==1)return;stateBundle.generatedRefsByPane[pi]=generatedRefs.slice();stateBundle.panes[pi]=state;}
