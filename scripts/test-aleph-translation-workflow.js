@@ -7,6 +7,9 @@ const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
 const fileMenu = fs.readFileSync(path.join(ROOT, 'js/app/file-menu.js'), 'utf8');
+const composerSrc = fs.readFileSync(path.join(ROOT, 'js/app/publication-layout-composer.js'), 'utf8');
+const pageSrc = fs.readFileSync(path.join(ROOT, 'js/app/contour-page-renderer.js'), 'utf8');
+const breaksSrc = fs.readFileSync(path.join(ROOT, 'js/app/layout-breaks.js'), 'utf8');
 
 function extractFunction(src, name) {
   const start = src.indexOf('function ' + name + '(');
@@ -27,6 +30,13 @@ function extractFunction(src, name) {
   throw new Error('Unclosed function ' + name);
 }
 
+function extractConst(src, name) {
+  const re = new RegExp('const ' + name + ' = \\{[\\s\\S]*?\\n\\};');
+  const m = src.match(re);
+  if (!m) throw new Error('Missing const ' + name);
+  return m[0];
+}
+
 const sandbox = {
   console,
   state: null,
@@ -41,9 +51,6 @@ const sandbox = {
   commentAnchorText: () => '',
   locToLabel: () => '',
   verseRefHidden: () => false,
-  contourIndentDocxTwipsForClause: () => 0,
-  spacingAfterDocxTwips: () => 0,
-  verseSpacingAfterDocxTwips: () => 0,
   markUndo: () => {},
   syncStateBundle: () => {},
   autoSaveProject: () => {},
@@ -51,6 +58,7 @@ const sandbox = {
   autosaveReady: false,
   isParallelActive: () => false,
 };
+sandbox.window = sandbox;
 
 function parseBibleReference(input) {
   const cleaned = String(input || '').replace(/[–—]/g, '-').replace(/\s+/g, ' ').trim();
@@ -80,6 +88,24 @@ sandbox.normalizePassageRangeRef = normalizePassageRangeRef;
 vm.createContext(sandbox);
 vm.runInContext(
   [
+    extractConst(pageSrc, 'CONTOUR_PAGE'),
+    'window.CONTOUR_PAGE = CONTOUR_PAGE;',
+    extractFunction(pageSrc, 'contourPxToDocxTwips'),
+    extractFunction(pageSrc, 'contourBreakDocxTwips'),
+    extractFunction(pageSrc, 'contourVerseSpacingDocxTwips'),
+    extractFunction(pageSrc, 'contourIndentDocxTwips'),
+    "const SPACING_AFTER_LEVELS = ['compact', 'default', 'small', 'medium', 'large'];",
+    "const VERSE_SPACING_LEVELS = ['default', 'single', 'oneHalf', 'double'];",
+    extractFunction(breaksSrc, 'normalizeSpacingAfter'),
+    extractFunction(breaksSrc, 'normalizeVerseSpacingAfter'),
+    extractFunction(breaksSrc, 'spacingAfterPxFromLevel'),
+    extractFunction(breaksSrc, 'contourTabIndentStepPx'),
+    extractFunction(breaksSrc, 'clauseIndentPx'),
+    extractFunction(breaksSrc, 'clauseSpacingAfterPx'),
+    extractFunction(breaksSrc, 'spacingAfterDocxTwips'),
+    extractFunction(breaksSrc, 'contourIndentDocxTwipsForClause'),
+    extractFunction(breaksSrc, 'verseSpacingAfterDocxTwips'),
+    composerSrc,
     extractFunction(fileMenu, 'xmlEscape'),
     extractFunction(fileMenu, 'canonicalAlephVerseKey'),
     extractFunction(fileMenu, 'chapterVerseSuffix'),
@@ -253,8 +279,7 @@ assert.ok(xml.includes('w:sz w:val="23"'), 'English ~11.5pt');
 assert.ok(!xml.includes('w:sz w:val="26"'), 'English not oversized 13pt');
 assert.ok(xml.includes('w:line="240"'), 'English single/compact line spacing');
 assert.ok(!xml.includes('w:line="288"'), 'no loose 1.2 English line spacing');
-assert.ok(xml.includes('w:after="160"'), 'verse block spacing ~8pt');
-assert.ok(!xml.includes('w:after="360"'), 'no oversized verse gap');
+assert.ok(!xml.includes('w:after="160"'), 'no fixed English VERSE_GAP; Contour spacing is Hebrew-owned');
 assert.ok(xml.includes('<w:bidi/><w:jc w:val="right"/>'), 'Hebrew remains bidi + right-justified');
 assert.ok(
   /w:tcW w:w="4100"[\s\S]*?w:right w:w="0"/.test(xml),
@@ -310,7 +335,7 @@ assert.strictEqual(
   'stored Aleph translation text is not mutated',
 );
 
-// Blank-line English becomes two DOCX paragraphs; verse spacing only on last.
+// Blank-line English becomes two DOCX paragraphs.
 const blankLineText = 'First paragraph line.\n\nSecond paragraph line.';
 sandbox.state.alephTranslations.byChapterVerse['19:21'].text = blankLineText;
 sandbox.state.alephTranslations.translations['Job 19:21'].text = blankLineText;
@@ -319,10 +344,8 @@ const engCellParas = (xmlParas.match(/<w:tcW w:w="6200"[\s\S]*?<\/w:tc>/) || [''
 assert.ok((engCellParas.match(/<w:p>/g) || []).length === 2, 'blank line yields two English paragraphs');
 assert.ok(engCellParas.includes('First paragraph line.'), 'first English paragraph present');
 assert.ok(engCellParas.includes('Second paragraph line.'), 'second English paragraph present');
-assert.ok(
-  (engCellParas.match(/w:after="160"/g) || []).length === 1,
-  'verse spacing only after final English paragraph',
-);
+assert.ok(xmlParas.includes('<w:tbl>'), 'side-by-side DOCX remains tabular');
+assert.ok(!engCellParas.includes('w:after="160"'), 'English no longer uses fixed VERSE_GAP=160');
 
 const plain = sandbox.contourDocxXml();
 assert.ok(plain.includes('חָנֻּנִי'), 'plain DOCX Hebrew present');
@@ -471,5 +494,52 @@ assert.strictEqual(
 
 const plainAfter = sandbox.contourDocxXml();
 assert.ok(!plainAfter.includes('<w:tbl>'), 'plain Contour DOCX still non-tabular after print-layout work');
+
+// Composer-backed side-by-side: Contour order, page model, publicationLayout → w:br
+{
+  sandbox.state.verses[0].clauses[0].spacingAfterPx = 40;
+  sandbox.setPublicationLayoutForVerse(
+    sandbox.state.verses[0],
+    'Be gracious to me,\nbe gracious to me,\nyou my friends,',
+  );
+  const composed = sandbox.composePublicationLayout({
+    verses: sandbox.state.verses,
+    getEnglishForVerse: (v) => sandbox.getSideBySideEnglishForVerse(v),
+  });
+  assert.ok(composed.segments.length === sandbox.state.verses.length, 'composer segment per Contour verse');
+  assert.ok(composed.segments[0].spacingAfterPx >= 0, 'extra spacing non-negative');
+  assert.ok(
+    composed.segments[0].contentPx >=
+      composed.segments[0].contourMinContentPx + composed.segments[0].contourSpacingAfterPx ||
+      composed.segments[0].englishContentPx >= composed.segments[0].contentPx,
+    'Contour spacing is minimum floor in composer content',
+  );
+  const xmlComp = sandbox.contourDocxXml({ sideBySide: true });
+  assert.ok(xmlComp.includes('<w:br/>'), 'publicationLayout \\n → DOCX w:br');
+  assert.ok(xmlComp.includes('<w:tbl>'), 'composer DOCX is tabular');
+  // Multi-page emission when composer pages > 1
+  const manyVerses = [];
+  for (let i = 0; i < 50; i++) {
+    manyVerses.push({
+      ref: 'Job 19:' + (i + 1),
+      clauses: [
+        { indent: 0, spacingAfterPx: 72, words: [{ text: 'א', format: {}, specials: [] }] },
+        { indent: 0, spacingAfterPx: 72, words: [{ text: 'ב', format: {}, specials: [] }] },
+      ],
+    });
+  }
+  const prevVerses = sandbox.state.verses;
+  sandbox.state.verses = manyVerses;
+  const big = sandbox.composePublicationLayout({
+    verses: manyVerses,
+    getEnglishForVerse: () => ({ text: 'x', preserveLineBreaks: false }),
+  });
+  assert.ok(big.pages.length >= 2, 'tall Contour packs to multiple composer pages');
+  const xmlPages = sandbox.contourDocxXml({ sideBySide: true });
+  if (big.pages.length >= 2) {
+    assert.ok(xmlPages.includes('w:type="page"'), 'multi-page composer emits Word page breaks');
+  }
+  sandbox.state.verses = prevVerses;
+}
 
 console.log('OK: scholarly side-by-side DOCX layout checks passed.');

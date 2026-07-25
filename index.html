@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="styles/contour-page.css?v=1">
 <link rel="stylesheet" href="styles/worksheet-pdf-wizard.css?v=1">
 <link rel="stylesheet" href="styles/file-menu-nav.css?v=2">
-<link rel="stylesheet" href="styles/print-layout.css?v=2">
+<link rel="stylesheet" href="styles/print-layout.css?v=3">
 </head>
 <body>
 <div id="passwordGate" class="password-gate">
@@ -169,7 +169,6 @@
     <div class="tabs row">
       <button class="btn active" data-tab="contour">Contour Editor</button>
       <button class="btn" data-tab="table">Table View</button>
-      <button class="btn" data-tab="print" title="Publication layout for Side-by-Side DOCX">Print Layout</button>
       <!-- Legend tab removed -->
     </div>
     <div class="workspace-layout-controls desktop-only" aria-label="Layout options">
@@ -371,22 +370,23 @@
       <p class="muted">Table edits autosave as you type.</p>
       <div id="tableWrap"></div>
     </div>
-    <div id="printLayoutTab" class="hidden">
-      <div id="printLayoutBanner" class="print-layout-banner" role="region" aria-label="Print Layout toolbar">
-        <span class="print-layout-banner-actions">
-          <button type="button" class="btn small" id="printLayoutExitBtn">Back to Contour</button>
-          <span class="print-layout-banner-title">Print Layout</span>
-          <button type="button" class="btn small good" id="printLayoutExportBtn">Export Side-by-Side DOCX</button>
-        </span>
-        <span class="print-layout-banner-meta">
-          <span id="printLayoutSaveStatus" class="pl-save-status" aria-live="polite"></span>
-          <span class="pl-match-status" title="Uses the same publicationLayout plain text and side-by-side DOCX rules">Preview matches exported Side-by-Side DOCX</span>
-        </span>
-      </div>
-      <div class="pl-page-wrap">
-        <div id="printLayoutPage"></div>
-      </div>
-    </div>
+  </div>
+</div>
+
+<div id="sideBySidePrintPreview" class="hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="printPreviewTitle" tabindex="-1">
+  <div class="print-preview-header">
+    <span class="print-preview-header-actions">
+      <button type="button" class="btn small" id="printPreviewCloseBtn">Close</button>
+      <span class="print-preview-header-title" id="printPreviewTitle">Print Preview</span>
+      <button type="button" class="btn small good" id="printPreviewExportBtn">Export Side-by-Side DOCX</button>
+    </span>
+    <span class="print-preview-header-meta">
+      <span id="printPreviewSaveStatus" class="pl-save-status" aria-live="polite"></span>
+      <span id="printPreviewPageMeta" class="pl-page-meta" aria-live="polite"></span>
+    </span>
+  </div>
+  <div class="print-preview-body">
+    <div id="printPreviewPages" class="print-preview-pages"></div>
   </div>
 </div>
 
@@ -589,6 +589,7 @@
 <script src="js/app/project-view-prefs.js"></script>
 <script src="js/app/project-header.js"></script>
 <script src="js/app/file-menu.js"></script>
+<script src="js/app/publication-layout-composer.js"></script>
 <script src="js/app/print-layout.js"></script>
 <script src="js/app/arcs.js"></script>
 <script src="js/app/worksheet-export-config.js"></script>
