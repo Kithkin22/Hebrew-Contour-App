@@ -94,7 +94,7 @@ function clause(words, indent) {
   };
 }
 
-// 1. One row per canonical verse; Heb|Num|Eng share the row
+// 1. One row per canonical verse; Eng|Num|Heb share the row
 {
   const verses = [verse('Job 19:21', [clause(['א']), clause(['ב'])]), verse('Job 19:22', [clause(['ג'])])];
   const out = compose({

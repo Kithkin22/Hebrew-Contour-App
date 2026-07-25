@@ -25,10 +25,10 @@ assert.ok(xml.includes('<w:br/>'), 'publicationLayout newlines → w:br');
 assert.ok(xml.includes('w:sz w:val="26"'), 'scholarly 13pt runs');
 assert.ok(xml.includes('<w:cantSplit/>'), 'Heb/Num/Eng keep-together');
 assert.ok(
-  xml.includes('<w:tblGrid><w:gridCol w:w="5000"/><w:gridCol w:w="650"/><w:gridCol w:w="5150"/></w:tblGrid>'),
-  'Hebrew | verse | English column grid',
+  xml.includes('<w:tblGrid><w:gridCol w:w="5150"/><w:gridCol w:w="650"/><w:gridCol w:w="5000"/></w:tblGrid>'),
+  'English | verse | Hebrew column grid',
 );
-assert.ok(xml.indexOf('חָנֻּנִי') < xml.indexOf('Be gracious to me,'), 'Hebrew precedes English');
+assert.ok(xml.indexOf('Be gracious to me,') < xml.indexOf('חָנֻּנִי'), 'English precedes Hebrew');
 
 const anchors = ['21', '22', '23', '24', '25', '26', '27', '28', '29'];
 anchors.forEach((n) => {

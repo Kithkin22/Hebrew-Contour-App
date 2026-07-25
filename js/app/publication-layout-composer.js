@@ -2,7 +2,7 @@
  * Side-by-Side publication composer — natural-height verse rows.
  *
  * Atomic unit: one invisible row per canonical verse
- *   [ Hebrew | Verse# | English ]
+ *   [ English | Verse# | Hebrew ]
  *
  * Contour supplies Hebrew text/lineation/formatting only — NOT canvas spacing.
  * English joins by canonical verse key. Preview and DOCX share this model.
@@ -10,10 +10,10 @@
 (function (root) {
   'use strict';
 
-  // Proportions ~46% | 6% | 48% of 10800 twips usable width
-  var HEB_COL_TWIPS = 5000;
-  var NUM_COL_TWIPS = 650;
+  // Proportions ~48% | 6% | 46% of 10800 twips usable width (Eng | # | Heb)
   var ENG_COL_TWIPS = 5150;
+  var NUM_COL_TWIPS = 650;
+  var HEB_COL_TWIPS = 5000;
   var ENG_AVG_CHAR_EM = 0.5;
 
   var PUBLICATION_PAGE = {

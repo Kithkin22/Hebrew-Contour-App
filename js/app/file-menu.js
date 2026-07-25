@@ -450,11 +450,11 @@ function contourDocxXml(opts){
   let body='';
   const exportTitle=typeof contourPassageTitleForExport==='function'?contourPassageTitleForExport():(state.ref||'');
 
-  // Side-by-side: natural-height rows Hebrew | Verse | English (screenshot authority).
+  // Side-by-side: natural-height rows English | Verse | Hebrew.
   if(sideBySide){
-    const HEB_W=(typeof PUBLICATION_LAYOUT_COL_TWIPS!=='undefined'&&PUBLICATION_LAYOUT_COL_TWIPS.heb)||5000;
-    const NUM_W=(typeof PUBLICATION_LAYOUT_COL_TWIPS!=='undefined'&&PUBLICATION_LAYOUT_COL_TWIPS.num)||650;
     const ENG_W=(typeof PUBLICATION_LAYOUT_COL_TWIPS!=='undefined'&&PUBLICATION_LAYOUT_COL_TWIPS.eng)||5150;
+    const NUM_W=(typeof PUBLICATION_LAYOUT_COL_TWIPS!=='undefined'&&PUBLICATION_LAYOUT_COL_TWIPS.num)||650;
+    const HEB_W=(typeof PUBLICATION_LAYOUT_COL_TWIPS!=='undefined'&&PUBLICATION_LAYOUT_COL_TWIPS.heb)||5000;
     let composed;
     try{
       composed=typeof composePublicationLayout==='function'
@@ -503,7 +503,7 @@ function contourDocxXml(opts){
     function spacerRow(heightTwips){
       if(!heightTwips||heightTwips<=0)return '';
       const emptyP='<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr></w:p>';
-      return `<w:tr><w:trPr><w:trHeight w:val="${heightTwips}" w:hRule="exact"/><w:cantSplit/></w:trPr>${sideBySideCell(HEB_W,emptyP,{top:0,left:0,bottom:0,right:0})}${sideBySideCell(NUM_W,emptyP,{top:0,left:0,bottom:0,right:0})}${sideBySideCell(ENG_W,emptyP,{top:0,left:0,bottom:0,right:0})}</w:tr>`;
+      return `<w:tr><w:trPr><w:trHeight w:val="${heightTwips}" w:hRule="exact"/><w:cantSplit/></w:trPr>${sideBySideCell(ENG_W,emptyP,{top:0,left:0,bottom:0,right:0})}${sideBySideCell(NUM_W,emptyP,{top:0,left:0,bottom:0,right:0})}${sideBySideCell(HEB_W,emptyP,{top:0,left:0,bottom:0,right:0})}</w:tr>`;
     }
     function verseTableRow(row){
       const v=state.verses[row.verseIndex];
@@ -523,15 +523,15 @@ function contourDocxXml(opts){
         clauses.forEach(function(c,ci){paras+=hebrewClauseParagraph(fake,row.verseIndex,c,ci);});
         heb=paras||'<w:p><w:pPr><w:bidi/><w:jc w:val="right"/></w:pPr><w:r><w:t></w:t></w:r></w:p>';
       }
-      // Hebrew | Verse | English — editable Word table cells; keep row together.
+      // English | Verse | Hebrew — editable Word table cells; keep row together.
       // Natural height from cell content (no Contour-canvas min-height).
-      return `<w:tr><w:trPr><w:cantSplit/></w:trPr>${sideBySideCell(HEB_W,heb,{top:40,left:40,bottom:40,right:0})}${sideBySideCell(NUM_W,num,{top:40,left:20,bottom:40,right:20})}${sideBySideCell(ENG_W,eng,{top:40,left:0,bottom:40,right:40})}</w:tr>`;
+      return `<w:tr><w:trPr><w:cantSplit/></w:trPr>${sideBySideCell(ENG_W,eng,{top:40,left:0,bottom:40,right:40})}${sideBySideCell(NUM_W,num,{top:40,left:20,bottom:40,right:20})}${sideBySideCell(HEB_W,heb,{top:40,left:40,bottom:40,right:0})}</w:tr>`;
     }
 
     let bodyPages='';
     pages.forEach(function(page,pi){
       if(pi>0)bodyPages+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-      let table=`<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/><w:jc w:val="center"/><w:tblInd w:w="0" w:type="dxa"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblCellMar><w:top w:w="20" w:type="dxa"/><w:left w:w="40" w:type="dxa"/><w:bottom w:w="20" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${HEB_W}"/><w:gridCol w:w="${NUM_W}"/><w:gridCol w:w="${ENG_W}"/></w:tblGrid>`;
+      let table=`<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/><w:jc w:val="center"/><w:tblInd w:w="0" w:type="dxa"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblCellMar><w:top w:w="20" w:type="dxa"/><w:left w:w="40" w:type="dxa"/><w:bottom w:w="20" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${ENG_W}"/><w:gridCol w:w="${NUM_W}"/><w:gridCol w:w="${HEB_W}"/></w:tblGrid>`;
       const pageRows=page.rows||page.blocks||page.segments||[];
       pageRows.forEach(function(row){
         table+=verseTableRow(row);

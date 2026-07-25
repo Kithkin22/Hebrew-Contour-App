@@ -1,4 +1,4 @@
-/* Side-by-Side Print Preview — Hebrew | Verse | English natural-height rows */
+/* Side-by-Side Print Preview — English | Verse | Hebrew natural-height rows */
 
 body.print-preview-open {
   overflow: hidden;
@@ -81,9 +81,9 @@ body.print-preview-open {
 }
 
 .pl-sheet {
-  --pl-heb: 46%;
-  --pl-num: 6%;
   --pl-eng: 48%;
+  --pl-num: 6%;
+  --pl-heb: 46%;
   width: min(8.5in, 100%);
   max-width: 8.5in;
   min-height: 11in;
@@ -111,10 +111,10 @@ body.print-preview-open {
   display: block;
 }
 
-/* Invisible natural-height verse row: Hebrew | # | English */
+/* Invisible natural-height verse row: English | # | Hebrew */
 .pl-verse-row {
   display: grid;
-  grid-template-columns: var(--pl-heb) var(--pl-num) var(--pl-eng);
+  grid-template-columns: var(--pl-eng) var(--pl-num) var(--pl-heb);
   align-items: start;
   width: 100%;
   box-sizing: border-box;
@@ -128,7 +128,7 @@ body.print-preview-open {
   direction: rtl;
   user-select: none;
   pointer-events: none;
-  padding: 0 4px 0 8px;
+  padding: 0 0 0 8px;
   cursor: default;
 }
 
@@ -151,7 +151,7 @@ body.print-preview-open {
 
 .pl-eng-col {
   min-width: 0;
-  padding-left: 8px;
+  padding-right: 8px;
 }
 
 .pl-eng-empty {

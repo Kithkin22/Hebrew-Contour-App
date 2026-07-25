@@ -270,8 +270,8 @@ assert.ok(xml.includes('w:w="650"'), 'narrow verse-number column (~6%)');
 assert.ok(xml.includes('w:w="5000"'), 'Hebrew column (~46%)');
 assert.ok(xml.includes('w:w="5150"'), 'English column (~48%)');
 assert.ok(
-  xml.includes('<w:tblGrid><w:gridCol w:w="5000"/><w:gridCol w:w="650"/><w:gridCol w:w="5150"/></w:tblGrid>'),
-  'three-column tblGrid Hebrew | verse | English',
+  xml.includes('<w:tblGrid><w:gridCol w:w="5150"/><w:gridCol w:w="650"/><w:gridCol w:w="5000"/></w:tblGrid>'),
+  'three-column tblGrid English | verse | Hebrew',
 );
 assert.ok(xml.includes('w:tblW w:w="5000" w:type="pct"'), 'table spans full content width (100%)');
 assert.ok(xml.includes('<w:tblInd w:w="0"'), 'table zero indent');
@@ -285,10 +285,10 @@ assert.ok(
   'Hebrew cell has zero right margin for flush page-edge',
 );
 
-// Hebrew before English in each data row (screenshot column order).
+// English before Hebrew in each data row.
 const engPos = xml.indexOf('Be gracious to me,');
 const hebPos = xml.indexOf('חָנֻּנִי');
-assert.ok(engPos > -1 && hebPos > -1 && hebPos < engPos, 'Hebrew column precedes English');
+assert.ok(engPos > -1 && hebPos > -1 && engPos < hebPos, 'English column precedes Hebrew');
 assert.ok(xml.includes('>21<'), 'center verse number present');
 assert.ok(
   xml.includes('Be gracious to me, be gracious to me, you my friends,'),
@@ -517,8 +517,8 @@ assert.ok(!plainAfter.includes('<w:tbl>'), 'plain Contour DOCX still non-tabular
   assert.ok(xmlComp.includes('<w:br/>'), 'publicationLayout \\n → DOCX w:br');
   assert.ok(xmlComp.includes('<w:tbl>'), 'composer DOCX is tabular');
   assert.ok(
-    xmlComp.indexOf('חָנֻּנִי') < xmlComp.indexOf('Be gracious to me,'),
-    'DOCX uses Hebrew | # | English order',
+    xmlComp.indexOf('Be gracious to me,') < xmlComp.indexOf('חָנֻּנִי'),
+    'DOCX uses English | # | Hebrew order',
   );
   // Multi-page emission when composer pages > 1
   const manyVerses = [];

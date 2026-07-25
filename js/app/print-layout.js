@@ -1,5 +1,5 @@
 /**
- * Side-by-Side Print Preview — natural-height verse rows (Hebrew | # | English).
+ * Side-by-Side Print Preview — natural-height verse rows (English | # | Hebrew).
  * Consumes composePublicationLayout(); Contour canvas spacing is not used.
  */
 (function () {
@@ -343,7 +343,7 @@
         : '<div class="pl-eng pl-eng-readonly" dir="ltr"></div>';
     }
 
-    // Hebrew | Verse | English — natural-height invisible row
+    // English | Verse | Hebrew — natural-height invisible row
     return (
       '<div class="pl-verse-row" data-v="' +
       vi +
@@ -354,14 +354,14 @@
       '" style="margin-bottom:' +
       gap +
       'px">' +
-      '<div class="pl-heb" dir="rtl" contenteditable="false" aria-readonly="true">' +
-      hebrewRowHtml(row) +
+      '<div class="pl-eng-col">' +
+      engInner +
       '</div>' +
       '<div class="pl-num" contenteditable="false" aria-hidden="true">' +
       esc(num) +
       '</div>' +
-      '<div class="pl-eng-col">' +
-      engInner +
+      '<div class="pl-heb" dir="rtl" contenteditable="false" aria-readonly="true">' +
+      hebrewRowHtml(row) +
       '</div>' +
       '</div>'
     );
@@ -394,7 +394,7 @@
         return (
           '<div class="pl-sheet" data-page="' +
           pi +
-          '" data-pl-engine="verse-row-heb-num-eng-v1">' +
+          '" data-pl-engine="verse-row-eng-num-heb-v1">' +
           (pi === 0 && title
             ? '<div class="pl-title" dir="ltr">' + esc(title) + '</div>'
             : '') +

@@ -276,7 +276,7 @@ const checks = {
     documentXml.includes('w:w="650"') &&
     documentXml.includes('w:w="5150"') &&
     documentXml.includes(
-      '<w:tblGrid><w:gridCol w:w="5000"/><w:gridCol w:w="650"/><w:gridCol w:w="5150"/></w:tblGrid>',
+      '<w:tblGrid><w:gridCol w:w="5150"/><w:gridCol w:w="650"/><w:gridCol w:w="5000"/></w:tblGrid>',
     ),
   engTypography:
     documentXml.includes('w:sz w:val="26"') &&
@@ -288,9 +288,9 @@ const checks = {
   hebrewFlushRight:
     documentXml.includes('<w:bidi/><w:jc w:val="right"/>') &&
     /w:tcW w:w="5000"[\s\S]*?w:right w:w="0"/.test(documentXml),
-  hebBeforeEng:
+  engBeforeHeb:
     documentXml.indexOf('חָנֻּנִי') > -1 &&
-    documentXml.indexOf('Be gracious to me,') > documentXml.indexOf('חָנֻּנִי'),
+    documentXml.indexOf('Be gracious to me,') < documentXml.indexOf('חָנֻּנִי'),
   composerRows: composed.rows.length === 9,
   naturalHeight:
     composed.rows[0].rowHeight ===
