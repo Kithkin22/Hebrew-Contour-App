@@ -133,11 +133,14 @@ function applyAlephTranslationImport(data){
   if(mismatch)return {ok:false,error:mismatch};
   const normalized=normalizeAlephTranslationsMap(data.translations);
   markUndo();
+  const prevPub=state.alephTranslations&&state.alephTranslations.publication;
   state.alephTranslations={
     reference:String(data.reference).trim(),
     translations:normalized.byCanon,
     byChapterVerse:normalized.byChapterVerse,
-    importedAt:new Date().toISOString()
+    importedAt:new Date().toISOString(),
+    // Keep publication settings bag for Print Layout extensibility (layouts live on verse entries).
+    publication:(prevPub&&typeof prevPub==='object')?prevPub:{settings:{},version:1}
   };
   syncStateBundle();
   if(autosaveReady)autoSaveProject();
@@ -171,25 +174,169 @@ function promptImportAlephTranslation(){
   if(!input){alert('Import control is unavailable. Reload the app and try again.');return;}
   input.click();
 }
+function getAlephTranslationEntryForVerse(v){
+  const store=state.alephTranslations;
+  if(!store)return null;
+  const canon=canonicalAlephVerseKey(v&&v.ref);
+  if(canon&&store.translations&&store.translations[canon]&&typeof store.translations[canon]==='object'){
+    return store.translations[canon];
+  }
+  const cv=chapterVerseSuffix(v&&v.ref);
+  if(cv&&store.byChapterVerse&&store.byChapterVerse[cv]&&typeof store.byChapterVerse[cv]==='object'){
+    return store.byChapterVerse[cv];
+  }
+  if(cv&&store.translations&&store.translations[cv]&&typeof store.translations[cv]==='object'){
+    return store.translations[cv];
+  }
+  return null;
+}
+/** Imported Aleph translation text only (never publicationLayout). */
 function getAlephTranslationForVerse(v){
   const store=state.alephTranslations;
   if(!store)return '';
-  const canon=canonicalAlephVerseKey(v&&v.ref);
-  if(canon&&store.translations&&store.translations[canon]){
-    return String(store.translations[canon].text||'');
-  }
+  const entry=getAlephTranslationEntryForVerse(v);
+  if(entry&&typeof entry.text==='string')return String(entry.text||'');
   const cv=chapterVerseSuffix(v&&v.ref);
-  if(cv&&store.byChapterVerse&&store.byChapterVerse[cv]){
-    return String(store.byChapterVerse[cv].text||'');
-  }
   // Legacy in-memory maps that stored plain strings under "19:21"
   if(cv&&store.translations&&typeof store.translations[cv]==='string'){
     return String(store.translations[cv]||'');
   }
-  if(cv&&store.translations&&store.translations[cv]&&typeof store.translations[cv].text==='string'){
-    return String(store.translations[cv].text||'');
-  }
   return '';
+}
+function ensureAlephPublicationBag(){
+  if(!state.alephTranslations){
+    state.alephTranslations={
+      reference:'',
+      translations:{},
+      byChapterVerse:{},
+      importedAt:null,
+      publication:{settings:{},version:1}
+    };
+  }
+  if(!state.alephTranslations.publication||typeof state.alephTranslations.publication!=='object'){
+    // Future: margins, column widths, verse-number visibility, fonts, verse spacing.
+    state.alephTranslations.publication={settings:{},version:1};
+  }else if(!state.alephTranslations.publication.settings||typeof state.alephTranslations.publication.settings!=='object'){
+    state.alephTranslations.publication.settings={};
+  }
+  return state.alephTranslations.publication;
+}
+/**
+ * Canonical plain-text publication lineation (preview + export share this).
+ * - CRLF/CR → LF
+ * - NBSP → ordinary space
+ * - strip zero-width chars
+ * - trim trailing whitespace per line (keep intentional leading spaces)
+ * - collapse 3+ consecutive newlines to a single blank-line boundary
+ * - trim leading/trailing newlines from the whole string (empty string stays empty)
+ */
+function normalizePublicationLayoutText(value){
+  let s=String(value==null?'':value);
+  s=s.replace(/\u00a0/g,' ');
+  s=s.replace(/[\u200B-\u200D\uFEFF]/g,'');
+  s=s.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  s=s.split('\n').map(function(line){return String(line).replace(/[ \t]+$/g,'');}).join('\n');
+  s=s.replace(/\n{3,}/g,'\n\n');
+  s=s.replace(/^\n+/,'');
+  s=s.replace(/\n+$/,'');
+  return s;
+}
+/**
+ * Convert HTML fragments (contenteditable / paste) to publication plain text.
+ * Used by tests and as a browser-independent path; live editors prefer the DOM walker.
+ */
+function publicationLayoutPlainTextFromHtml(html){
+  let s=String(html==null?'':html);
+  s=s.replace(/&nbsp;/gi,' ');
+  s=s.replace(/\u00a0/g,' ');
+  s=s.replace(/<br\s*\/?>/gi,'\n');
+  // Block close → newline; then strip remaining tags.
+  s=s.replace(/<\/(div|p|li|h[1-6]|tr|blockquote)>/gi,'\n');
+  s=s.replace(/<(div|p|li|h[1-6]|tr|blockquote)[^>]*>/gi,'');
+  s=s.replace(/<[^>]+>/g,'');
+  s=s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&apos;/g,"'");
+  return normalizePublicationLayoutText(s);
+}
+function hasPublicationLayoutForVerse(v){
+  const entry=getAlephTranslationEntryForVerse(v);
+  return !!(entry&&typeof entry.publicationLayout==='string');
+}
+function getPublicationLayoutForVerse(v){
+  const entry=getAlephTranslationEntryForVerse(v);
+  if(entry&&typeof entry.publicationLayout==='string'){
+    return normalizePublicationLayoutText(entry.publicationLayout);
+  }
+  return null;
+}
+/**
+ * Side-by-side English source: publicationLayout if set, else imported translation.
+ * Does not mutate storage.
+ */
+function getSideBySideEnglishForVerse(v){
+  if(hasPublicationLayoutForVerse(v)){
+    return {text:getPublicationLayoutForVerse(v)||'',preserveLineBreaks:true,source:'publicationLayout'};
+  }
+  return {text:getAlephTranslationForVerse(v),preserveLineBreaks:false,source:'imported'};
+}
+function setPublicationLayoutForVerse(v,layoutText){
+  ensureAlephPublicationBag();
+  const canon=canonicalAlephVerseKey(v&&v.ref);
+  const cv=chapterVerseSuffix(v&&v.ref);
+  const text=normalizePublicationLayoutText(layoutText);
+  function touch(map,key){
+    if(!map||!key)return;
+    if(!map[key]||typeof map[key]!=='object')map[key]={text:''};
+    // Never overwrite imported translation text — presentation only.
+    map[key].publicationLayout=text;
+  }
+  if(!state.alephTranslations.translations)state.alephTranslations.translations={};
+  if(!state.alephTranslations.byChapterVerse)state.alephTranslations.byChapterVerse={};
+  if(canon)touch(state.alephTranslations.translations,canon);
+  if(cv)touch(state.alephTranslations.byChapterVerse,cv);
+}
+/** Seed missing publicationLayout from imported prose (export-time normalize), without changing .text. */
+function seedPublicationLayoutsFromImport(){
+  if(!state.alephTranslations||!state.verses)return 0;
+  ensureAlephPublicationBag();
+  let seeded=0;
+  state.verses.forEach(function(v){
+    // Absent only — empty string is intentional blank and must not be reseeded.
+    if(hasPublicationLayoutForVerse(v))return;
+    const imported=getAlephTranslationForVerse(v);
+    const prose=normalizeEnglishForSideBySideDocx(imported).join('\n\n');
+    setPublicationLayoutForVerse(v,prose);
+    seeded++;
+  });
+  return seeded;
+}
+
+/**
+ * Export-only English reflow for scholarly side-by-side DOCX (imported text fallback).
+ * Does not mutate application state or Aleph translation storage.
+ * - CRLF/CR → LF
+ * - single newline → space (join verse prose)
+ * - two+ newlines → intentional paragraph break
+ * - trim joined lines; collapse repeated spaces; keep punctuation
+ */
+function normalizeEnglishForSideBySideDocx(text){
+  const normalized=String(text||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  if(!normalized.length)return [''];
+  return normalized.split(/\n{2,}/).map(block=>{
+    return block.split('\n').map(line=>String(line).trim()).join(' ').replace(/[ \t]+/g,' ').trim();
+  }).filter((p,i,arr)=>p.length>0||arr.length===1);
+}
+/**
+ * Publication lineation: keep single newlines as soft breaks; blank lines as paragraphs.
+ * Returns array of paragraphs, each an array of lines.
+ * Always runs through normalizePublicationLayoutText first (preview/export parity).
+ */
+function publicationEnglishLinesForDocx(text){
+  const normalized=normalizePublicationLayoutText(text);
+  if(!normalized.length)return [['']];
+  return normalized.split(/\n{2,}/).map(block=>{
+    const lines=block.split('\n');
+    return lines.length?lines:[''];
+  }).filter((lines,i,arr)=>lines.some(l=>l.length)||arr.length===1);
 }
 
 function contourDocxXml(opts){
@@ -240,16 +387,95 @@ function contourDocxXml(opts){
     v.clauses.forEach((c,ci)=>{paras+=hebrewClauseParagraph(v,vi,c,ci);});
     return paras;
   }
-  function englishTranslationParagraphs(text){
-    const raw=String(text||'');
-    if(!raw.trim())return '<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:t xml:space="preserve"></w:t></w:r></w:p>';
-    return raw.split(/\n/).map(line=>`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t xml:space="preserve">${xmlEscape(line)}</w:t></w:r></w:p>`).join('');
+  /** Hebrew body only (no verse-ref line) for side-by-side parallel layout. */
+  function hebrewVerseBodyParagraphs(v,vi){
+    let paras='';
+    (v.clauses||[]).forEach((c,ci)=>{paras+=hebrewClauseParagraph(v,vi,c,ci);});
+    return paras||'<w:p><w:pPr><w:bidi/><w:jc w:val="right"/></w:pPr><w:r><w:t></w:t></w:r></w:p>';
+  }
+  function verseNumberFromRef(ref){
+    const m=String(ref||'').match(/(\d+)\s*:\s*(\d+)/);
+    if(m)return String(+m[2]);
+    const bare=String(ref||'').match(/(\d+)\s*$/);
+    return bare?String(+bare[1]):'';
+  }
+  /**
+   * Side-by-side English paragraphs.
+   * - preserveLineBreaks false (imported fallback): collapse single \\n to spaces
+   * - preserveLineBreaks true (publicationLayout): \\n → <w:br/>, \\n\\n → new <w:p>
+   */
+  function englishTranslationParagraphs(text,opts){
+    opts=opts||{};
+    const afterTwips=opts.afterTwips!=null?opts.afterTwips:0;
+    const preserve=!!opts.preserveLineBreaks;
+    const rPr='<w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="23"/><w:szCs w:val="23"/></w:rPr>';
+    if(!preserve){
+      const paras=normalizeEnglishForSideBySideDocx(text);
+      return paras.map((para,i)=>{
+        const isLast=i===paras.length-1;
+        let ppr='<w:jc w:val="left"/><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>';
+        if(isLast&&afterTwips)ppr=`<w:jc w:val="left"/><w:spacing w:before="0" w:after="${afterTwips}" w:line="240" w:lineRule="auto"/>`;
+        return `<w:p><w:pPr>${ppr}</w:pPr><w:r>${rPr}<w:t xml:space="preserve">${xmlEscape(para)}</w:t></w:r></w:p>`;
+      }).join('');
+    }
+    const paraLines=publicationEnglishLinesForDocx(text);
+    return paraLines.map((lines,i)=>{
+      const isLast=i===paraLines.length-1;
+      let ppr='<w:jc w:val="left"/><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/>';
+      if(isLast&&afterTwips)ppr=`<w:jc w:val="left"/><w:spacing w:before="0" w:after="${afterTwips}" w:line="240" w:lineRule="auto"/>`;
+      const runs=lines.map((line,li)=>{
+        const br=li?`<w:r>${rPr}<w:br/></w:r>`:'';
+        return `${br}<w:r>${rPr}<w:t xml:space="preserve">${xmlEscape(line)}</w:t></w:r>`;
+      }).join('');
+      return `<w:p><w:pPr>${ppr}</w:pPr>${runs}</w:p>`;
+    }).join('');
+  }
+  function sideBySideCellBorders(){
+    return '<w:tcBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/></w:tcBorders>';
+  }
+  function sideBySideCell(widthTwips,innerXml,cellMar){
+    // Optional per-cell margins (Hebrew uses right=0 so glyphs sit on the page-right edge).
+    let mar='';
+    if(cellMar){
+      const t=cellMar.top!=null?cellMar.top:20;
+      const l=cellMar.left!=null?cellMar.left:40;
+      const b=cellMar.bottom!=null?cellMar.bottom:20;
+      const r=cellMar.right!=null?cellMar.right:0;
+      mar=`<w:tcMar><w:top w:w="${t}" w:type="dxa"/><w:left w:w="${l}" w:type="dxa"/><w:bottom w:w="${b}" w:type="dxa"/><w:right w:w="${r}" w:type="dxa"/></w:tcMar>`;
+    }
+    return `<w:tc><w:tcPr><w:tcW w:w="${widthTwips}" w:type="dxa"/>${sideBySideCellBorders()}${mar}<w:vAlign w:val="top"/></w:tcPr>${innerXml}</w:tc>`;
+  }
+  function verseNumberParagraph(num){
+    // Top of cell: align with first line of the verse block.
+    return `<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="0" w:after="0"/></w:pPr><w:r><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t>${xmlEscape(num||'')}</w:t></w:r></w:p>`;
   }
   let body='';
   const exportTitle=typeof contourPassageTitleForExport==='function'?contourPassageTitleForExport():(state.ref||'');
   if(exportTitle){
-    body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>${xmlEscape(exportTitle)}</w:t></w:r></w:p>`;
+    body+=`<w:p><w:pPr><w:jc w:val="left"/><w:spacing w:after="240"/></w:pPr><w:r><w:rPr><w:b/><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman" w:cs="Times New Roman"/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr><w:t>${xmlEscape(exportTitle)}</w:t></w:r></w:p>`;
   }
+
+  // Side-by-side only: early-return scholarly page (English | verse | Hebrew).
+  // When sideBySide is false/omitted, execution continues into the plain Contour DOCX path below.
+  if(sideBySide){
+    // Full usable width: wide English | narrow verse | compact Hebrew flush to page-right.
+    // Causes of prior inset: table jc=left (autofit slack on the right) + right cell padding.
+    const ENG_W=6200, NUM_W=500, HEB_W=4100; // 10800 twips
+    const VERSE_GAP=160; // ~8pt between verse blocks only
+    let table=`<w:tbl><w:tblPr><w:tblW w:w="5000" w:type="pct"/><w:tblLayout w:type="fixed"/><w:jc w:val="right"/><w:tblInd w:w="0" w:type="dxa"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblCellMar><w:top w:w="20" w:type="dxa"/><w:left w:w="40" w:type="dxa"/><w:bottom w:w="20" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${ENG_W}"/><w:gridCol w:w="${NUM_W}"/><w:gridCol w:w="${HEB_W}"/></w:tblGrid>`;
+    state.verses.forEach((v,vi)=>{
+      const engSrc=typeof getSideBySideEnglishForVerse==='function'?getSideBySideEnglishForVerse(v):{text:getAlephTranslationForVerse(v),preserveLineBreaks:false};
+      const eng=englishTranslationParagraphs(engSrc.text,{afterTwips:VERSE_GAP,preserveLineBreaks:!!engSrc.preserveLineBreaks});
+      const num=verseNumberParagraph(verseNumberFromRef(v.ref));
+      const heb=hebrewVerseBodyParagraphs(v,vi);
+      // Hebrew cell: no right padding so Contour right-aligned lines meet the page margin.
+      table+=`<w:tr><w:trPr><w:cantSplit/></w:trPr>${sideBySideCell(ENG_W,eng,{top:20,left:0,bottom:20,right:40})}${sideBySideCell(NUM_W,num,{top:20,left:20,bottom:20,right:20})}${sideBySideCell(HEB_W,heb,{top:20,left:40,bottom:20,right:0})}</w:tr>`;
+    });
+    table+='</w:tbl>';
+    body+=table;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="720" w:right="720" w:bottom="720" w:left="720"/></w:sectPr></w:body></w:document>`;
+  }
+
   function legendRunProps(e){
     let rpr=`<w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="24"/><w:szCs w:val="24"/>`;
     if(e.type==='highlight')rpr+=`<w:shd w:val="clear" w:color="auto" w:fill="${hex(e.color||'#fff36d')}"/>`;
@@ -284,19 +510,7 @@ function contourDocxXml(opts){
       if(inc.theme||inc.evidence)body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:t xml:space="preserve">${xmlEscape([inc.theme&&'Theme: '+inc.theme,inc.evidence&&'Evidence: '+inc.evidence].filter(Boolean).join('; '))}</w:t></w:r></w:p>`;
     });
   }
-  if(sideBySide){
-    let table='<w:tbl><w:tblPr><w:tblW w:w="10800" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders></w:tblPr>';
-    table+='<w:tr><w:tc><w:tcPr><w:tcW w:w="5400" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Hebrew</w:t></w:r></w:p></w:tc><w:tc><w:tcPr><w:tcW w:w="5400" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Translation</w:t></w:r></w:p></w:tc></w:tr>';
-    state.verses.forEach((v,vi)=>{
-      const heb=hebrewVerseParagraphs(v,vi)||'<w:p><w:r><w:t></w:t></w:r></w:p>';
-      const eng=englishTranslationParagraphs(getAlephTranslationForVerse(v));
-      table+=`<w:tr><w:tc><w:tcPr><w:tcW w:w="5400" w:type="dxa"/></w:tcPr>${heb}</w:tc><w:tc><w:tcPr><w:tcW w:w="5400" w:type="dxa"/></w:tcPr>${eng}</w:tc></w:tr>`;
-    });
-    table+='</w:tbl>';
-    body+=table;
-  }else{
-    state.verses.forEach((v,vi)=>{body+=hebrewVerseParagraphs(v,vi);});
-  }
+  state.verses.forEach((v,vi)=>{body+=hebrewVerseParagraphs(v,vi);});
   ensureComments();
   if(state.comments&&state.comments.length){
     body+=`<w:p><w:pPr><w:jc w:val="left"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Comments</w:t></w:r></w:p>`;
@@ -390,6 +604,17 @@ function exportContourSideBySideDocx(opts){
 }
 window.exportContourSideBySideDocx=exportContourSideBySideDocx;
 window.promptImportAlephTranslation=promptImportAlephTranslation;
+window.getAlephTranslationForVerse=getAlephTranslationForVerse;
+window.getSideBySideEnglishForVerse=getSideBySideEnglishForVerse;
+window.getPublicationLayoutForVerse=getPublicationLayoutForVerse;
+window.hasPublicationLayoutForVerse=hasPublicationLayoutForVerse;
+window.setPublicationLayoutForVerse=setPublicationLayoutForVerse;
+window.seedPublicationLayoutsFromImport=seedPublicationLayoutsFromImport;
+window.normalizeEnglishForSideBySideDocx=normalizeEnglishForSideBySideDocx;
+window.normalizePublicationLayoutText=normalizePublicationLayoutText;
+window.publicationLayoutPlainTextFromHtml=publicationLayoutPlainTextFromHtml;
+window.publicationEnglishLinesForDocx=publicationEnglishLinesForDocx;
+window.ensureAlephPublicationBag=ensureAlephPublicationBag;
 function exportContourHtml(){
   if(isParallelActive()){alert('For parallel passages, export each pane separately or use Word export.');return;}
   if(!state.verses.length){alert('Create or generate text first.');return;}

@@ -1,0 +1,249 @@
+/* Print Layout — publication paper workspace (matches Side-by-Side DOCX geometry) */
+
+/* Recede application chrome */
+body.workspace-print-layout #colorToolbar,
+body.workspace-print-layout #formatToolbar,
+body.workspace-print-layout #commentToolbar,
+body.workspace-print-layout #inclusioPanel,
+body.workspace-print-layout #arcToolbar,
+body.workspace-print-layout .toolbar-section,
+body.workspace-print-layout #annotationTabsShell,
+body.workspace-print-layout .ann-export-source,
+body.workspace-print-layout #pageZoomControls,
+body.workspace-print-layout .parallel-toggle-compact,
+body.workspace-print-layout .workspace-comments-btn,
+body.workspace-print-layout #activePaneIndicator {
+  display: none !important;
+}
+
+body.workspace-print-layout .main-workspace {
+  background: #d9dee6;
+}
+
+body.workspace-print-layout .workspace-view-header {
+  background: transparent;
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 4px;
+}
+
+body.workspace-print-layout .tabs .btn:not(.active) {
+  opacity: 0.55;
+}
+
+#printLayoutTab {
+  margin-top: 0;
+  min-height: calc(100vh - 160px);
+}
+
+/* Minimal publication toolbar */
+.print-layout-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 8px 4px 12px;
+  margin: 0 0 4px;
+  border: none;
+  background: transparent;
+}
+
+.print-layout-banner.hidden {
+  display: none;
+}
+
+.print-layout-banner-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #334155;
+}
+
+.print-layout-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.print-layout-banner-meta {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: center;
+}
+
+.pl-save-status {
+  font-size: 12px;
+  color: #3c763d;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  min-width: 3.5em;
+}
+
+.pl-save-status.is-visible {
+  opacity: 1;
+}
+
+.pl-match-status {
+  font-size: 12px;
+  color: #475569;
+}
+
+.pl-match-status::before {
+  content: '✓ ';
+  color: #3c763d;
+}
+
+/* Desk / paper canvas */
+.pl-page-wrap {
+  background: transparent;
+  padding: 12px 16px 40px;
+  min-height: 70vh;
+}
+
+.pl-sheet {
+  --pl-eng: 57.4%;
+  --pl-num: 4.6%;
+  --pl-heb: 38%;
+  width: min(8.5in, 100%);
+  max-width: 8.5in;
+  min-height: 11in;
+  margin: 0 auto;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 12px 40px rgba(15, 23, 42, 0.12);
+  padding: 0.7in 0.65in 0.85in;
+  box-sizing: border-box;
+}
+
+.pl-title {
+  font-family: 'Times New Roman', Times, serif;
+  font-weight: 700;
+  font-size: 14pt;
+  margin: 0 0 10pt;
+  text-align: left;
+  color: #111;
+}
+
+.pl-col-legend {
+  display: grid;
+  grid-template-columns: var(--pl-eng) var(--pl-num) var(--pl-heb);
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 9pt;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 14pt;
+  user-select: none;
+  pointer-events: none;
+}
+
+.pl-col-legend span:nth-child(1) {
+  text-align: left;
+}
+.pl-col-legend span:nth-child(2) {
+  text-align: center;
+}
+.pl-col-legend span:nth-child(3) {
+  text-align: right;
+}
+
+.pl-table {
+  width: 100%;
+  display: block;
+}
+
+.pl-verse-row {
+  display: grid;
+  grid-template-columns: var(--pl-eng) var(--pl-num) var(--pl-heb);
+  column-gap: 0;
+  align-items: start;
+  margin: 0 0 8pt;
+}
+
+.pl-eng-col {
+  min-width: 0;
+}
+
+.pl-eng-empty {
+  margin: 0 0 4px;
+  font-family: system-ui, sans-serif;
+  font-size: 11px;
+}
+
+.pl-eng {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 11.5pt;
+  line-height: 1.2;
+  text-align: left;
+  direction: ltr;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  min-height: 1.2em;
+  padding: 1px 8px 1px 2px;
+  outline: none;
+  border-radius: 2px;
+  caret-color: #0b61a4;
+}
+
+.pl-eng:hover {
+  background: rgba(250, 245, 230, 0.35);
+}
+
+.pl-eng:focus {
+  background: #fffdf5;
+  box-shadow: inset 0 0 0 1px #d4c28a;
+}
+
+/* Locked publication columns */
+.pl-num {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 9pt;
+  line-height: 1.2;
+  text-align: center;
+  color: #333;
+  user-select: none;
+  pointer-events: none;
+  padding-top: 0.08em;
+}
+
+.pl-heb {
+  font-family: 'SBL BibLit', 'SBL Hebrew', 'Ezra SIL', 'Times New Roman', serif;
+  font-size: 16pt;
+  line-height: 1.35;
+  text-align: right;
+  direction: rtl;
+  user-select: none;
+  pointer-events: none;
+  padding: 0 0 0 4px;
+  cursor: default;
+}
+
+.pl-heb-line {
+  margin: 0;
+  padding: 0;
+  text-align: right;
+}
+
+.pl-heb-word.pred {
+  color: #0b61a4;
+  font-weight: 700;
+}
+.pl-heb-word.subj {
+  color: #b02a2a;
+  font-weight: 700;
+}
+
+.pl-empty {
+  max-width: 8.5in;
+  margin: 24px auto;
+  padding: 28px;
+  background: #fff;
+  border: 1px dashed #b0b8c4;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+}

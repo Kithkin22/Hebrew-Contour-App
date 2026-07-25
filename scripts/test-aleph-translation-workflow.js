@@ -87,8 +87,19 @@ vm.runInContext(
     extractFunction(fileMenu, 'validateAlephTranslationJson'),
     extractFunction(fileMenu, 'alephPassageMatchError'),
     extractFunction(fileMenu, 'normalizeAlephTranslationsMap'),
+    extractFunction(fileMenu, 'getAlephTranslationEntryForVerse'),
     extractFunction(fileMenu, 'getAlephTranslationForVerse'),
+    extractFunction(fileMenu, 'ensureAlephPublicationBag'),
+    extractFunction(fileMenu, 'hasPublicationLayoutForVerse'),
+    extractFunction(fileMenu, 'getPublicationLayoutForVerse'),
+    extractFunction(fileMenu, 'getSideBySideEnglishForVerse'),
+    extractFunction(fileMenu, 'setPublicationLayoutForVerse'),
+    extractFunction(fileMenu, 'seedPublicationLayoutsFromImport'),
     extractFunction(fileMenu, 'applyAlephTranslationImport'),
+    extractFunction(fileMenu, 'normalizeEnglishForSideBySideDocx'),
+    extractFunction(fileMenu, 'normalizePublicationLayoutText'),
+    extractFunction(fileMenu, 'publicationLayoutPlainTextFromHtml'),
+    extractFunction(fileMenu, 'publicationEnglishLinesForDocx'),
     extractFunction(fileMenu, 'contourDocxXml'),
   ].join('\n'),
   sandbox,
@@ -203,16 +214,262 @@ assert.ok(
 );
 
 resetState();
-sandbox.applyAlephTranslationImport(good);
+sandbox.state.alephTranslations = {
+  reference: 'Job 19:21-29',
+  translations: {
+    'Job 19:21': {
+      text: 'Be gracious to me,\n    be gracious to me,\n    you my friends,',
+    },
+    'Job 19:22': { text: 'Why do you pursue me\n    like God' },
+  },
+  byChapterVerse: {
+    '19:21': {
+      text: 'Be gracious to me,\n    be gracious to me,\n    you my friends,',
+    },
+    '19:22': { text: 'Why do you pursue me\n    like God' },
+  },
+};
+
 const xml = sandbox.contourDocxXml({ sideBySide: true });
 assert.ok(xml.includes('<w:tbl>'), 'side-by-side uses a table');
-assert.ok(xml.includes('Pity me, pity me, you my friends'), 'translation appears in DOCX XML');
-assert.ok(xml.includes('חָנֻּנִי'), 'Hebrew text preserved');
+assert.ok(/w:tblBorders>[\s\S]*w:val="nil"/.test(xml), 'table borders are nil');
+assert.ok(!/w:tblBorders>[\s\S]*w:val="single"/.test(xml), 'no single table borders');
+assert.ok(!xml.includes('<w:tblStyle'), 'no Word table style that could restore borders');
+assert.ok(xml.includes('<w:tblLayout w:type="fixed"/>'), 'fixed column layout for Word');
+assert.ok(!xml.includes('>Hebrew<'), 'no Hebrew column header');
+assert.ok(!xml.includes('>Translation<'), 'no Translation column header');
+assert.ok(xml.includes('<w:cantSplit/>'), 'verse rows prefer not to split');
+assert.ok(xml.includes('<w:vAlign w:val="top"/>'), 'cells are top-aligned');
+assert.ok(xml.includes('w:w="500"'), 'narrow verse-number column');
+assert.ok(xml.includes('w:w="6200"'), 'wide English column');
+assert.ok(xml.includes('w:w="4100"'), 'compact Hebrew column');
+assert.ok(
+  xml.includes('<w:tblGrid><w:gridCol w:w="6200"/><w:gridCol w:w="500"/><w:gridCol w:w="4100"/></w:tblGrid>'),
+  'three-column tblGrid English | verse | Hebrew',
+);
+assert.ok(xml.includes('w:tblW w:w="5000" w:type="pct"'), 'table spans full content width (100%)');
+assert.ok(xml.includes('<w:jc w:val="right"/>') && xml.includes('<w:tblInd w:w="0"'), 'table right-anchored with zero indent');
+assert.ok(xml.includes('w:sz w:val="23"'), 'English ~11.5pt');
+assert.ok(!xml.includes('w:sz w:val="26"'), 'English not oversized 13pt');
+assert.ok(xml.includes('w:line="240"'), 'English single/compact line spacing');
+assert.ok(!xml.includes('w:line="288"'), 'no loose 1.2 English line spacing');
+assert.ok(xml.includes('w:after="160"'), 'verse block spacing ~8pt');
+assert.ok(!xml.includes('w:after="360"'), 'no oversized verse gap');
+assert.ok(xml.includes('<w:bidi/><w:jc w:val="right"/>'), 'Hebrew remains bidi + right-justified');
+assert.ok(
+  /w:tcW w:w="4100"[\s\S]*?w:right w:w="0"/.test(xml),
+  'Hebrew cell has zero right margin for flush page-edge',
+);
+
+// English before Hebrew in each data row: first verse text then Hebrew token.
+const engPos = xml.indexOf('Be gracious to me,');
+const hebPos = xml.indexOf('חָנֻּנִי');
+assert.ok(engPos > -1 && hebPos > -1 && engPos < hebPos, 'English column precedes Hebrew');
+assert.ok(xml.includes('>21<'), 'center verse number present');
+assert.ok(
+  xml.includes('Be gracious to me, be gracious to me, you my friends,'),
+  'single newlines reflow into continuous English prose',
+);
+assert.ok(!xml.includes('<w:br/>'), 'no hard w:br for ordinary English newlines');
+const engCellMatch = xml.match(/<w:tcW w:w="6200"[\s\S]*?<\/w:tc>/);
+assert.ok(engCellMatch, 'English cell present');
+const engCell = engCellMatch[0];
+assert.ok((engCell.match(/<w:p>/g) || []).length === 1, 'one English paragraph when source has only single newlines');
+const hebCellMatch = xml.match(/<w:tcW w:w="4100"[\s\S]*?<\/w:tc>/);
+assert.ok(hebCellMatch, 'Hebrew cell present');
+assert.ok(hebCellMatch[0].includes('<w:bidi/>'), 'Hebrew cell keeps bidi');
+assert.ok(hebCellMatch[0].includes('w:jc w:val="right"'), 'Hebrew cell keeps right justification');
 assert.ok(xml.includes('<w:b/><w:bCs/>'), 'Hebrew formatting preserved');
 assert.ok(xml.includes('0B61A4'), 'annotation color preserved');
+assert.ok(xml.includes('<w:bidi/>'), 'Hebrew RTL paragraph properties preserved');
+assert.ok(!xml.includes('Job 19:21</w:t>'), 'side-by-side omits full verse-ref lines in Hebrew cell');
+
+// Export-time normalization unit checks (does not mutate stored translation).
+function normEq(input, expected, msg) {
+  assert.strictEqual(
+    JSON.stringify(Array.from(sandbox.normalizeEnglishForSideBySideDocx(input))),
+    JSON.stringify(expected),
+    msg,
+  );
+}
+normEq('line one\nline two', ['line one line two'], 'single newline joins with one space');
+normEq('paragraph one\n\nparagraph two', ['paragraph one', 'paragraph two'], 'blank line preserves paragraph boundary');
+normEq('line one\r\nline two', ['line one line two'], 'CRLF normalized like LF');
+normEq('hello  \n  world', ['hello world'], 'joining does not create double spaces');
+normEq(
+  'Be gracious to me,\nbe gracious to me,',
+  ['Be gracious to me, be gracious to me,'],
+  'punctuation unchanged when joining',
+);
+
+const storedBefore = sandbox.state.alephTranslations.byChapterVerse['19:21'].text;
+sandbox.contourDocxXml({ sideBySide: true });
+assert.strictEqual(
+  sandbox.state.alephTranslations.byChapterVerse['19:21'].text,
+  storedBefore,
+  'stored Aleph translation text is not mutated',
+);
+
+// Blank-line English becomes two DOCX paragraphs; verse spacing only on last.
+const blankLineText = 'First paragraph line.\n\nSecond paragraph line.';
+sandbox.state.alephTranslations.byChapterVerse['19:21'].text = blankLineText;
+sandbox.state.alephTranslations.translations['Job 19:21'].text = blankLineText;
+const xmlParas = sandbox.contourDocxXml({ sideBySide: true });
+const engCellParas = (xmlParas.match(/<w:tcW w:w="6200"[\s\S]*?<\/w:tc>/) || [''])[0];
+assert.ok((engCellParas.match(/<w:p>/g) || []).length === 2, 'blank line yields two English paragraphs');
+assert.ok(engCellParas.includes('First paragraph line.'), 'first English paragraph present');
+assert.ok(engCellParas.includes('Second paragraph line.'), 'second English paragraph present');
+assert.ok(
+  (engCellParas.match(/w:after="160"/g) || []).length === 1,
+  'verse spacing only after final English paragraph',
+);
 
 const plain = sandbox.contourDocxXml();
 assert.ok(plain.includes('חָנֻּנִי'), 'plain DOCX Hebrew present');
 assert.ok(!plain.includes('<w:tbl>'), 'plain DOCX is not tabular');
+assert.ok(plain.includes('Job 19:21') || plain.includes('19:21'), 'plain DOCX still includes verse refs');
+assert.ok(!plain.includes('First paragraph line.'), 'plain DOCX path does not use side-by-side English reflow');
 
-console.log('OK: Aleph import + side-by-side DOCX workflow checks passed.');
+// --- Print Layout publicationLayout ---
+resetState();
+sandbox.state.alephTranslations = {
+  reference: 'Job 19:21-29',
+  translations: {
+    'Job 19:21': {
+      text: 'Be gracious to me,\n    be gracious to me,\n    you my friends,',
+    },
+  },
+  byChapterVerse: {
+    '19:21': {
+      text: 'Be gracious to me,\n    be gracious to me,\n    you my friends,',
+    },
+  },
+  publication: { settings: {}, version: 1 },
+};
+const v21 = sandbox.state.verses[0];
+const importedSnap = sandbox.getAlephTranslationForVerse(v21);
+sandbox.seedPublicationLayoutsFromImport();
+assert.ok(sandbox.hasPublicationLayoutForVerse(v21), 'seed creates publicationLayout');
+assert.strictEqual(
+  sandbox.getAlephTranslationForVerse(v21),
+  importedSnap,
+  'seed does not mutate imported translation text',
+);
+assert.strictEqual(
+  sandbox.getPublicationLayoutForVerse(v21),
+  'Be gracious to me, be gracious to me, you my friends,',
+  'seed uses normalized prose as starting layout',
+);
+sandbox.setPublicationLayoutForVerse(
+  v21,
+  'Be gracious to me,\nbe gracious to me, you my friends,\nas the hand of God has struck me.',
+);
+assert.strictEqual(
+  sandbox.getAlephTranslationForVerse(v21),
+  importedSnap,
+  'lineation edit does not mutate imported text',
+);
+const src = sandbox.getSideBySideEnglishForVerse(v21);
+assert.strictEqual(src.source, 'publicationLayout');
+assert.strictEqual(src.preserveLineBreaks, true);
+const xmlLayout = sandbox.contourDocxXml({ sideBySide: true });
+assert.ok(xmlLayout.includes('<w:br/>'), 'publicationLayout preserves line breaks as w:br');
+assert.ok(
+  xmlLayout.includes('Be gracious to me,') && xmlLayout.includes('be gracious to me, you my friends,'),
+  'publication lineation content exported',
+);
+assert.ok(
+  !xmlLayout.includes('Be gracious to me, be gracious to me, you my friends,'),
+  'publicationLayout is not reflow-collapsed when present',
+);
+
+// Normalization pipeline (preview/export share these helpers).
+assert.strictEqual(
+  sandbox.normalizePublicationLayoutText('line one\r\nline two\u00a0'),
+  'line one\nline two',
+  'CRLF + NBSP normalized',
+);
+assert.strictEqual(
+  sandbox.normalizePublicationLayoutText('a\u200B\nb'),
+  'a\nb',
+  'zero-width characters removed',
+);
+assert.strictEqual(
+  sandbox.publicationLayoutPlainTextFromHtml('<div>line one</div><div>line two</div>'),
+  'line one\nline two',
+  'div blocks → newlines',
+);
+assert.strictEqual(
+  sandbox.publicationLayoutPlainTextFromHtml('<p>line one</p><p>line two</p>'),
+  'line one\nline two',
+  'p blocks → newlines',
+);
+assert.strictEqual(
+  sandbox.publicationLayoutPlainTextFromHtml('line one<br>line two'),
+  'line one\nline two',
+  'br → newline',
+);
+assert.strictEqual(
+  sandbox.publicationLayoutPlainTextFromHtml('hello&nbsp;world'),
+  'hello world',
+  'nbsp entity → space',
+);
+assert.strictEqual(
+  sandbox.publicationLayoutPlainTextFromHtml('<span style="font-weight:bold">rich</span> text'),
+  'rich text',
+  'rich-text markup stripped to plain text',
+);
+
+// Empty publicationLayout is intentional blank (not reseeded).
+sandbox.setPublicationLayoutForVerse(v21, '');
+assert.ok(sandbox.hasPublicationLayoutForVerse(v21), 'empty string still counts as present');
+assert.strictEqual(sandbox.getPublicationLayoutForVerse(v21), '', 'empty layout retained');
+const seededAgain = sandbox.seedPublicationLayoutsFromImport();
+assert.strictEqual(seededAgain, 0, 'seed skips verses that already have publicationLayout');
+assert.strictEqual(sandbox.getPublicationLayoutForVerse(v21), '', 'empty layout not overwritten by seed');
+assert.strictEqual(
+  sandbox.getSideBySideEnglishForVerse(v21).text,
+  '',
+  'empty publicationLayout exports blank English',
+);
+
+// Existing layout not overwritten on seed.
+sandbox.setPublicationLayoutForVerse(v21, 'Be gracious to me,\nyou my friends,');
+const beforeSeed = sandbox.getPublicationLayoutForVerse(v21);
+sandbox.seedPublicationLayoutsFromImport();
+assert.strictEqual(sandbox.getPublicationLayoutForVerse(v21), beforeSeed, 'existing layout preserved on entry seed');
+
+// Preview/export identical normalized source.
+const layoutPlain = 'Be gracious to me, be gracious to me,\nyou my friends,\nas the hand of God has struck me.';
+sandbox.setPublicationLayoutForVerse(v21, layoutPlain);
+const exportSrc = sandbox.getSideBySideEnglishForVerse(v21).text;
+assert.strictEqual(exportSrc, sandbox.normalizePublicationLayoutText(layoutPlain), 'export uses normalized publication text');
+const lines = sandbox.publicationEnglishLinesForDocx(exportSrc);
+assert.strictEqual(lines.length, 1, 'one verse paragraph');
+assert.strictEqual(lines[0].length, 3, 'three publication lines for Job 19:21 sample');
+const xmlThree = sandbox.contourDocxXml({ sideBySide: true });
+assert.ok((xmlThree.match(/<w:br\/>/g) || []).length >= 2, 'three lines → two w:br within verse');
+
+// Persistence through project-style serialization.
+const serialized = JSON.parse(JSON.stringify(sandbox.state.alephTranslations));
+assert.strictEqual(
+  serialized.translations['Job 19:21'].publicationLayout,
+  exportSrc,
+  'publicationLayout survives JSON serialize',
+);
+assert.strictEqual(
+  serialized.translations['Job 19:21'].text,
+  importedSnap,
+  'imported text survives alongside publicationLayout',
+);
+sandbox.state.alephTranslations = serialized;
+assert.strictEqual(
+  sandbox.getPublicationLayoutForVerse(v21),
+  exportSrc,
+  'publicationLayout survives reload from serialized project',
+);
+
+const plainAfter = sandbox.contourDocxXml();
+assert.ok(!plainAfter.includes('<w:tbl>'), 'plain Contour DOCX still non-tabular after print-layout work');
+
+console.log('OK: scholarly side-by-side DOCX layout checks passed.');

@@ -26,7 +26,8 @@ function applyEditorLayoutFix(){
   else bind();
 })();
 
-function render(){applyLanguageLayout();syncStateBundle();if(typeof syncAllPaneInclusioWordMarkers==='function')syncAllPaneInclusioWordMarkers();renderParallelEditors();if(isParallelActive()){renderDualTables();}else{renderEditor();renderTable();if(typeof renderInclusioFrameOverlays==='function')renderInclusioFrameOverlays();}renderLegendEditor();syncLegendBelowEditor();if(typeof renderInclusioUI==='function')renderInclusioUI();else if(typeof renderInclusioManager==='function')renderInclusioManager();if(!isWorkspaceTableView())renderCommentsPanel();setTimeout(updateCommentPopover,0);if(isParallelActive())renderArcManagerParallel();else if(typeof renderArcManager==='function')renderArcManager();if(stateBundle.parallelEnabled)updateParallelAlignStatus();if(typeof updateVisualBreakToolbar==='function')updateVisualBreakToolbar();if(!isParallelActive()&&typeof finalizeDocumentPagePresentation==='function')finalizeDocumentPagePresentation();if(autosaveReady)autoSaveProject();scheduleEditorLayoutFix();}
+function render(){applyLanguageLayout();syncStateBundle();if(typeof syncAllPaneInclusioWordMarkers==='function')syncAllPaneInclusioWordMarkers();renderParallelEditors();if(isParallelActive()){renderDualTables();}else{renderEditor();renderTable();if(typeof renderInclusioFrameOverlays==='function')renderInclusioFrameOverlays();}renderLegendEditor();syncLegendBelowEditor();if(typeof renderInclusioUI==='function')renderInclusioUI();else if(typeof renderInclusioManager==='function')renderInclusioManager();if(!isWorkspaceTableView())renderCommentsPanel();setTimeout(updateCommentPopover,0);if(isParallelActive())renderArcManagerParallel();else if(typeof renderArcManager==='function')renderArcManager();if(stateBundle.parallelEnabled)updateParallelAlignStatus();if(typeof updateVisualBreakToolbar==='function')updateVisualBreakToolbar();if(!isParallelActive()&&typeof finalizeDocumentPagePresentation==='function')finalizeDocumentPagePresentation();// Print Layout is not rebuilt from Contour render() — avoids caret jump while editing English.
+if(autosaveReady)autoSaveProject();scheduleEditorLayoutFix();}
 function wordFormatClasses(w,l,forExport){let f=w.format||{};let suppressCommentStart=l&&isCommentBoundary(l,'start')&&!w.bracketSource;let suppressCommentEnd=l&&isCommentBoundary(l,'end')&&!w.bracketSource;let suppressInclusioBracket=w.bracketSource==='inclusio';let incCls=typeof inclusioWordHighlightClass==='function'&&l?inclusioWordHighlightClass(l,w):'';let inclusioQuiet=w.bracketSource==='inclusio'&&!forExport?'inclusio-bracket':'';return `${f.bold?'fmt-bold':''} ${f.italic?'fmt-italic':''} ${f.underline?'fmt-underline':''} ${f.doubleUnderline?'fmt-double-underline':''} ${f.highlight?'fmt-highlight':''} ${(w.bracketStart&&!suppressCommentStart&&!suppressInclusioBracket)?'bracket-start':''} ${(w.bracketEnd&&!suppressCommentEnd&&!suppressInclusioBracket)?'bracket-end':''} ${inclusioQuiet} ${incCls}`.replace(/\s+/g,' ').trim();}
 function wordInlineStyle(w){let styles=[];if(w.color)styles.push('color:'+esc(w.color));if(w.format&&w.format.highlight)styles.push('background-color:'+esc(w.format.highlight));let bc=w.bracketColor||w.inclusioColor;if(bc)styles.push('--bracket-color:'+esc(bc));return styles.join(';');}
 function renderWordTokensInClause(words,opt){const vi=opt.vi,ci=opt.ci,pane=opt.pane,paneState=opt.paneState||state,activeKey=opt.activeKey||'',forExport=!!(opt&&opt.forExport);const selLoc=opt.selLoc||(paneState&&paneState.selected);const idsFn=opt.idsForLoc||(pane!=null?(l=>commentIdsForLocInPane(l,pane)):(l=>commentIdsForLoc(l)));const markersFn=opt.markersForLoc||(pane!=null?(l=>commentMarkersForLocInPane(l,pane)):(l=>commentMarkersForLoc(l)));let html='';words.forEach((w,wi)=>{if(isMaqafConnector(w)){const hidden=forExport?'':' aria-hidden="true"';html+=`<span class="maqaf-connector"${hidden}>${esc(w.text||MAQAF_CHAR)}</span>`;return;}ensureSelectableWordFields(w);const l=pane!=null?{v:vi,c:ci,w:wi,pane}:{v:vi,c:ci,w:wi};const ids=idsFn(l);const commentClass=ids.length?'comment-anchored':'';const activeCommentClass=(paneState.activeCommentId&&ids.includes(paneState.activeCommentId))?'comment-active':'';const wsel=selLoc&&selLoc.v===vi&&selLoc.c===ci&&selLoc.w===wi;const same=activeKey&&normalizeHebrewWord(w.text)===activeKey&&!wsel;const paneAttr=pane!=null?` data-pane="${pane}"`:'';const specials=w.specials||[];html+=`<span class="word ${wsel?'selected':''} ${same?'sameword':''} ${commentClass} ${activeCommentClass} ${w.deleted?'deleted':''} ${specials.includes('predicate')?'pred':''} ${specials.includes('subject')?'subj':''} ${w.color?'has-text-color':''} ${wordFormatClasses(w,l,forExport)}"${paneAttr} data-v="${vi}" data-c="${ci}" data-w="${wi}" style="${wordInlineStyle(w)}">${esc(w.text)}</span>${markersFn(l)}`;if(needsSpaceAfterWord(words,wi))html+=' ';});return html;}
@@ -569,9 +570,14 @@ function isWorkspaceTableView(){
   const tableTab=document.getElementById('tableTab');
   return !!(tableTab && !tableTab.classList.contains('hidden'));
 }
+function isWorkspacePrintLayoutView(){
+  const printTab=document.getElementById('printLayoutTab');
+  return !!(printTab && !printTab.classList.contains('hidden'));
+}
 function setWorkspaceTab(tab){
   const onContour=tab==='contour';
   const onTable=tab==='table';
+  const onPrint=tab==='print';
   document.querySelectorAll('.tabs button').forEach(x=>{
     x.classList.toggle('active',x.dataset.tab===tab);
   });
@@ -579,6 +585,7 @@ function setWorkspaceTab(tab){
   if(contourShell) contourShell.classList.toggle('hidden',!onContour);
   document.getElementById('contourTab')?.classList.toggle('hidden',!onContour);
   document.getElementById('tableTab')?.classList.toggle('hidden',!onTable);
+  document.getElementById('printLayoutTab')?.classList.toggle('hidden',!onPrint);
   document.getElementById('legendTab')?.classList.toggle('hidden',tab!=='legend');
   const annShell=document.getElementById('annotationTabsShell');
   if(annShell) annShell.classList.toggle('hidden',!onContour);
@@ -587,14 +594,21 @@ function setWorkspaceTab(tab){
   if(onContour&&typeof syncLegendBelowEditor==='function')syncLegendBelowEditor();
   document.body.classList.toggle('workspace-table-view',onTable);
   document.body.classList.toggle('workspace-contour-view',onContour);
+  document.body.classList.toggle('workspace-print-layout',onPrint);
+  if(typeof setPrintLayoutActive==='function')setPrintLayoutActive(onPrint);
   const persistComments=document.getElementById('persistentShowComments');
   if(persistComments) persistComments.classList.toggle('hidden',!onContour);
   if(!onContour) hideCommentPopover();
   if(onTable){if(isParallelActive())renderDualTables();else renderTable();}
   if(tab==='legend') renderLegendEditor();
   if(onContour){if(typeof renderInclusioUI==='function')renderInclusioUI();scheduleEditorLayoutFix();}
+  if(onPrint&&typeof renderPrintLayout==='function')renderPrintLayout();
 }
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setWorkspaceTab(b.dataset.tab));
+document.getElementById('printLayoutExitBtn')?.addEventListener('click',()=>setWorkspaceTab('contour'));
+document.getElementById('printLayoutExportBtn')?.addEventListener('click',()=>{
+  if(typeof exportContourSideBySideDocx==='function')exportContourSideBySideDocx();
+});
 const PARALLEL_TABLE_SCOPE_BTNS={text:'Choose the left table, right table, or both.',buttons:{left:'Left table only',right:'Right table only',both:'Both tables'}};
 document.getElementById('addColumn').onclick=()=>{const askName=panes=>{if(!panes||!panes.length)return;promptModal('Add Column','Column name:','',v=>{applyCustomColumnToPanes(panes,v);});};if(isParallelActive())pickParallelPaneScope({title:'Add custom column to which table?',...PARALLEL_TABLE_SCOPE_BTNS}).then(scope=>{if(scope)askName(scope.panes);});else askName([stateBundle.activePane]);};
 document.getElementById('resetColumns').onclick=()=>{const doReset=panes=>{if(!panes||!panes.length)return;resetCustomColumnsOnPanes(panes);};if(isParallelActive())pickParallelPaneScope({title:'Reset custom columns on which table?',...PARALLEL_TABLE_SCOPE_BTNS}).then(scope=>{if(scope)doReset(scope.panes);});else doReset([stateBundle.activePane]);};
