@@ -1,6 +1,6 @@
 /**
- * Side-by-Side Print Preview — temporary overlay for publicationLayout editing + DOCX export.
- * Consumes composePublicationLayout(); Contour Hebrew spacing is authoritative minimum structure.
+ * Side-by-Side Print Preview — natural-height verse rows (Hebrew | # | English).
+ * Consumes composePublicationLayout(); Contour canvas spacing is not used.
  */
 (function () {
   'use strict';
@@ -49,16 +49,6 @@
     return {};
   }
 
-  function englishTextForPreview(v) {
-    if (typeof getSideBySideEnglishForVerse === 'function') {
-      return getSideBySideEnglishForVerse(v).text || '';
-    }
-    if (typeof getAlephTranslationForVerse === 'function') {
-      return getAlephTranslationForVerse(v) || '';
-    }
-    return '';
-  }
-
   function englishToEditableHtml(text) {
     var normalized = normalizeText(text);
     if (!normalized.length) return '<br>';
@@ -100,23 +90,8 @@
 
   function hebrewClauseHtml(c) {
     var indentPx =
-      typeof clauseIndentPx === 'function'
-        ? clauseIndentPx(c)
-        : Math.max(0, (c.indent || 0) * ((window.CONTOUR_PAGE && window.CONTOUR_PAGE.displayIndentPx) || 30));
-    var cls =
-      typeof clauseLayoutClassNames === 'function' ? clauseLayoutClassNames(c, false) : 'clause';
-    // Preview uses Contour clause tokens; strip editor-only "selected".
-    cls = String(cls || 'clause')
-      .replace(/\bselected\b/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    var style = 'margin-right:' + indentPx + 'px';
-    var spPx = typeof clauseSpacingAfterPx === 'function' ? clauseSpacingAfterPx(c) : 0;
-    var presetPx = [-8, 18, 40, 72];
-    var useClass =
-      typeof (c && c.spacingAfterPx) !== 'number' || presetPx.indexOf(spPx) >= 0;
-    if (spPx !== 0 && !useClass) style += ';margin-bottom:' + spPx + 'px';
-
+      typeof publicationIndentPx === 'function' ? publicationIndentPx(c) : Math.max(0, (c.indent || 0) * 14);
+    var style = indentPx ? 'padding-right:' + indentPx + 'px' : '';
     var wordsHtml = '';
     (c.words || []).forEach(function (w) {
       if (typeof isMaqafConnector === 'function' && isMaqafConnector(w)) {
@@ -148,21 +123,17 @@
         '</span> ';
     });
     return (
-      '<div class="pl-heb-line ' +
-      esc(cls) +
-      '" dir="rtl" style="' +
-      esc(style) +
-      '">' +
+      '<div class="pl-heb-line" dir="rtl"' +
+      (style ? ' style="' + esc(style) + '"' : '') +
+      '>' +
       wordsHtml +
       '</div>'
     );
   }
 
-  function hebrewSegmentHtml(seg) {
-    var clauses = seg.hebrewClauses || [];
-    if (!clauses.length) {
-      return '<div class="pl-heb-line clause" dir="rtl"></div>';
-    }
+  function hebrewRowHtml(row) {
+    var clauses = (row.hebrew && (row.hebrew.units || row.hebrew.lines)) || row.hebrewClauses || [];
+    if (!clauses.length) return '<div class="pl-heb-line" dir="rtl"></div>';
     return clauses.map(hebrewClauseHtml).join('');
   }
 
@@ -224,9 +195,7 @@
     range.deleteContents();
     var br = document.createElement('br');
     range.insertNode(br);
-    if (!br.nextSibling) {
-      el.appendChild(document.createElement('br'));
-    }
+    if (!br.nextSibling) el.appendChild(document.createElement('br'));
     range.setStartAfter(br);
     range.collapse(true);
     sel.removeAllRanges();
@@ -241,15 +210,12 @@
     var text = readPublicationLayoutPlainText(el);
     if (lastPersistedByVerse[vi] === text) return;
     lastPersistedByVerse[vi] = text;
-    if (typeof setPublicationLayoutForVerse === 'function') {
-      setPublicationLayoutForVerse(v, text);
-    }
+    if (typeof setPublicationLayoutForVerse === 'function') setPublicationLayoutForVerse(v, text);
     if (typeof syncStateBundle === 'function') syncStateBundle();
     if (typeof autosaveReady !== 'undefined' && autosaveReady && typeof autoSaveProject === 'function') {
       autoSaveProject();
     }
     flashSaved();
-    // Recompose later pages only — keep focused editor intact.
     recomposeAfterEdit(vi);
   }
 
@@ -321,15 +287,13 @@
   }
 
   function getEnglishForCompose(v) {
-    if (typeof getSideBySideEnglishForVerse === 'function') {
-      return getSideBySideEnglishForVerse(v);
-    }
-    return { text: englishTextForPreview(v), preserveLineBreaks: false };
+    if (typeof getSideBySideEnglishForVerse === 'function') return getSideBySideEnglishForVerse(v);
+    return { text: '', preserveLineBreaks: false };
   }
 
   function composeNow() {
     if (typeof composePublicationLayout !== 'function') {
-      return { segments: [], pages: [], metrics: {} };
+      return { rows: [], pages: [], metrics: {}, pairing: { ok: true, errors: [], report: [] } };
     }
     return composePublicationLayout({
       verses: (state && state.verses) || [],
@@ -337,14 +301,17 @@
     });
   }
 
-  function buildSegmentRowHtml(seg, editable) {
-    var vi = seg.verseIndex;
-    var eng = seg.english && seg.english.text != null ? seg.english.text : '';
-    var num = seg.verseNumber || '';
+  function pageRows(page) {
+    return page.rows || page.blocks || page.segments || [];
+  }
+
+  function buildVerseRowHtml(row, editable) {
+    var vi = row.verseIndex;
+    var eng = row.english && row.english.text != null ? row.english.text : '';
+    var num = row.verseNumber || row.verseNumberText || '';
+    var verseKey = row.verseKey || row.ref || '';
     var canon =
-      typeof canonicalAlephVerseKey === 'function'
-        ? canonicalAlephVerseKey(seg.ref)
-        : seg.ref;
+      typeof canonicalAlephVerseKey === 'function' ? canonicalAlephVerseKey(verseKey) : verseKey;
     var emptyImported = !(
       typeof getAlephTranslationForVerse === 'function' &&
       state &&
@@ -356,8 +323,7 @@
       emptyImported && editable
         ? '<div class="pl-eng-empty muted small" dir="ltr">No imported translation for this verse.</div>'
         : '';
-    var extraGap = Math.max(0, seg.spacingAfterPx || 0);
-    var rowStyle = extraGap > 0 ? ' style="margin-bottom:' + extraGap + 'px"' : '';
+    var gap = Math.max(0, Math.round(row.spacingAfter || 0));
     var engInner;
     if (editable) {
       engInner =
@@ -367,38 +333,35 @@
         '" data-verse-key="' +
         esc(canon || '') +
         '" aria-label="Publication English for ' +
-        esc(seg.ref) +
+        esc(verseKey) +
         '">' +
         englishToEditableHtml(eng) +
         '</div>';
     } else {
-      // Continuation split: show plain text without a second editor for the same verse.
       engInner = eng
         ? '<div class="pl-eng pl-eng-readonly" dir="ltr">' + englishToEditableHtml(eng) + '</div>'
         : '<div class="pl-eng pl-eng-readonly" dir="ltr"></div>';
     }
-    var verseCls =
-      typeof verseBlockClassNames === 'function' && state && state.verses && state.verses[vi]
-        ? verseBlockClassNames(state.verses[vi])
-        : 'verse-block';
+
+    // Hebrew | Verse | English — natural-height invisible row
     return (
       '<div class="pl-verse-row" data-v="' +
       vi +
+      '" data-verse-key="' +
+      esc(verseKey) +
       '" data-split="' +
-      (seg.splitPart != null ? seg.splitPart : '') +
-      '"' +
-      rowStyle +
-      '>' +
-      '<div class="pl-eng-col">' +
-      engInner +
+      (row.splitPart != null ? row.splitPart : '') +
+      '" style="margin-bottom:' +
+      gap +
+      'px">' +
+      '<div class="pl-heb" dir="rtl" contenteditable="false" aria-readonly="true">' +
+      hebrewRowHtml(row) +
       '</div>' +
       '<div class="pl-num" contenteditable="false" aria-hidden="true">' +
       esc(num) +
       '</div>' +
-      '<div class="pl-heb ' +
-      esc(verseCls) +
-      '" dir="rtl" contenteditable="false" aria-readonly="true">' +
-      hebrewSegmentHtml(seg) +
+      '<div class="pl-eng-col">' +
+      engInner +
       '</div>' +
       '</div>'
     );
@@ -416,26 +379,24 @@
     var editableSeen = Object.create(null);
     return pages
       .map(function (page, pi) {
-        var rows = (page.segments || [])
-          .map(function (seg) {
+        var rows = pageRows(page)
+          .map(function (row) {
             var editable = false;
-            if (seg.splitPart == null || seg.splitPart === 0) {
-              if (!editableSeen[seg.verseIndex]) {
+            if (row.splitPart == null || row.splitPart === 0) {
+              if (!editableSeen[row.verseIndex]) {
                 editable = true;
-                editableSeen[seg.verseIndex] = true;
+                editableSeen[row.verseIndex] = true;
               }
             }
-            return buildSegmentRowHtml(seg, editable);
+            return buildVerseRowHtml(row, editable);
           })
           .join('');
         return (
           '<div class="pl-sheet" data-page="' +
           pi +
-          '" data-pl-engine="publication-layout-composer-v1">' +
-          (pi === 0 && title ? '<div class="pl-title" dir="ltr">' + esc(title) + '</div>' : '') +
-          (pi === 0
-            ? '<div class="pl-col-legend" dir="ltr" aria-hidden="true">' +
-              '<span>English</span><span>Verse</span><span>Hebrew</span></div>'
+          '" data-pl-engine="verse-row-heb-num-eng-v1">' +
+          (pi === 0 && title
+            ? '<div class="pl-title" dir="ltr">' + esc(title) + '</div>'
             : '') +
           '<div class="pl-table" role="table" aria-label="Publication page ' +
           (pi + 1) +
@@ -447,10 +408,6 @@
       .join('');
   }
 
-  /**
-   * Full rebuild of preview pages. Skips if an English editor in this root has focus
-   * (caret stability) — use recomposeAfterEdit for incremental updates while typing.
-   */
   function renderPrintPreview(opts) {
     opts = opts || {};
     var root = document.getElementById('printPreviewPages');
@@ -475,21 +432,20 @@
         '<div class="pl-empty" dir="ltr"><p><strong>No Contour text loaded.</strong></p>' +
         '<p class="muted">Generate or open a passage, then import an Aleph translation.</p></div>';
       updatePageMeta(0);
-      lastComposed = { segments: [], pages: [], metrics: {} };
+      lastComposed = { rows: [], pages: [], metrics: {} };
       return lastComposed;
     }
 
     publicationSettings();
     lastComposed = composeNow();
+    if (lastComposed.pairing && !lastComposed.pairing.ok && lastComposed.pairing.errors.length) {
+      console.warn('Side-by-side pairing warnings:', lastComposed.pairing.errors);
+    }
     root.innerHTML = buildPagesHtml(lastComposed);
     updatePageMeta((lastComposed.pages && lastComposed.pages.length) || 0);
     return lastComposed;
   }
 
-  /**
-   * After English edit: recompose model; rebuild only pages/segments that do not
-   * contain the focused editor (preserve caret).
-   */
   function recomposeAfterEdit(focusedVerseIndex) {
     var root = document.getElementById('printPreviewPages');
     if (!root || typeof composePublicationLayout !== 'function') return;
@@ -503,48 +459,46 @@
 
     var sheets = root.querySelectorAll('.pl-sheet');
     var pages = lastComposed.pages || [];
-    if (sheets.length !== pages.length) {
-      // Page count changed — full rebuild would steal caret; defer until blur/next open.
-      // Still update non-focused sheets' later siblings when counts match later.
-      return;
-    }
+    if (sheets.length !== pages.length) return;
 
     var editableSeen = Object.create(null);
     for (var pi = 0; pi < pages.length; pi++) {
       var sheet = sheets[pi];
       if (!sheet) continue;
-      var pageSegs = pages[pi].segments || [];
-      var touchesFocus = pageSegs.some(function (s) {
-        return s.verseIndex === focusVi && (s.splitPart == null || s.splitPart === 0);
+      var rows = pageRows(pages[pi]);
+      var touchesFocus = rows.some(function (r) {
+        return r.verseIndex === focusVi && (r.splitPart == null || r.splitPart === 0);
       });
       if (touchesFocus && focused) continue;
 
-      var rows = pageSegs
-        .map(function (seg) {
+      var html = rows
+        .map(function (row) {
           var editable = false;
-          if (seg.splitPart == null || seg.splitPart === 0) {
-            if (!editableSeen[seg.verseIndex]) {
+          if (row.splitPart == null || row.splitPart === 0) {
+            if (!editableSeen[row.verseIndex]) {
               editable = true;
-              editableSeen[seg.verseIndex] = true;
+              editableSeen[row.verseIndex] = true;
             }
           }
-          return buildSegmentRowHtml(seg, editable);
+          return buildVerseRowHtml(row, editable);
         })
         .join('');
       var table = sheet.querySelector('.pl-table');
-      if (table) table.innerHTML = rows;
+      if (table) table.innerHTML = html;
     }
   }
 
   function getFocusableInOverlay(dialog) {
     if (!dialog) return [];
-    return Array.prototype.slice.call(
-      dialog.querySelectorAll(
-        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [contenteditable="true"]',
-      ),
-    ).filter(function (el) {
-      return el.offsetParent !== null || el === document.activeElement;
-    });
+    return Array.prototype.slice
+      .call(
+        dialog.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [contenteditable="true"]',
+        ),
+      )
+      .filter(function (el) {
+        return el.offsetParent !== null || el === document.activeElement;
+      });
   }
 
   function installFocusTrap(dialog) {
@@ -598,18 +552,14 @@
     }
 
     lastFocusReturn = opts.focusReturn || document.activeElement;
-
     dialog.classList.remove('hidden');
     dialog.setAttribute('aria-hidden', 'false');
     document.body.classList.add('print-preview-open');
-
     renderPrintPreview({ force: true });
     installFocusTrap(dialog);
-
     var closeBtn = document.getElementById('printPreviewCloseBtn');
     if (closeBtn) closeBtn.focus();
     else dialog.focus();
-
     return lastComposed;
   }
 
@@ -620,7 +570,6 @@
     dialog.classList.add('hidden');
     dialog.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('print-preview-open');
-    // Do not persist printPreviewOpen.
     var restore = lastFocusReturn;
     lastFocusReturn = null;
     if (restore && typeof restore.focus === 'function') {
@@ -640,35 +589,16 @@
     }
   }
 
-  // Legacy aliases used by older wiring
-  function isPrintLayoutView() {
-    return isPrintPreviewOpen();
-  }
-  function renderPrintLayout() {
-    return renderPrintPreview({ force: true });
-  }
-  function setPrintLayoutActive(on) {
-    if (on) openSideBySidePrintPreview();
-    else closeSideBySidePrintPreview();
-  }
-  function enterPrintLayoutMode() {
-    openSideBySidePrintPreview();
-  }
-
   function bindPreviewChrome() {
     var closeBtn = document.getElementById('printPreviewCloseBtn');
     var exportBtn = document.getElementById('printPreviewExportBtn');
     if (closeBtn && !closeBtn._plBound) {
       closeBtn._plBound = true;
-      closeBtn.addEventListener('click', function () {
-        closeSideBySidePrintPreview();
-      });
+      closeBtn.addEventListener('click', closeSideBySidePrintPreview);
     }
     if (exportBtn && !exportBtn._plBound) {
       exportBtn._plBound = true;
-      exportBtn.addEventListener('click', function () {
-        exportFromPrintPreview();
-      });
+      exportBtn.addEventListener('click', exportFromPrintPreview);
     }
   }
 
@@ -686,10 +616,13 @@
     return lastComposed;
   };
   window.readPublicationLayoutPlainText = readPublicationLayoutPlainText;
-
-  // Back-compat for any leftover callers
-  window.isPrintLayoutView = isPrintLayoutView;
-  window.renderPrintLayout = renderPrintLayout;
-  window.setPrintLayoutActive = setPrintLayoutActive;
-  window.enterPrintLayoutMode = enterPrintLayoutMode;
+  window.isPrintLayoutView = isPrintPreviewOpen;
+  window.renderPrintLayout = function () {
+    return renderPrintPreview({ force: true });
+  };
+  window.setPrintLayoutActive = function (on) {
+    if (on) openSideBySidePrintPreview();
+    else closeSideBySidePrintPreview();
+  };
+  window.enterPrintLayoutMode = openSideBySidePrintPreview;
 })();

@@ -1,4 +1,4 @@
-/* Side-by-Side Print Preview overlay — multi-page publication paper */
+/* Side-by-Side Print Preview — Hebrew | Verse | English natural-height rows */
 
 body.print-preview-open {
   overflow: hidden;
@@ -26,13 +26,11 @@ body.print-preview-open {
   padding: 10px 16px;
   background: #f8fafc;
   border-bottom: 1px solid #cbd5e1;
-  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
 }
 
 .print-preview-header-title {
   font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.02em;
   color: #1e293b;
 }
 
@@ -82,21 +80,10 @@ body.print-preview-open {
   gap: 28px;
 }
 
-/* Letter paper canvas — Contour letter metrics (816×1056 @ 96dpi ≈ 8.5×11in) */
 .pl-sheet {
-  --pl-eng: 57.4%;
-  --pl-num: 4.6%;
-  --pl-heb: 38%;
-  --contour-body-font-size: 26px;
-  --contour-body-line-height: 2.1;
-  --contour-display-indent-px: 30px;
-  --contour-break-compact: -8px;
-  --contour-break-sm: 18px;
-  --contour-break-md: 40px;
-  --contour-break-lg: 72px;
-  --contour-verse-spacing-single: 2.1em;
-  --contour-verse-spacing-oneHalf: 3.15em;
-  --contour-verse-spacing-double: 4.2em;
+  --pl-heb: 46%;
+  --pl-num: 6%;
+  --pl-eng: 48%;
   width: min(8.5in, 100%);
   max-width: 8.5in;
   min-height: 11in;
@@ -105,40 +92,18 @@ body.print-preview-open {
   box-shadow:
     0 0 0 1px rgba(15, 23, 42, 0.06),
     0 12px 40px rgba(15, 23, 42, 0.14);
-  padding: 1in;
+  padding: 0.85in 0.75in;
   box-sizing: border-box;
 }
 
 .pl-title {
-  font-family: 'Times New Roman', Times, serif;
-  font-weight: 700;
-  font-size: 14pt;
-  margin: 0 0 10pt;
-  text-align: left;
-  color: #111;
-}
-
-.pl-col-legend {
-  display: grid;
-  grid-template-columns: var(--pl-eng) var(--pl-num) var(--pl-heb);
-  font-family: 'Times New Roman', Times, serif;
-  font-size: 9pt;
-  color: #94a3b8;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin: 0 0 14pt;
-  user-select: none;
-  pointer-events: none;
-}
-
-.pl-col-legend span:nth-child(1) {
-  text-align: left;
-}
-.pl-col-legend span:nth-child(2) {
+  font-family: 'Times New Roman', Times, Georgia, serif;
+  font-weight: 400;
+  font-style: italic;
+  font-size: 12pt;
+  margin: 0 0 18pt;
   text-align: center;
-}
-.pl-col-legend span:nth-child(3) {
-  text-align: right;
+  color: #222;
 }
 
 .pl-table {
@@ -146,37 +111,67 @@ body.print-preview-open {
   display: block;
 }
 
+/* Invisible natural-height verse row: Hebrew | # | English */
 .pl-verse-row {
   display: grid;
-  grid-template-columns: var(--pl-eng) var(--pl-num) var(--pl-heb);
-  column-gap: 0;
+  grid-template-columns: var(--pl-heb) var(--pl-num) var(--pl-eng);
   align-items: start;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pl-heb {
+  font-family: 'SBL Hebrew', 'SBL BibLit', 'Ezra SIL', 'Times New Roman', Times, serif;
+  font-size: 13pt;
+  line-height: 1.4;
+  text-align: right;
+  direction: rtl;
+  user-select: none;
+  pointer-events: none;
+  padding: 0 4px 0 8px;
+  cursor: default;
+}
+
+.pl-heb-line {
   margin: 0;
+  padding: 0;
+  text-align: right;
+}
+
+.pl-num {
+  font-family: 'Times New Roman', Times, Georgia, serif;
+  font-size: 10pt;
+  line-height: 1.4;
+  text-align: center;
+  color: #333;
+  user-select: none;
+  pointer-events: none;
+  padding-top: 0.05em;
 }
 
 .pl-eng-col {
   min-width: 0;
+  padding-left: 8px;
 }
 
 .pl-eng-empty {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   font-family: system-ui, sans-serif;
   font-size: 11px;
 }
 
 .pl-eng {
-  font-family: 'Times New Roman', Times, serif;
-  font-size: 11.5pt;
-  line-height: 1.2;
+  font-family: 'Times New Roman', Times, Georgia, serif;
+  font-size: 13pt;
+  line-height: 1.35;
   text-align: left;
   direction: ltr;
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow-wrap: break-word;
-  min-height: 1.2em;
-  padding: 1px 8px 1px 2px;
+  min-height: 1.35em;
+  padding: 0;
   outline: none;
-  border-radius: 2px;
   caret-color: #0b61a4;
 }
 
@@ -186,65 +181,12 @@ body.print-preview-open {
 }
 
 .pl-eng:hover {
-  background: rgba(250, 245, 230, 0.35);
+  background: rgba(250, 245, 230, 0.3);
 }
 
 .pl-eng:focus {
   background: #fffdf5;
   box-shadow: inset 0 0 0 1px #d4c28a;
-}
-
-.pl-num {
-  font-family: 'Times New Roman', Times, serif;
-  font-size: 9pt;
-  line-height: 1.2;
-  text-align: center;
-  color: #333;
-  user-select: none;
-  pointer-events: none;
-  padding-top: 0.08em;
-}
-
-/* Contour-faithful Hebrew column */
-.pl-heb {
-  font-family: 'SBL BibLit', 'SBL Hebrew', 'Ezra SIL', 'Times New Roman', serif;
-  font-size: var(--contour-body-font-size, 26px);
-  line-height: var(--contour-body-line-height, 2.1);
-  text-align: right;
-  direction: rtl;
-  user-select: none;
-  pointer-events: none;
-  padding: 0 0 0 4px;
-  cursor: default;
-}
-
-.pl-heb.verse-spacing-single {
-  margin-bottom: var(--contour-verse-spacing-single);
-}
-.pl-heb.verse-spacing-oneHalf {
-  margin-bottom: var(--contour-verse-spacing-oneHalf);
-}
-.pl-heb.verse-spacing-double {
-  margin-bottom: var(--contour-verse-spacing-double);
-}
-
-.pl-heb-line {
-  margin: 0;
-  padding: 0;
-  text-align: right;
-}
-
-.pl-heb-line.layout-break-compact {
-  margin-bottom: var(--contour-break-compact);
-}
-.pl-heb-line.layout-break-sm {
-  margin-bottom: var(--contour-break-sm);
-}
-.pl-heb-line.layout-break-md {
-  margin-bottom: var(--contour-break-md);
-}
-.pl-heb-line.layout-break-lg {
-  margin-bottom: var(--contour-break-lg);
 }
 
 .pl-heb-word.pred {
@@ -263,5 +205,4 @@ body.print-preview-open {
   background: #fff;
   border: 1px dashed #b0b8c4;
   border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
 }

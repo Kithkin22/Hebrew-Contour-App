@@ -266,41 +266,40 @@ assert.ok(!xml.includes('>Hebrew<'), 'no Hebrew column header');
 assert.ok(!xml.includes('>Translation<'), 'no Translation column header');
 assert.ok(xml.includes('<w:cantSplit/>'), 'verse rows prefer not to split');
 assert.ok(xml.includes('<w:vAlign w:val="top"/>'), 'cells are top-aligned');
-assert.ok(xml.includes('w:w="500"'), 'narrow verse-number column');
-assert.ok(xml.includes('w:w="6200"'), 'wide English column');
-assert.ok(xml.includes('w:w="4100"'), 'compact Hebrew column');
+assert.ok(xml.includes('w:w="650"'), 'narrow verse-number column (~6%)');
+assert.ok(xml.includes('w:w="5000"'), 'Hebrew column (~46%)');
+assert.ok(xml.includes('w:w="5150"'), 'English column (~48%)');
 assert.ok(
-  xml.includes('<w:tblGrid><w:gridCol w:w="6200"/><w:gridCol w:w="500"/><w:gridCol w:w="4100"/></w:tblGrid>'),
-  'three-column tblGrid English | verse | Hebrew',
+  xml.includes('<w:tblGrid><w:gridCol w:w="5000"/><w:gridCol w:w="650"/><w:gridCol w:w="5150"/></w:tblGrid>'),
+  'three-column tblGrid Hebrew | verse | English',
 );
 assert.ok(xml.includes('w:tblW w:w="5000" w:type="pct"'), 'table spans full content width (100%)');
-assert.ok(xml.includes('<w:jc w:val="right"/>') && xml.includes('<w:tblInd w:w="0"'), 'table right-anchored with zero indent');
-assert.ok(xml.includes('w:sz w:val="23"'), 'English ~11.5pt');
-assert.ok(!xml.includes('w:sz w:val="26"'), 'English not oversized 13pt');
+assert.ok(xml.includes('<w:tblInd w:w="0"'), 'table zero indent');
+assert.ok(xml.includes('w:sz w:val="26"'), 'English ~13pt (scholarly)');
 assert.ok(xml.includes('w:line="240"'), 'English single/compact line spacing');
 assert.ok(!xml.includes('w:line="288"'), 'no loose 1.2 English line spacing');
-assert.ok(!xml.includes('w:after="160"'), 'no fixed English VERSE_GAP; Contour spacing is Hebrew-owned');
+assert.ok(xml.includes('<w:cantSplit/>'), 'verse rows keep Heb/Num/Eng together');
 assert.ok(xml.includes('<w:bidi/><w:jc w:val="right"/>'), 'Hebrew remains bidi + right-justified');
 assert.ok(
-  /w:tcW w:w="4100"[\s\S]*?w:right w:w="0"/.test(xml),
+  /w:tcW w:w="5000"[\s\S]*?w:right w:w="0"/.test(xml),
   'Hebrew cell has zero right margin for flush page-edge',
 );
 
-// English before Hebrew in each data row: first verse text then Hebrew token.
+// Hebrew before English in each data row (screenshot column order).
 const engPos = xml.indexOf('Be gracious to me,');
 const hebPos = xml.indexOf('חָנֻּנִי');
-assert.ok(engPos > -1 && hebPos > -1 && engPos < hebPos, 'English column precedes Hebrew');
+assert.ok(engPos > -1 && hebPos > -1 && hebPos < engPos, 'Hebrew column precedes English');
 assert.ok(xml.includes('>21<'), 'center verse number present');
 assert.ok(
   xml.includes('Be gracious to me, be gracious to me, you my friends,'),
   'single newlines reflow into continuous English prose',
 );
 assert.ok(!xml.includes('<w:br/>'), 'no hard w:br for ordinary English newlines');
-const engCellMatch = xml.match(/<w:tcW w:w="6200"[\s\S]*?<\/w:tc>/);
+const engCellMatch = xml.match(/<w:tcW w:w="5150"[\s\S]*?<\/w:tc>/);
 assert.ok(engCellMatch, 'English cell present');
 const engCell = engCellMatch[0];
 assert.ok((engCell.match(/<w:p>/g) || []).length === 1, 'one English paragraph when source has only single newlines');
-const hebCellMatch = xml.match(/<w:tcW w:w="4100"[\s\S]*?<\/w:tc>/);
+const hebCellMatch = xml.match(/<w:tcW w:w="5000"[\s\S]*?<\/w:tc>/);
 assert.ok(hebCellMatch, 'Hebrew cell present');
 assert.ok(hebCellMatch[0].includes('<w:bidi/>'), 'Hebrew cell keeps bidi');
 assert.ok(hebCellMatch[0].includes('w:jc w:val="right"'), 'Hebrew cell keeps right justification');
@@ -340,12 +339,12 @@ const blankLineText = 'First paragraph line.\n\nSecond paragraph line.';
 sandbox.state.alephTranslations.byChapterVerse['19:21'].text = blankLineText;
 sandbox.state.alephTranslations.translations['Job 19:21'].text = blankLineText;
 const xmlParas = sandbox.contourDocxXml({ sideBySide: true });
-const engCellParas = (xmlParas.match(/<w:tcW w:w="6200"[\s\S]*?<\/w:tc>/) || [''])[0];
+const engCellParas = (xmlParas.match(/<w:tcW w:w="5150"[\s\S]*?<\/w:tc>/) || [''])[0];
 assert.ok((engCellParas.match(/<w:p>/g) || []).length === 2, 'blank line yields two English paragraphs');
 assert.ok(engCellParas.includes('First paragraph line.'), 'first English paragraph present');
 assert.ok(engCellParas.includes('Second paragraph line.'), 'second English paragraph present');
 assert.ok(xmlParas.includes('<w:tbl>'), 'side-by-side DOCX remains tabular');
-assert.ok(!engCellParas.includes('w:after="160"'), 'English no longer uses fixed VERSE_GAP=160');
+assert.ok(xmlParas.includes('<w:cantSplit/>'), 'natural-height verse rows stay keep-together');
 
 const plain = sandbox.contourDocxXml();
 assert.ok(plain.includes('חָנֻּנִי'), 'plain DOCX Hebrew present');
@@ -495,9 +494,9 @@ assert.strictEqual(
 const plainAfter = sandbox.contourDocxXml();
 assert.ok(!plainAfter.includes('<w:tbl>'), 'plain Contour DOCX still non-tabular after print-layout work');
 
-// Composer-backed side-by-side: Contour order, page model, publicationLayout → w:br
+// Composer-backed side-by-side: natural-height verse-rows, publicationLayout → w:br
 {
-  sandbox.state.verses[0].clauses[0].spacingAfterPx = 40;
+  sandbox.state.verses[0].clauses[0].spacingAfterPx = 400; // Contour canvas gap must not drive publication
   sandbox.setPublicationLayoutForVerse(
     sandbox.state.verses[0],
     'Be gracious to me,\nbe gracious to me,\nyou my friends,',
@@ -506,17 +505,21 @@ assert.ok(!plainAfter.includes('<w:tbl>'), 'plain Contour DOCX still non-tabular
     verses: sandbox.state.verses,
     getEnglishForVerse: (v) => sandbox.getSideBySideEnglishForVerse(v),
   });
-  assert.ok(composed.segments.length === sandbox.state.verses.length, 'composer segment per Contour verse');
-  assert.ok(composed.segments[0].spacingAfterPx >= 0, 'extra spacing non-negative');
-  assert.ok(
-    composed.segments[0].contentPx >=
-      composed.segments[0].contourMinContentPx + composed.segments[0].contourSpacingAfterPx ||
-      composed.segments[0].englishContentPx >= composed.segments[0].contentPx,
-    'Contour spacing is minimum floor in composer content',
+  assert.ok(composed.rows.length === sandbox.state.verses.length, 'one verse-row per Contour verse');
+  assert.strictEqual(composed.blocks[0].type, 'verse-row');
+  assert.strictEqual(
+    composed.rows[0].rowHeight,
+    Math.max(composed.rows[0].measuredHebrewHeight, composed.rows[0].measuredEnglishHeight),
   );
+  assert.ok(composed.rows[0].spacingAfter <= 20, 'Contour canvas spacingAfterPx ignored');
+  assert.ok(composed.pairing && composed.pairing.ok, 'canonical pairing verified');
   const xmlComp = sandbox.contourDocxXml({ sideBySide: true });
   assert.ok(xmlComp.includes('<w:br/>'), 'publicationLayout \\n → DOCX w:br');
   assert.ok(xmlComp.includes('<w:tbl>'), 'composer DOCX is tabular');
+  assert.ok(
+    xmlComp.indexOf('חָנֻּנִי') < xmlComp.indexOf('Be gracious to me,'),
+    'DOCX uses Hebrew | # | English order',
+  );
   // Multi-page emission when composer pages > 1
   const manyVerses = [];
   for (let i = 0; i < 50; i++) {
@@ -534,7 +537,7 @@ assert.ok(!plainAfter.includes('<w:tbl>'), 'plain Contour DOCX still non-tabular
     verses: manyVerses,
     getEnglishForVerse: () => ({ text: 'x', preserveLineBreaks: false }),
   });
-  assert.ok(big.pages.length >= 2, 'tall Contour packs to multiple composer pages');
+  assert.ok(big.pages.length >= 2, 'natural-height rows paginate across pages');
   const xmlPages = sandbox.contourDocxXml({ sideBySide: true });
   if (big.pages.length >= 2) {
     assert.ok(xmlPages.includes('w:type="page"'), 'multi-page composer emits Word page breaks');

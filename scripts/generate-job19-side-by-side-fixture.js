@@ -272,24 +272,33 @@ const checks = {
   noHeaders: !documentXml.includes('>Hebrew<') && !documentXml.includes('>Translation<'),
   threeWidths:
     documentXml.includes('w:tblW w:w="5000" w:type="pct"') &&
-    documentXml.includes('6200') &&
-    documentXml.includes('w:w="500"') &&
-    documentXml.includes('4100'),
+    documentXml.includes('w:w="5000"') &&
+    documentXml.includes('w:w="650"') &&
+    documentXml.includes('w:w="5150"') &&
+    documentXml.includes(
+      '<w:tblGrid><w:gridCol w:w="5000"/><w:gridCol w:w="650"/><w:gridCol w:w="5150"/></w:tblGrid>',
+    ),
   engTypography:
-    documentXml.includes('w:sz w:val="23"') &&
+    documentXml.includes('w:sz w:val="26"') &&
     documentXml.includes('w:line="240"') &&
     documentXml.includes('<w:br/>') &&
     documentXml.includes('For I know that my Redeemer lives,') &&
-    !documentXml.includes('w:sz w:val="26"') &&
+    documentXml.includes('<w:cantSplit/>') &&
     !documentXml.includes('w:line="288"'),
   hebrewFlushRight:
     documentXml.includes('<w:bidi/><w:jc w:val="right"/>') &&
-    /w:tcW w:w="4100"[\s\S]*?w:right w:w="0"/.test(documentXml),
-  composerSegments: composed.segments.length === 9,
-  contourSpacingMin:
-    composed.segments[0].contentPx >=
-    composed.segments[0].contourMinContentPx + composed.segments[0].contourSpacingAfterPx,
-  verseAnchors: composed.segments.map((s) => s.verseNumber).join(',') === '21,22,23,24,25,26,27,28,29',
+    /w:tcW w:w="5000"[\s\S]*?w:right w:w="0"/.test(documentXml),
+  hebBeforeEng:
+    documentXml.indexOf('חָנֻּנִי') > -1 &&
+    documentXml.indexOf('Be gracious to me,') > documentXml.indexOf('חָנֻּנִי'),
+  composerRows: composed.rows.length === 9,
+  naturalHeight:
+    composed.rows[0].rowHeight ===
+    Math.max(composed.rows[0].measuredHebrewHeight, composed.rows[0].measuredEnglishHeight),
+  noContourGapBleed: composed.rows.every((r) => (r.spacingAfter || 0) <= 20),
+  verseAnchors: composed.rows.map((s) => s.verseNumber).join(',') === '21,22,23,24,25,26,27,28,29',
+  verseRowType: composed.rows.every((b) => b.type === 'verse-row'),
+  pairingOk: !!(composed.pairing && composed.pairing.ok),
 };
 
 const failed = Object.keys(checks).filter((k) => !checks[k]);

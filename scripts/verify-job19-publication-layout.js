@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Job 19 Contour vs composer vs DOCX structural verification.
- * Complements manual Contour Editor ↔ Print Preview ↔ Word visual check (no merge/deploy).
+ * Complements manual Contour Editor ↔ Print Preview ↔ Word visual check.
  */
 const assert = require('assert');
 const fs = require('fs');
@@ -22,7 +22,13 @@ const xml = fs.readFileSync(FIXTURE_XML, 'utf8');
 assert.ok(xml.includes('<w:tbl>'), 'side-by-side is tabular');
 assert.ok(!xml.includes('>Hebrew<'), 'no Hebrew header');
 assert.ok(xml.includes('<w:br/>'), 'publicationLayout newlines → w:br');
-assert.ok(xml.includes('w:type="page"'), 'multi-page Contour+English emits Word page break');
+assert.ok(xml.includes('w:sz w:val="26"'), 'scholarly 13pt runs');
+assert.ok(xml.includes('<w:cantSplit/>'), 'Heb/Num/Eng keep-together');
+assert.ok(
+  xml.includes('<w:tblGrid><w:gridCol w:w="5000"/><w:gridCol w:w="650"/><w:gridCol w:w="5150"/></w:tblGrid>'),
+  'Hebrew | verse | English column grid',
+);
+assert.ok(xml.indexOf('חָנֻּנִי') < xml.indexOf('Be gracious to me,'), 'Hebrew precedes English');
 
 const anchors = ['21', '22', '23', '24', '25', '26', '27', '28', '29'];
 anchors.forEach((n) => {
@@ -36,12 +42,6 @@ assert.ok(xml.includes('and after my skin'), 'English 26 present');
 assert.ok(xml.includes('whom I shall see on my side,'), 'English 27 present');
 assert.ok(xml.includes('be afraid of the sword,'), 'English 29 present');
 
-// Contour spacing minima mapped into Hebrew paragraph after (px→twips ×15)
-assert.ok(
-  xml.includes('w:after="270"') || xml.includes('w:after="600"') || xml.includes('w:after="1080"'),
-  'Contour clause/verse spacing appears in Hebrew DOCX',
-);
-
 console.log('OK: Job 19 Contour↔composer↔DOCX structural verification');
-console.log('  Manual visual still recommended: Contour Editor gaps vs Print Preview vs Word.');
+console.log('  Pages/page-breaks:', (xml.match(/w:type="page"/g) || []).length + 1);
 console.log('  Fixture:', FIXTURE_XML);

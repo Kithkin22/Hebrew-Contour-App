@@ -1,72 +1,90 @@
 /**
- * Shared Contour publication layout composer.
- * Pure layout model for Side-by-Side Print Preview and Side-by-Side DOCX.
- * Contour clause/verse spacing is a minimum; English overflow expands and shifts later anchors.
+ * Side-by-Side publication composer — natural-height verse rows.
+ *
+ * Atomic unit: one invisible row per canonical verse
+ *   [ Hebrew | Verse# | English ]
+ *
+ * Contour supplies Hebrew text/lineation/formatting only — NOT canvas spacing.
+ * English joins by canonical verse key. Preview and DOCX share this model.
  */
 (function (root) {
   'use strict';
 
-  var ENG_COL_TWIPS = 6200;
-  var NUM_COL_TWIPS = 500;
-  var HEB_COL_TWIPS = 4100;
-  var ENG_FONT_PT = 11.5;
-  var ENG_LINE_HEIGHT = 1.2;
+  // Proportions ~46% | 6% | 48% of 10800 twips usable width
+  var HEB_COL_TWIPS = 5000;
+  var NUM_COL_TWIPS = 650;
+  var ENG_COL_TWIPS = 5150;
   var ENG_AVG_CHAR_EM = 0.5;
 
+  var PUBLICATION_PAGE = {
+    letterWidthPx: 816,
+    letterHeightPx: 1056,
+    marginPx: 72,
+    fontPt: 13,
+    fontPx: (13 * 96) / 72,
+    lineHeight: 1.4,
+    engFontPt: 13,
+    engLineHeight: 1.35,
+    indentStepPx: 14,
+    rowGapPx: 14, // natural inter-verse gap (not Contour canvas)
+    hebFontHalfPoints: 26,
+    engFontHalfPoints: 26,
+  };
+
   function pageTokens(page) {
-    var p = page || (typeof CONTOUR_PAGE !== 'undefined' ? CONTOUR_PAGE : null) || {};
-    var letterW = p.letterWidthPx != null ? p.letterWidthPx : 816;
-    var letterH = p.letterHeightPx != null ? p.letterHeightPx : 1056;
-    var margin = p.marginPx != null ? p.marginPx : 96;
-    var bodyFs = p.bodyFontSizePx != null ? p.bodyFontSizePx : 26;
-    var bodyLh = p.bodyLineHeight != null ? p.bodyLineHeight : 2.1;
-    var breakPx = p.breakPx || { compact: -8, small: 18, medium: 40, large: 72 };
-    var verseEm = p.verseSpacingEm || { single: 2.1, oneHalf: 3.15, double: 4.2 };
+    var pub = PUBLICATION_PAGE;
+    var p = page || {};
+    var letterW = p.letterWidthPx != null ? p.letterWidthPx : pub.letterWidthPx;
+    var letterH = p.letterHeightPx != null ? p.letterHeightPx : pub.letterHeightPx;
+    var margin = p.marginPx != null ? p.marginPx : pub.marginPx;
+    var hebFs = p.bodyFontSizePx != null ? p.bodyFontSizePx : pub.fontPx;
+    var hebLh = p.bodyLineHeight != null ? p.bodyLineHeight : pub.lineHeight;
+    var engPt = p.engFontPt != null ? p.engFontPt : pub.engFontPt;
+    var engLh = p.engLineHeight != null ? p.engLineHeight : pub.engLineHeight;
+    var engFontPx = (engPt * 96) / 72;
     return {
       letterWidthPx: letterW,
       letterHeightPx: letterH,
       marginPx: margin,
       printableHeightPx: Math.max(0, letterH - 2 * margin),
       printableWidthPx: Math.max(0, letterW - 2 * margin),
-      bodyFontSizePx: bodyFs,
-      bodyLineHeight: bodyLh,
-      hebrewLinePx: bodyFs * bodyLh,
-      breakPx: breakPx,
-      verseSpacingEm: verseEm,
+      bodyFontSizePx: hebFs,
+      bodyLineHeight: hebLh,
+      hebrewLinePx: hebFs * hebLh,
+      indentStepPx: p.indentStepPx != null ? p.indentStepPx : pub.indentStepPx,
+      rowGapPx: p.rowGapPx != null ? p.rowGapPx : pub.rowGapPx,
       engColTwips: ENG_COL_TWIPS,
       numColTwips: NUM_COL_TWIPS,
       hebColTwips: HEB_COL_TWIPS,
       engContentWidthPx: ENG_COL_TWIPS / 15,
-      engFontPx: (ENG_FONT_PT * 96) / 72,
-      engLinePx: ((ENG_FONT_PT * 96) / 72) * ENG_LINE_HEIGHT,
+      hebContentWidthPx: HEB_COL_TWIPS / 15,
+      engFontPx: engFontPx,
+      engLinePx: engFontPx * engLh,
+      engFontPt: engPt,
+      hebFontHalfPoints: pub.hebFontHalfPoints,
+      engFontHalfPoints: pub.engFontHalfPoints,
     };
   }
 
-  function clauseSpacingPx(clause) {
-    if (typeof clauseSpacingAfterPx === 'function') return clauseSpacingAfterPx(clause);
+  function publicationIndentPx(clause, metrics) {
+    var m = metrics || pageTokens();
+    var stepPub = m.indentStepPx || 14;
     if (!clause) return 0;
-    if (typeof clause.spacingAfterPx === 'number') return Math.round(clause.spacingAfterPx);
-    var level = String((clause && clause.spacingAfter) || 'default').toLowerCase();
-    var page = pageTokens();
-    if (level === 'compact') return page.breakPx.compact || -8;
-    if (level === 'small') return page.breakPx.small || 18;
-    if (level === 'medium') return page.breakPx.medium || 40;
-    if (level === 'large') return page.breakPx.large || 72;
-    return 0;
+    if (typeof clause.indentPx === 'number' && typeof contourTabIndentStepPx === 'function') {
+      var stepC = contourTabIndentStepPx() || 30;
+      var levels = stepC > 0 ? clause.indentPx / stepC : clause.indent || 0;
+      return Math.max(0, Math.round(levels * stepPub));
+    }
+    if (typeof clauseIndentPx === 'function' && typeof contourTabIndentStepPx === 'function') {
+      var cPx = clauseIndentPx(clause);
+      var step = contourTabIndentStepPx() || 30;
+      return Math.max(0, Math.round((step > 0 ? cPx / step : clause.indent || 0) * stepPub));
+    }
+    return Math.max(0, Math.round((clause.indent || 0) * stepPub));
   }
 
-  function verseSpacingPx(verse) {
-    if (typeof verseSpacingAfterDocxTwips === 'function' && typeof contourPxToDocxTwips === 'function') {
-      var tw = verseSpacingAfterDocxTwips(verse);
-      if (tw) return Math.round(tw / 15);
-    }
-    var level = String((verse && verse.spacingAfter) || 'default');
-    if (level === 'onehalf' || level === '1.5') level = 'oneHalf';
-    if (level === 'default') return 0;
-    var page = pageTokens();
-    var em = page.verseSpacingEm[level];
-    if (em == null) return 0;
-    return Math.round(em * page.bodyFontSizePx);
+  function publicationIndentDocxTwips(clause) {
+    return Math.round(publicationIndentPx(clause) * 15);
   }
 
   function cloneClauses(clauses) {
@@ -74,8 +92,6 @@
       return {
         indent: c.indent || 0,
         indentPx: typeof c.indentPx === 'number' ? c.indentPx : undefined,
-        spacingAfter: c.spacingAfter,
-        spacingAfterPx: typeof c.spacingAfterPx === 'number' ? c.spacingAfterPx : undefined,
         alignment: c.alignment,
         words: (c.words || []).map(function (w) {
           return {
@@ -97,237 +113,372 @@
     return bare ? String(+bare[1]) : '';
   }
 
-  function estimateHebrewBlockPx(clauses, metrics) {
+  function resolveVerseKey(ref) {
+    if (typeof canonicalAlephVerseKey === 'function') {
+      var k = canonicalAlephVerseKey(ref);
+      if (k) return k;
+    }
+    return String(ref || '').trim();
+  }
+
+  function englishLinesFromText(text, preserveLineBreaks) {
+    var raw = String(text == null ? '' : text);
+    if (preserveLineBreaks) return raw.length ? raw.split('\n') : [''];
+    var collapsed = raw
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n')
+      .replace(/\n+/g, ' ')
+      .replace(/[ \t]+/g, ' ')
+      .trim();
+    return collapsed ? [collapsed] : [''];
+  }
+
+  function estimateLineWrapCount(text, contentWidthPx, fontPx) {
+    var len = String(text || '').length;
+    if (!len) return 1;
+    var charsPerLine = Math.max(8, Math.floor(contentWidthPx / (fontPx * ENG_AVG_CHAR_EM)));
+    return Math.max(1, Math.ceil(len / charsPerLine));
+  }
+
+  function estimateHebrewHeight(clauses, metrics) {
     var list = clauses || [];
     if (!list.length) return metrics.hebrewLinePx;
     var total = 0;
     for (var i = 0; i < list.length; i++) {
-      total += metrics.hebrewLinePx;
-      if (i < list.length - 1) {
-        // Inter-clause Contour gaps belong to content; trailing gap is spacingAfter.
-        total += Math.max(0, clauseSpacingPx(list[i]));
-      }
+      var words = (list[i].words || [])
+        .map(function (w) {
+          return w.text || '';
+        })
+        .join(' ');
+      var wraps = estimateLineWrapCount(words, metrics.hebContentWidthPx, metrics.bodyFontSizePx);
+      total += wraps * metrics.hebrewLinePx;
     }
     return total;
   }
 
-  function estimateEnglishContentPx(text, preserveLineBreaks, metrics) {
-    var raw = String(text == null ? '' : text);
-    var lines;
-    if (preserveLineBreaks) {
-      lines = raw.length ? raw.split('\n') : [''];
-    } else {
-      var collapsed = raw
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n')
-        .replace(/\n+/g, ' ')
-        .replace(/[ \t]+/g, ' ')
-        .trim();
-      lines = collapsed ? [collapsed] : [''];
-    }
-    var charsPerLine = Math.max(
-      8,
-      Math.floor(metrics.engContentWidthPx / (metrics.engFontPx * ENG_AVG_CHAR_EM)),
-    );
-    var wrapped = 0;
+  function estimateEnglishHeight(text, preserveLineBreaks, metrics) {
+    var lines = englishLinesFromText(text, preserveLineBreaks);
+    var total = 0;
     for (var i = 0; i < lines.length; i++) {
-      var len = lines[i].length;
-      if (len === 0) {
-        wrapped += 1;
-        continue;
-      }
-      wrapped += Math.max(1, Math.ceil(len / charsPerLine));
+      total += estimateLineWrapCount(lines[i], metrics.engContentWidthPx, metrics.engFontPx) * metrics.engLinePx;
     }
-    return wrapped * metrics.engLinePx;
+    return total || metrics.engLinePx;
   }
 
-  function contourTrailingSpacingPx(verse, clauses) {
-    var list = clauses || [];
-    var last = list.length ? list[list.length - 1] : null;
-    var clauseTrail = last ? clauseSpacingPx(last) : 0;
-    // Compact (negative) collapses; treat as 0 for publication floor of "gap after".
-    if (clauseTrail < 0) clauseTrail = 0;
-    return clauseTrail + verseSpacingPx(verse);
+  function hebrewWordCount(verse) {
+    var n = 0;
+    ((verse && verse.clauses) || []).forEach(function (c) {
+      (c.words || []).forEach(function (w) {
+        if (String((w && w.text) || '').trim()) n++;
+      });
+    });
+    return n;
   }
 
-  function buildSegment(verse, verseIndex, engSrc, metrics) {
-    var clauses = cloneClauses(verse && verse.clauses);
-    var contourMinContentPx = estimateHebrewBlockPx(clauses, metrics);
-    var contourSpacingAfterPx = contourTrailingSpacingPx(verse, verse && verse.clauses);
-    var contourBlockPx = contourMinContentPx + contourSpacingAfterPx;
-    var engText = engSrc && engSrc.text != null ? String(engSrc.text) : '';
-    var preserve = !!(engSrc && engSrc.preserveLineBreaks);
-    var englishContentPx = estimateEnglishContentPx(engText, preserve, metrics);
-    // Match Word/preview: Contour trail lives inside the Hebrew column, so segment
-    // height is max(Contour block, English) — never Contour-lines + English + trail.
-    var contentPx = Math.max(contourBlockPx, englishContentPx);
-    return {
-      type: 'verse-segment',
-      verseIndex: verseIndex,
-      verseNumber: verseNumberFromRef(verse && verse.ref),
-      ref: (verse && verse.ref) || '',
-      hebrewClauses: clauses,
-      contourMinContentPx: contourMinContentPx,
-      contourSpacingAfterPx: contourSpacingAfterPx,
-      english: {
-        text: engText,
-        preserveLineBreaks: preserve,
-        source: (engSrc && engSrc.source) || '',
-      },
-      englishContentPx: englishContentPx,
-      contentPx: contentPx,
-      // Extra after Contour block only when English-driven expansion needs more than Contour floor.
-      spacingAfterPx: 0,
-      keepTogether: true,
-      splitPart: null,
-      splitOf: null,
-    };
+  function tokenVerseKey(token, fallbackKey) {
+    if (!token) return fallbackKey;
+    var raw = token.verseKey || token.verseRef || token.ref || token.canonicalVerse || '';
+    if (!raw) return fallbackKey;
+    return resolveVerseKey(raw) || fallbackKey;
   }
 
   /**
-   * Ensure Contour minima are never compressed and English overflow shifts later anchors.
-   * Contour trailing spacing is part of the Contour block floor inside contentPx.
+   * Split a Contour verse whose clauses/words carry mixed canonical keys.
+   * Preserves display order; never assigns a whole mixed block to the first verse.
    */
-  function applyEnglishExpansion(segments) {
-    var i;
-    for (i = 0; i < segments.length; i++) {
-      var seg = segments[i];
-      var contourBlock = seg.contourMinContentPx + seg.contourSpacingAfterPx;
-      seg.contentPx = Math.max(contourBlock, seg.englishContentPx);
-      if (seg.spacingAfterPx < 0) seg.spacingAfterPx = 0;
-    }
-    // Collision pass: Contour-min start of i+1 must stay ≥ Contour-only distance from i.
-    var contourCursor = 0;
-    var pubCursor = 0;
-    for (i = 0; i < segments.length; i++) {
-      var s = segments[i];
-      var contourBlock = s.contourMinContentPx + s.contourSpacingAfterPx;
-      var contourStart = contourCursor;
-      var pubStart = pubCursor;
-      if (pubStart < contourStart && i > 0) {
-        segments[i - 1].spacingAfterPx += contourStart - pubStart;
-        pubCursor = contourStart;
-        pubStart = contourStart;
-      }
-      contourCursor = contourStart + contourBlock;
-      pubCursor = pubStart + s.contentPx + s.spacingAfterPx;
-      if (pubCursor < contourCursor) {
-        s.spacingAfterPx += contourCursor - pubCursor;
-        pubCursor = contourCursor;
-      }
-    }
-    return segments;
-  }
+  function expandContourVerseUnits(v, vi, parentKey) {
+    var units = [];
+    var clauses = (v && v.clauses) || [];
+    var currentKey = null;
+    var bucket = [];
 
-  function segmentHeightOnPage(seg, isLastOnPage) {
-    // Trailing Contour/expansion gap after the last segment on a page still occupies space
-    // when measuring keep-together against printable height (matches Word cell padding feel).
-    return seg.contentPx + (isLastOnPage ? 0 : seg.spacingAfterPx);
-  }
+    function flush() {
+      if (!bucket.length || !currentKey) return;
+      units.push({
+        verseKey: currentKey,
+        verseIndex: vi,
+        verseNumber: verseNumberFromRef(currentKey),
+        hebrewVerse: { ref: currentKey, clauses: cloneClauses(bucket) },
+        parentRef: (v && v.ref) || parentKey,
+      });
+      bucket = [];
+    }
 
-  function splitTallSegment(seg, printablePx) {
-    var parts = [];
-    var clauses = seg.hebrewClauses || [];
-    var metrics = pageTokens();
-    // Prefer splitting English lines when English alone exceeds the page.
-    if (seg.englishContentPx > printablePx && seg.english.preserveLineBreaks) {
-      var lines = String(seg.english.text || '').split('\n');
-      var chunkLines = [];
-      var chunkPx = 0;
-      var partIndex = 0;
-      function flushEnglishChunk(isLast) {
-        if (!chunkLines.length && partIndex > 0) return;
-        var text = chunkLines.join('\n');
-        var engPx = estimateEnglishContentPx(text, true, metrics);
-        var heb = partIndex === 0 ? clauses : [];
-        var hebPx = estimateHebrewBlockPx(heb, metrics);
-        parts.push({
-          type: 'verse-segment',
-          verseIndex: seg.verseIndex,
-          verseNumber: partIndex === 0 ? seg.verseNumber : '',
-          ref: seg.ref,
-          hebrewClauses: heb,
-          contourMinContentPx: hebPx,
-          contourSpacingAfterPx: isLast ? seg.contourSpacingAfterPx : 0,
-          english: {
-            text: text,
-            preserveLineBreaks: true,
-            source: seg.english.source,
-          },
-          englishContentPx: engPx,
-          contentPx: Math.max(hebPx + (isLast ? seg.contourSpacingAfterPx : 0), engPx),
-          spacingAfterPx: isLast ? seg.spacingAfterPx : 0,
-          keepTogether: false,
-          splitPart: partIndex,
-          splitOf: seg.verseIndex,
+    clauses.forEach(function (c) {
+      var clauseKey = tokenVerseKey(c, parentKey);
+      var words = c.words || [];
+      if (!words.length) {
+        if (clauseKey !== currentKey) {
+          flush();
+          currentKey = clauseKey;
+        }
+        bucket.push(c);
+        return;
+      }
+      var runKey = null;
+      var runWords = [];
+      function flushRun() {
+        if (!runWords.length || !runKey) return;
+        if (runKey !== currentKey) {
+          flush();
+          currentKey = runKey;
+        }
+        bucket.push({
+          indent: c.indent || 0,
+          indentPx: typeof c.indentPx === 'number' ? c.indentPx : undefined,
+          alignment: c.alignment,
+          words: runWords,
+          verseKey: runKey,
         });
-        partIndex += 1;
-        chunkLines = [];
+        runWords = [];
+      }
+      words.forEach(function (w) {
+        var wk = tokenVerseKey(w, clauseKey);
+        if (runKey && wk !== runKey) flushRun();
+        runKey = wk;
+        runWords.push(w);
+      });
+      flushRun();
+    });
+    flush();
+
+    if (!units.length) {
+      units.push({
+        verseKey: parentKey,
+        verseIndex: vi,
+        verseNumber: verseNumberFromRef(parentKey),
+        hebrewVerse: { ref: parentKey, clauses: cloneClauses(clauses) },
+        parentRef: (v && v.ref) || parentKey,
+      });
+    }
+    return units;
+  }
+
+  /**
+   * Join Hebrew Contour verses + English by canonical verse key.
+   * Returns { rows, report, errors }.
+   */
+  function buildCanonicalVersePairs(verses, getEnglishForVerse) {
+    var hebrewByVerse = Object.create(null);
+    var order = [];
+    var errors = [];
+    var report = [];
+
+    (verses || []).forEach(function (v, vi) {
+      var parentKey = resolveVerseKey(v && v.ref);
+      if (!parentKey) {
+        errors.push('Missing canonical verse key for Contour verse at index ' + vi);
+        return;
+      }
+      var units = expandContourVerseUnits(v, vi, parentKey);
+      units.forEach(function (unit) {
+        var key = unit.verseKey;
+        if (hebrewByVerse[key]) {
+          var prev = hebrewByVerse[key];
+          // Fragments from the same Contour verse (mixed-block split) combine in order.
+          // Two distinct Contour verse records claiming the same key fail validation.
+          if (prev.verseIndex !== vi) {
+            errors.push('Duplicate Hebrew verse for ' + key);
+            return;
+          }
+          prev.hebrewVerse.clauses = (prev.hebrewVerse.clauses || []).concat(
+            unit.hebrewVerse.clauses || [],
+          );
+          return;
+        }
+        hebrewByVerse[key] = unit;
+        order.push(key);
+      });
+    });
+
+    var englishSeen = Object.create(null);
+    var rows = [];
+    order.forEach(function (key, rowIndex) {
+      var heb = hebrewByVerse[key];
+      var v = heb.hebrewVerse;
+      var lookupVerse = { ref: key, clauses: v.clauses };
+      var engSrc =
+        (typeof getEnglishForVerse === 'function' &&
+          getEnglishForVerse(lookupVerse, heb.verseIndex)) || {
+          text: '',
+          preserveLineBreaks: false,
+        };
+      if (engSrc && engSrc.verseKey) {
+        var engKey = resolveVerseKey(engSrc.verseKey);
+        if (engKey && engKey !== key) {
+          errors.push('English/Hebrew key mismatch for ' + key + ' (English claimed ' + engKey + ')');
+        }
+      }
+      if (englishSeen[key]) {
+        errors.push('Duplicate English verse for ' + key);
+      }
+      englishSeen[key] = true;
+
+      var hasHeb = hebrewWordCount(v) > 0;
+      if (!hasHeb) {
+        errors.push('Missing Hebrew for ' + key);
+      }
+
+      var num = verseNumberFromRef(key) || heb.verseNumber || '';
+      var keyVerse = (String(key).match(/:(\d+)\s*$/) || [])[1];
+      if (num && keyVerse && String(+keyVerse) !== String(num)) {
+        errors.push('Verse number mismatch for ' + key);
+      }
+
+      rows.push({
+        verseKey: key,
+        verseIndex: heb.verseIndex,
+        verseNumber: num,
+        hebrewVerse: v,
+        englishSrc: engSrc,
+      });
+      report.push({
+        verseKey: key,
+        hebrewFound: hasHeb,
+        englishFound: !!(engSrc && String(engSrc.text || '').length),
+        outputRow: rowIndex + 1,
+        status: hasHeb ? 'verified' : 'missing-hebrew',
+      });
+    });
+
+    if (!rows.length && (verses || []).length) {
+      errors.push('No verifiable Hebrew/English verse rows could be built');
+    }
+
+    return { rows: rows, report: report, errors: errors, hebrewByVerse: hebrewByVerse };
+  }
+
+  function validatePublicationPairing(pairResult) {
+    var errors = (pairResult && pairResult.errors) || [];
+    return {
+      ok: errors.length === 0,
+      errors: errors,
+      report: (pairResult && pairResult.report) || [],
+    };
+  }
+
+  function buildVerseRow(pair, metrics) {
+    var clauses = cloneClauses(pair.hebrewVerse && pair.hebrewVerse.clauses);
+    var engText = pair.englishSrc && pair.englishSrc.text != null ? String(pair.englishSrc.text) : '';
+    var preserve = !!(pair.englishSrc && pair.englishSrc.preserveLineBreaks);
+    var lines = englishLinesFromText(engText, preserve);
+    var hebH = estimateHebrewHeight(clauses, metrics);
+    var engH = estimateEnglishHeight(engText, preserve, metrics);
+    var rowHeight = Math.max(hebH, engH);
+
+    return {
+      type: 'verse-row',
+      verseKey: pair.verseKey,
+      verseIndex: pair.verseIndex,
+      verseNumber: pair.verseNumber,
+      hebrew: {
+        lines: clauses,
+        units: clauses,
+        direction: 'rtl',
+        measuredHeight: hebH,
+      },
+      english: {
+        text: engText,
+        lines: lines,
+        preserveLineBreaks: preserve,
+        source: (pair.englishSrc && pair.englishSrc.source) || '',
+        measuredHeight: engH,
+      },
+      measuredHebrewHeight: hebH,
+      measuredEnglishHeight: engH,
+      rowHeight: rowHeight,
+      keepTogether: true,
+      splitPart: null,
+      // Compat aliases for existing preview/DOCX wiring
+      ref: pair.verseKey,
+      verseNumberText: pair.verseNumber,
+      hebrewClauses: clauses,
+      contentPx: rowHeight,
+      finalHeight: rowHeight,
+      contentHeight: rowHeight,
+      spacingAfter: metrics.rowGapPx,
+      contourSpacingAfterPx: metrics.rowGapPx,
+      englishContentPx: engH,
+      contourMinContentPx: hebH,
+    };
+  }
+
+  function splitTallRow(row, printablePx, metrics) {
+    if (row.rowHeight <= printablePx) return [row];
+    var clauses = row.hebrew.units || [];
+    var lines = row.english.lines || [''];
+    var engChunks = [];
+    var chunk = [];
+    var chunkPx = 0;
+    for (var i = 0; i < lines.length; i++) {
+      var lp = estimateEnglishHeight(lines[i], true, metrics);
+      if (chunk.length && chunkPx + lp > printablePx * 0.55) {
+        engChunks.push(chunk);
+        chunk = [];
         chunkPx = 0;
       }
-      for (var li = 0; li < lines.length; li++) {
-        var linePx = estimateEnglishContentPx(lines[li], true, metrics);
-        if (chunkLines.length && chunkPx + linePx > printablePx) flushEnglishChunk(false);
-        chunkLines.push(lines[li]);
-        chunkPx += linePx;
-      }
-      flushEnglishChunk(true);
-      if (parts.length) return parts;
+      chunk.push(lines[i]);
+      chunkPx += lp;
+    }
+    if (chunk.length) engChunks.push(chunk);
+    if (!engChunks.length) engChunks = [['']];
+
+    var clauseChunks = [];
+    if (!clauses.length) {
+      clauseChunks = engChunks.map(function () {
+        return [];
+      });
+    } else {
+      var per = Math.max(1, Math.ceil(clauses.length / engChunks.length));
+      for (var c = 0; c < clauses.length; c += per) clauseChunks.push(clauses.slice(c, c + per));
+      while (clauseChunks.length < engChunks.length) clauseChunks.push([]);
+      while (engChunks.length < clauseChunks.length) engChunks.push(['']);
     }
 
-    // Clause-level split: first part carries English + as many clauses as fit.
-    if (clauses.length <= 1) {
-      // Cannot split further; emit as-is (may overflow a single page).
-      return [seg];
-    }
-    var budget = Math.max(metrics.hebrewLinePx, printablePx - Math.min(seg.englishContentPx, printablePx * 0.5));
-    var used = 0;
-    var batch = [];
-    var first = true;
-    var splitIndex = 0;
-    function flushClauses(isLast) {
-      if (!batch.length) return;
-      var hebPx = estimateHebrewBlockPx(batch, metrics);
-      var engText = first ? seg.english.text : '';
-      var engPx = first ? seg.englishContentPx : 0;
-      var trail = isLast ? seg.contourSpacingAfterPx : 0;
+    var parts = [];
+    var n = Math.max(engChunks.length, clauseChunks.length);
+    for (var p = 0; p < n; p++) {
+      var eLines = engChunks[p] || [''];
+      var hUnits = clauseChunks[p] || [];
+      var eText = eLines.join('\n');
+      var eH = estimateEnglishHeight(eText, true, metrics);
+      var hH = estimateHebrewHeight(hUnits, metrics);
+      var rh = Math.max(eH, hH);
+      var isLast = p === n - 1;
       parts.push({
-        type: 'verse-segment',
-        verseIndex: seg.verseIndex,
-        verseNumber: first ? seg.verseNumber : '',
-        ref: seg.ref,
-        hebrewClauses: batch,
-        contourMinContentPx: hebPx,
-        contourSpacingAfterPx: trail,
+        type: 'verse-row',
+        verseKey: row.verseKey,
+        verseIndex: row.verseIndex,
+        verseNumber: p === 0 ? row.verseNumber : '',
+        hebrew: { lines: hUnits, units: hUnits, direction: 'rtl', measuredHeight: hH },
         english: {
-          text: engText,
-          preserveLineBreaks: first ? seg.english.preserveLineBreaks : false,
-          source: seg.english.source,
+          text: eText,
+          lines: eLines,
+          preserveLineBreaks: true,
+          source: row.english.source,
+          measuredHeight: eH,
         },
-        englishContentPx: engPx,
-        contentPx: Math.max(hebPx + trail, engPx),
-        spacingAfterPx: isLast ? seg.spacingAfterPx : 0,
+        measuredHebrewHeight: hH,
+        measuredEnglishHeight: eH,
+        rowHeight: rh,
         keepTogether: false,
-        splitPart: splitIndex,
-        splitOf: seg.verseIndex,
+        splitPart: p,
+        ref: row.verseKey,
+        verseNumberText: p === 0 ? row.verseNumber : '',
+        hebrewClauses: hUnits,
+        contentPx: rh,
+        finalHeight: rh,
+        contentHeight: rh,
+        spacingAfter: isLast ? metrics.rowGapPx : 0,
+        contourSpacingAfterPx: isLast ? metrics.rowGapPx : 0,
+        englishContentPx: eH,
+        contourMinContentPx: hH,
       });
-      splitIndex += 1;
-      first = false;
-      batch = [];
-      used = 0;
     }
-    for (var ci = 0; ci < clauses.length; ci++) {
-      var add = metrics.hebrewLinePx;
-      if (batch.length) add += Math.max(0, clauseSpacingPx(batch[batch.length - 1]));
-      if (batch.length && used + add > budget) flushClauses(false);
-      batch.push(clauses[ci]);
-      used += add;
-    }
-    flushClauses(true);
-    return parts.length ? parts : [seg];
+    return parts.length ? parts : [row];
   }
 
-  function paginateSegments(segments, metrics) {
+  function paginateRows(rows, metrics) {
     var printable = metrics.printableHeightPx;
     var pages = [];
     var current = [];
@@ -335,38 +486,26 @@
 
     function pushPage() {
       if (!current.length) return;
-      pages.push({ segments: current });
+      pages.push({ rows: current, blocks: current, segments: current });
       current = [];
       used = 0;
     }
 
-    for (var i = 0; i < segments.length; i++) {
-      var seg = segments[i];
-      var pieces = [seg];
-      if (seg.contentPx > printable) {
-        pieces = splitTallSegment(seg, printable);
-      }
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var pieces = row.rowHeight > printable ? splitTallRow(row, printable, metrics) : [row];
       for (var p = 0; p < pieces.length; p++) {
         var piece = pieces[p];
-        var h = piece.contentPx;
-        var gap = piece.spacingAfterPx;
-        // If keep-together and won't fit with current page content, break page first.
-        if (current.length && used + h > printable) {
-          pushPage();
-        }
+        var h = piece.rowHeight;
+        var gap = piece.spacingAfter || 0;
+        if (current.length && used + h > printable) pushPage();
         if (!current.length && h > printable) {
-          // Still too tall after split attempt — place alone.
           current.push(piece);
           pushPage();
           continue;
         }
         current.push(piece);
         used += h + gap;
-        // If trailing gap pushed past page end, still OK (gap is after content).
-        if (used - gap > printable) {
-          // Content itself overflowed somehow; force new page after this piece.
-          pushPage();
-        }
       }
     }
     pushPage();
@@ -375,39 +514,68 @@
 
   /**
    * @param {object} opts
-   * @param {Array} opts.verses
-   * @param {function} opts.getEnglishForVerse - (verse, verseIndex) => { text, preserveLineBreaks, source? }
-   * @param {object} [opts.page] - CONTOUR_PAGE-like metrics override
-   * @returns {{ segments, pages, metrics }}
+   * @param {Array} opts.verses - Contour verses
+   * @param {function} opts.getEnglishForVerse
+   * @param {boolean} [opts.throwOnPairingError=false]
+   * @returns {{ rows, blocks, segments, pages, metrics, pairing }}
    */
   function composePublicationLayout(opts) {
     opts = opts || {};
     var verses = opts.verses || [];
-    var getEng =
-      opts.getEnglishForVerse ||
-      function () {
-        return { text: '', preserveLineBreaks: false };
-      };
+    var getEng = opts.getEnglishForVerse || function () {
+      return { text: '', preserveLineBreaks: false };
+    };
     var metrics = pageTokens(opts.page);
-    var segments = [];
-    for (var vi = 0; vi < verses.length; vi++) {
-      var v = verses[vi];
-      var engSrc = getEng(v, vi) || { text: '', preserveLineBreaks: false };
-      segments.push(buildSegment(v, vi, engSrc, metrics));
+    var paired = buildCanonicalVersePairs(verses, getEng);
+    var validation = validatePublicationPairing(paired);
+    if (!validation.ok && opts.throwOnPairingError) {
+      var first = validation.errors[0] || 'unknown verse';
+      var verseHint = first.match(/(?:for|verse)\s+(.+?)(?:\.|$)/i);
+      var named = verseHint ? verseHint[1].replace(/\.$/, '') : first;
+      var err = new Error(
+        'Side-by-side export could not verify Hebrew and English pairing for ' + named + '.',
+      );
+      err.pairingErrors = validation.errors;
+      err.pairingReport = validation.report;
+      throw err;
     }
-    applyEnglishExpansion(segments);
-    var pages = paginateSegments(segments, metrics);
+
+    var rows = paired.rows.map(function (pair) {
+      return buildVerseRow(pair, metrics);
+    });
+    var pages = paginateRows(rows, metrics);
     return {
-      segments: segments,
+      rows: rows,
+      blocks: rows,
+      segments: rows,
       pages: pages,
       metrics: metrics,
+      pairing: validation,
     };
   }
 
+  root.PUBLICATION_PAGE = PUBLICATION_PAGE;
   root.composePublicationLayout = composePublicationLayout;
+  root.buildCanonicalVersePairs = buildCanonicalVersePairs;
+  root.validatePublicationPairing = validatePublicationPairing;
+  root.publicationIndentPx = publicationIndentPx;
+  root.publicationIndentDocxTwips = publicationIndentDocxTwips;
+  // No Contour discourse spacing in publication — stubs for any leftover callers
+  root.publicationClauseSpacingPx = function () {
+    return 0;
+  };
+  root.publicationVerseSpacingPx = function () {
+    return 0;
+  };
+  root.publicationSpacingAfterDocxTwips = function () {
+    return 0;
+  };
+  root.publicationVerseSpacingDocxTwips = function () {
+    return 0;
+  };
   root.PUBLICATION_LAYOUT_COL_TWIPS = {
-    eng: ENG_COL_TWIPS,
-    num: NUM_COL_TWIPS,
     heb: HEB_COL_TWIPS,
+    num: NUM_COL_TWIPS,
+    eng: ENG_COL_TWIPS,
   };
 })(typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : this);

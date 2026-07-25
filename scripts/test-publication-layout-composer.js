@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Unit tests for composePublicationLayout (Contour min spacing + English expansion + pagination). */
+/** Natural-height verse-row composer + canonical pairing tests. */
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -7,8 +7,7 @@ const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
 const composerSrc = fs.readFileSync(path.join(ROOT, 'js/app/publication-layout-composer.js'), 'utf8');
-const pageSrc = fs.readFileSync(path.join(ROOT, 'js/app/contour-page-renderer.js'), 'utf8');
-const breaksSrc = fs.readFileSync(path.join(ROOT, 'js/app/layout-breaks.js'), 'utf8');
+const fileMenu = fs.readFileSync(path.join(ROOT, 'js/app/file-menu.js'), 'utf8');
 
 function extractFunction(src, name) {
   const start = src.indexOf('function ' + name + '(');
@@ -29,30 +28,38 @@ function extractFunction(src, name) {
   throw new Error('Unclosed function ' + name);
 }
 
-function extractConst(src, name) {
-  const re = new RegExp('const ' + name + ' = \\{[\\s\\S]*?\\n\\};');
-  const m = src.match(re);
-  if (!m) throw new Error('Missing const ' + name);
-  return m[0];
+function parseBibleReference(input) {
+  const cleaned = String(input || '').replace(/[–—]/g, '-').replace(/\s+/g, ' ').trim();
+  const m = cleaned.match(/^(.+?)\s+(\d+)(?::(\d+))?(?:\s*-\s*(?:(\d+)\s*:\s*)?(\d+))?$/);
+  if (!m) return null;
+  const sc = +m[2];
+  const sv = m[3] ? +m[3] : 1;
+  const ec = m[4] ? +m[4] : sc;
+  const ev = m[5] ? +m[5] : m[3] ? sv : 999;
+  const bookName = m[1].trim().replace(/\b\w/g, (c) => c.toUpperCase());
+  return { bookId: '18O', bookName, sc, sv, ec, ev, source: 'hebrew' };
+}
+function normalizePassageRangeRef(refStr) {
+  const parsed = parseBibleReference(refStr);
+  if (!parsed) return String(refStr || '').trim();
+  if (parsed.sc === parsed.ec && parsed.sv === parsed.ev) {
+    return parsed.bookName + ' ' + parsed.sc + ':' + parsed.sv;
+  }
+  if (parsed.sc === parsed.ec) {
+    return parsed.bookName + ' ' + parsed.sc + ':' + parsed.sv + '-' + parsed.ev;
+  }
+  return parsed.bookName + ' ' + parsed.sc + ':' + parsed.sv + '-' + parsed.ec + ':' + parsed.ev;
 }
 
 const sandbox = { console, window: {} };
 sandbox.window = sandbox;
+sandbox.parseBibleReference = parseBibleReference;
+sandbox.normalizePassageRangeRef = normalizePassageRangeRef;
 vm.createContext(sandbox);
 vm.runInContext(
   [
-    extractConst(pageSrc, 'CONTOUR_PAGE'),
-    'window.CONTOUR_PAGE = CONTOUR_PAGE;',
-    extractFunction(pageSrc, 'contourPxToDocxTwips'),
-    extractFunction(pageSrc, 'contourBreakDocxTwips'),
-    extractFunction(pageSrc, 'contourVerseSpacingDocxTwips'),
-    "const SPACING_AFTER_LEVELS = ['compact', 'default', 'small', 'medium', 'large'];",
-    "const VERSE_SPACING_LEVELS = ['default', 'single', 'oneHalf', 'double'];",
-    extractFunction(breaksSrc, 'normalizeSpacingAfter'),
-    extractFunction(breaksSrc, 'normalizeVerseSpacingAfter'),
-    extractFunction(breaksSrc, 'spacingAfterPxFromLevel'),
-    extractFunction(breaksSrc, 'clauseSpacingAfterPx'),
-    extractFunction(breaksSrc, 'verseSpacingAfterDocxTwips'),
+    extractFunction(fileMenu, 'canonicalAlephVerseKey'),
+    extractFunction(fileMenu, 'chapterVerseSuffix'),
     composerSrc,
   ].join('\n'),
   sandbox,
@@ -60,175 +67,257 @@ vm.runInContext(
 );
 
 const compose = sandbox.composePublicationLayout;
-assert.equal(typeof compose, 'function', 'composePublicationLayout exported');
 
-function eng(text, preserve) {
-  return function () {
-    return { text: text || '', preserveLineBreaks: !!preserve, source: preserve ? 'publicationLayout' : 'import' };
+function engMap(map) {
+  return function (v) {
+    const key = sandbox.canonicalAlephVerseKey(v.ref);
+    const text = map[key] != null ? map[key] : map[v.ref] || '';
+    return { text: text, preserveLineBreaks: String(text).includes('\n'), source: 'publicationLayout' };
   };
 }
 
-function verse(ref, clauses, spacingAfter) {
-  const v = { ref: ref, clauses: clauses };
-  if (spacingAfter) v.spacingAfter = spacingAfter;
-  return v;
+function verse(ref, clauses) {
+  return {
+    ref: ref,
+    clauses: (clauses || [{ indent: 0, words: [{ text: 'א', format: {}, specials: [] }] }]).map((c) =>
+      typeof c === 'string'
+        ? { indent: 0, words: [{ text: c, format: {}, specials: [] }] }
+        : c,
+    ),
+  };
 }
 
-function clause(words, spacingAfterPx, indent) {
+function clause(words, indent) {
   return {
     indent: indent || 0,
-    spacingAfterPx: spacingAfterPx,
-    words: (words || ['א']).map((t) => ({ text: t, format: {}, specials: [] })),
+    words: (Array.isArray(words) ? words : [words]).map((t) => ({ text: t, format: {}, specials: [] })),
   };
 }
 
-// Contour spacingAfterPx becomes minimum inter-segment gap
+// 1. One row per canonical verse; Heb|Num|Eng share the row
 {
-  const verses = [
-    verse('Job 19:21', [clause(['א'], 40)]),
-    verse('Job 19:22', [clause(['ב'], 0)]),
-  ];
+  const verses = [verse('Job 19:21', [clause(['א']), clause(['ב'])]), verse('Job 19:22', [clause(['ג'])])];
   const out = compose({
     verses,
-    getEnglishForVerse: eng('Short', false),
+    getEnglishForVerse: engMap({ 'Job 19:21': 'Be gracious', 'Job 19:22': 'Why' }),
   });
-  assert.strictEqual(out.segments.length, 2, 'one segment per verse');
-  assert.ok(out.segments[0].contourSpacingAfterPx >= 40, 'Contour clause trail is minimum');
-  assert.ok(
-    out.segments[0].contentPx >=
-      out.segments[0].contourMinContentPx + out.segments[0].contourSpacingAfterPx,
-    'contentPx includes Contour block floor (lines + trail)',
-  );
+  assert.strictEqual(out.rows.length, 2);
+  assert.strictEqual(out.rows[0].type, 'verse-row');
+  assert.strictEqual(out.rows[0].verseKey, 'Job 19:21');
+  assert.strictEqual(out.rows[0].verseNumber, '21');
+  assert.strictEqual(out.rows[0].hebrew.units.length, 2);
+  assert.ok(out.rows[0].english.text.includes('Be gracious'));
+  assert.strictEqual(out.rows, out.blocks);
 }
 
-// Verse anchors follow Contour verse order
+// 2–4. rowHeight = max(heb, eng); Eng growth / Heb growth
 {
-  const verses = [
-    verse('Job 19:21', [clause(['א'])]),
-    verse('Job 19:25', [clause(['ב'])]),
-    verse('Job 19:26', [clause(['ג'])]),
-  ];
-  const out = compose({ verses, getEnglishForVerse: eng('x', false) });
+  const verses = [verse('Job 19:25', [clause(['א'])]), verse('Job 19:26', [clause(['ב'])])];
+  const base = compose({
+    verses,
+    getEnglishForVerse: engMap({ 'Job 19:25': 'Short', 'Job 19:26': 'Next' }),
+  });
+  const tallEng = compose({
+    verses,
+    getEnglishForVerse: engMap({
+      'Job 19:25': 'Line1\nLine2\nLine3\nLine4\nLine5',
+      'Job 19:26': 'Next',
+    }),
+  });
+  assert.ok(tallEng.rows[0].rowHeight > base.rows[0].rowHeight);
   assert.strictEqual(
-    out.segments.map((s) => s.ref).join('|'),
-    'Job 19:21|Job 19:25|Job 19:26',
-    'anchors follow Contour order',
+    tallEng.rows[0].rowHeight,
+    Math.max(tallEng.rows[0].measuredHebrewHeight, tallEng.rows[0].measuredEnglishHeight),
   );
-  assert.strictEqual(
-    out.segments.map((s) => s.verseNumber).join('|'),
-    '21|25|26',
-    'verse numbers from refs',
-  );
+  const d = tallEng.rows[0].rowHeight - base.rows[0].rowHeight;
+  const baseStart26 = base.rows[0].rowHeight + base.rows[0].spacingAfter;
+  const tallStart26 = tallEng.rows[0].rowHeight + tallEng.rows[0].spacingAfter;
+  assert.ok(Math.abs(tallStart26 - baseStart26 - d) < 1);
+
+  const tallHeb = compose({
+    verses: [
+      verse('Job 19:25', [clause(['א']), clause(['ב']), clause(['ג']), clause(['ד'])]),
+      verse('Job 19:26', [clause(['ה'])]),
+    ],
+    getEnglishForVerse: engMap({ 'Job 19:25': 'x', 'Job 19:26': 'y' }),
+  });
+  assert.ok(tallHeb.rows[0].rowHeight > base.rows[0].rowHeight);
 }
 
-// Tall English expands shared segment; later anchors shift together
+// Canonical join — reordered Contour array still pairs by key
 {
-  const tall =
-    'Line one of a very long English publication layout that will wrap.\n' +
-    'Line two continues the overflow deliberately for height.\n' +
-    'Line three keeps going so englishContentPx exceeds Hebrew.\n' +
-    'Line four ensures contentPx is driven by English.';
-  const verses = [
-    verse('Job 19:21', [clause(['א'], 18)]),
-    verse('Job 19:22', [clause(['ב'], 0)]),
-  ];
+  const verses = [verse('Job 19:26', [clause(['ב'])]), verse('Job 19:25', [clause(['א'])])];
   const out = compose({
     verses,
-    getEnglishForVerse: function (v) {
-      if (v.ref === 'Job 19:21') return { text: tall, preserveLineBreaks: true, source: 'publicationLayout' };
-      return { text: 'Short', preserveLineBreaks: false };
-    },
+    getEnglishForVerse: engMap({
+      'Job 19:25': 'I know that my Redeemer lives',
+      'Job 19:26': 'and after my skin',
+    }),
   });
-  const s0 = out.segments[0];
-  const s1 = out.segments[1];
-  assert.ok(s0.englishContentPx > s0.contourMinContentPx, 'English taller than Contour Hebrew lines');
-  assert.strictEqual(
-    s0.contentPx,
-    Math.max(s0.contourMinContentPx + s0.contourSpacingAfterPx, s0.englishContentPx),
-    'contentPx = max(Contour block, English)',
-  );
-  const contourOnlyEnd = s0.contourMinContentPx + s0.contourSpacingAfterPx;
-  const pubEnd = s0.contentPx + s0.spacingAfterPx;
-  assert.ok(pubEnd >= contourOnlyEnd, 'later Contour-min start never earlier than Contour-only');
-  assert.ok(s1.verseIndex === 1, 'second anchor still verse 22');
+  // Contour order preserved (composer walks verses in Contour order)
+  assert.strictEqual(out.rows[0].verseKey, 'Job 19:26');
+  assert.ok(out.rows[0].english.text.includes('after my skin'));
+  assert.ok(out.rows[1].english.text.includes('Redeemer'));
 }
 
-// No Contour spacing compression
+// Duplicate Hebrew fails validation
 {
-  const verses = [
-    verse('Job 19:21', [clause(['א'], 72)]),
-    verse('Job 19:22', [clause(['ב'], 0)]),
-  ];
+  const verses = [verse('Job 19:25', [clause(['א'])]), verse('Job 19:25', [clause(['ב'])])];
   const out = compose({
     verses,
-    getEnglishForVerse: eng('', false),
+    getEnglishForVerse: engMap({ 'Job 19:25': 'x' }),
   });
-  assert.ok(
-    out.segments[0].contentPx >= out.segments[0].contourMinContentPx + 72,
-    'large Contour gap preserved with empty English',
-  );
-  assert.ok(
-    out.segments[0].contentPx >=
-      out.segments[0].contourMinContentPx + out.segments[0].contourSpacingAfterPx,
-    'never compress Contour spacing',
+  assert.ok(!out.pairing.ok);
+  assert.ok(out.pairing.errors.some((e) => /Duplicate Hebrew/i.test(e)));
+}
+
+// Missing English → empty cell allowed
+{
+  const out = compose({
+    verses: [verse('Job 19:21', [clause(['א'])])],
+    getEnglishForVerse: () => ({ text: '', preserveLineBreaks: false }),
+  });
+  assert.ok(out.pairing.ok);
+  assert.strictEqual(out.rows[0].english.text, '');
+  assert.ok(out.pairing.report[0].hebrewFound);
+  assert.ok(!out.pairing.report[0].englishFound);
+}
+
+// throwOnPairingError for export guard
+{
+  const verses = [verse('Job 19:25', [clause(['א'])]), verse('Job 19:25', [clause(['ב'])])];
+  assert.throws(
+    () =>
+      compose({
+        verses,
+        getEnglishForVerse: engMap({ 'Job 19:25': 'x' }),
+        throwOnPairingError: true,
+      }),
+    /could not verify|Duplicate/i,
   );
 }
 
-// Multi-page when content exceeds printable height
+// No Contour spacer geometry — modest rowGap only
+{
+  const out = compose({
+    verses: [
+      verse('Job 19:21', [
+        { indent: 0, spacingAfterPx: 72, words: [{ text: 'א', format: {}, specials: [] }] },
+      ]),
+      verse('Job 19:22', [clause(['ב'])]),
+    ],
+    getEnglishForVerse: engMap({ 'Job 19:21': 'a', 'Job 19:22': 'b' }),
+  });
+  assert.ok(out.rows[0].spacingAfter <= 20, 'no Contour large canvas gaps');
+}
+
+// Pagination units
 {
   const many = [];
-  for (let i = 0; i < 40; i++) {
-    many.push(
-      verse('Job 19:' + (i + 1), [
-        clause(['א'], 40),
-        clause(['ב'], 40),
-        clause(['ג'], 40),
-      ]),
-    );
+  for (let i = 1; i <= 60; i++) {
+    many.push(verse('Job 19:' + i, [clause(['א']), clause(['ב']), clause(['ג'])]));
   }
-  const out = compose({
-    verses: many,
-    getEnglishForVerse: eng('One line.', false),
+  const map = {};
+  many.forEach((v) => {
+    map[sandbox.canonicalAlephVerseKey(v.ref)] = 'English line for ' + v.ref;
   });
-  assert.ok(out.pages.length >= 2, 'packs onto multiple pages when needed');
-  assert.ok(out.metrics.printableHeightPx > 0, 'printable height from Contour letter metrics');
+  const out = compose({ verses: many, getEnglishForVerse: engMap(map) });
+  assert.ok(out.pages.length >= 2);
+  out.pages.forEach((p) => {
+    (p.rows || []).forEach((r) => {
+      assert.strictEqual(r.type, 'verse-row');
+      assert.ok(r.hebrew && r.english);
+    });
+  });
 }
 
-// Keep-together moves intact when possible
+// Column proportions
 {
-  const verses = [
-    verse('Job 19:21', [clause(['א'], 0), clause(['ב'], 0)]),
-    verse('Job 19:22', [clause(['ג'], 0)]),
-  ];
-  const out = compose({
-    verses,
-    getEnglishForVerse: eng('Hello', false),
-  });
-  const firstPageSegs = out.pages[0].segments;
-  const v21 = firstPageSegs.filter((s) => s.verseIndex === 0);
-  assert.ok(v21.length === 1 || v21.every((s) => s.keepTogether === false), 'keep-together or controlled split');
-  if (out.segments[0].contentPx <= out.metrics.printableHeightPx) {
-    assert.strictEqual(out.segments[0].keepTogether, true, 'fits → keepTogether true');
-  }
+  assert.strictEqual(sandbox.PUBLICATION_LAYOUT_COL_TWIPS.heb, 5000);
+  assert.strictEqual(sandbox.PUBLICATION_LAYOUT_COL_TWIPS.num, 650);
+  assert.strictEqual(sandbox.PUBLICATION_LAYOUT_COL_TWIPS.eng, 5150);
 }
 
-// Preview/DOCX consume identical composer output shape
+// Missing Hebrew blocks export
+{
+  assert.throws(
+    () =>
+      compose({
+        verses: [{ ref: 'Job 19:25', clauses: [{ indent: 0, words: [] }] }],
+        getEnglishForVerse: engMap({ 'Job 19:25': 'x' }),
+        throwOnPairingError: true,
+      }),
+    /could not verify|Missing Hebrew/i,
+  );
+}
+
+// Mixed Contour block splits at canonical boundaries
+{
+  const mixed = {
+    ref: 'Job 19:25',
+    clauses: [
+      {
+        indent: 0,
+        words: [
+          { text: 'א', format: {}, specials: [], verseRef: 'Job 19:25' },
+          { text: 'ב', format: {}, specials: [], verseRef: 'Job 19:26' },
+        ],
+      },
+    ],
+  };
+  const out = compose({
+    verses: [mixed],
+    getEnglishForVerse: engMap({
+      'Job 19:25': 'Redeemer',
+      'Job 19:26': 'skin',
+    }),
+  });
+  assert.strictEqual(out.rows.length, 2);
+  assert.strictEqual(out.rows[0].verseKey, 'Job 19:25');
+  assert.strictEqual(out.rows[1].verseKey, 'Job 19:26');
+  assert.ok(out.rows[0].hebrew.units[0].words.every((w) => w.text === 'א'));
+  assert.ok(out.rows[1].hebrew.units[0].words.every((w) => w.text === 'ב'));
+  assert.ok(out.rows[0].english.text.includes('Redeemer'));
+  assert.ok(out.rows[1].english.text.includes('skin'));
+  assert.ok(!JSON.stringify(out.rows[0].hebrew).includes('"ב"'));
+}
+
+// Multiple Hebrew blocks for one verse combine in order
+{
+  const mixed = {
+    ref: 'Job 19:25',
+    clauses: [
+      {
+        indent: 0,
+        words: [
+          { text: 'א', format: {}, specials: [], verseRef: 'Job 19:25' },
+          { text: 'ב', format: {}, specials: [], verseRef: 'Job 19:26' },
+          { text: 'ג', format: {}, specials: [], verseRef: 'Job 19:25' },
+        ],
+      },
+    ],
+  };
+  const out = compose({
+    verses: [mixed],
+    getEnglishForVerse: engMap({ 'Job 19:25': 'a', 'Job 19:26': 'b' }),
+  });
+  const texts25 = out.rows
+    .find((r) => r.verseKey === 'Job 19:25')
+    .hebrew.units.map((u) => u.words.map((w) => w.text).join(''))
+    .join('|');
+  assert.strictEqual(texts25, 'א|ג');
+}
+
+// Pairing report (dev/tests)
 {
   const out = compose({
-    verses: [verse('Job 19:21', [clause(['א'], 18)])],
-    getEnglishForVerse: eng('Be gracious to me,\nyou my friends,', true),
+    verses: [verse('Job 19:25', [clause(['א'])])],
+    getEnglishForVerse: engMap({ 'Job 19:25': 'yes' }),
   });
-  const seg = out.segments[0];
-  assert.strictEqual(seg.type, 'verse-segment');
-  assert.ok('contourMinContentPx' in seg);
-  assert.ok('contourSpacingAfterPx' in seg);
-  assert.ok('englishContentPx' in seg);
-  assert.ok('contentPx' in seg);
-  assert.ok('spacingAfterPx' in seg);
-  assert.ok(seg.english && typeof seg.english.text === 'string');
-  assert.ok(Array.isArray(out.pages));
-  assert.ok(out.pages[0].segments.length >= 1);
-  assert.ok(out.metrics.engColTwips === 6200);
+  assert.ok(out.pairing.report.length === 1);
+  assert.strictEqual(out.pairing.report[0].verseKey, 'Job 19:25');
+  assert.strictEqual(out.pairing.report[0].status, 'verified');
+  assert.strictEqual(out.pairing.report[0].outputRow, 1);
 }
 
-console.log('OK: publication-layout-composer checks passed.');
+console.log('OK: natural-height verse-row + pairing checks passed.');
